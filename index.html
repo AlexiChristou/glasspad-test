@@ -865,6 +865,8 @@
   @media (orientation: landscape) { body.game .gspA { display: block; } body.game #gSeq { flex: none; padding: 0 6px; } body.game #gSeq i { width: 16px; max-width: none; }
     body.game #gDock { height: 36px; bottom: max(0px, calc(var(--lift, 80px) - 44px)); } body.game #gDock button { height: 36px; } body.game #gBand { padding-bottom: 8px; } }
   .gsp { flex: 1; } .gspA { display: none; }
+  /* 5.26: landscape controls all together in the middle */
+  @media (orientation: landscape) { body.game #gDock { justify-content: center; gap: 14px; } body.game #gDock .gsp, body.game #gDock .gspA { display: none; } }
   #gDock .garp { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0 12px; color: var(--muted); border: 2px solid rgba(255,255,255,.16); }
   .garp svg { width: 22px; height: 12px; } .garp span { font: 600 9.5px var(--mono); letter-spacing: .14em; }
   #gArpB svg path { stroke: rgba(var(--g-bass-rgb, 79,199,180), .55); } #gArpL svg path { stroke: rgba(var(--g-lead-rgb, 242,176,74), .55); }
@@ -1343,7 +1345,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.25 TEST · game mode · 4 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.26 TEST · game mode · 4 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1361,6 +1363,7 @@
     <div class="gr"><div><label>Strip lines</label><small>With the picture on</small></div><div class="gseg" id="gLines"><button data-v="pro">Pro</button><button data-v="soft">Soft</button><button data-v="none">None</button></div></div>
     <div class="gr"><div><label>Neighbour light</label><small>A press sends a gentle wave of light across the lines</small></div><button class="gsw" id="gNLight" aria-pressed="true"></button></div>
     <div class="gr"><div><label>Wobble</label><small>The lines of the strip you hold hum like electricity</small></div><div class="gseg" id="gWobble"><button data-v="off">Off</button><button data-v="touched">Touched</button><button data-v="near">+ Neighbours</button></div></div>
+    <div class="gr"><div><label>Picture life</label><small>Moon glow, twinkling stars, flickering lights and a shimmer on the water (Arabic Nights)</small></div><button class="gsw" id="gAtmos" aria-pressed="true"></button></div>
     <div class="gr" hidden><div><label>Bend style</label><small>How a line looks while it bends</small></div><div class="gseg" id="gBendStyle"><button data-v="pro">Pro lines</button><button data-v="same">Same style</button></div></div>
     <div class="gr" hidden><div><label>Line whiteness</label><small>The thin core of the neon lines</small></div><div class="gseg" id="gCore"><button data-v="0.75">75%</button><button data-v="0.5">50%</button><button data-v="0.25">25%</button></div></div>
     <div class="gr"><div><label>Strip bend</label><small>The live app's bend, on whichever lines you pick</small></div><button class="gsw" id="gBend" aria-pressed="true"></button></div>
@@ -1443,7 +1446,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.25 TEST · game mode · 4 Oct 2026</p>
+      <p class="ver">GlassPad 5.26 TEST · game mode · 4 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -3049,7 +3052,7 @@ function octGains(src) {
 const voices = new Map();   // voiceKey -> voice
 const active = new Map();   // pointerId -> voiceKey
 let nextKey = 1;
-const leadH = () => bass.on ? Math.round(H * (game.on ? (W > H ? .64 : .7) : .66)) : H;
+const leadH = () => bass.on ? Math.round(H * (game.on ? (W > H ? .66 : .7) : .66)) : H;
 
 // sliding a finger past the left or right edge of the pad (into the margin) plays one more note:
 // the next scale note below the lowest, or above the highest. Nothing extra is drawn.
@@ -9078,6 +9081,101 @@ function gameExtras(now, LH) {
   if (game.autoV.length > 40) game.autoV = game.autoV.filter(a => a.te > t - 1);
 }
 
+/* ---------- 5.26 game mode: Arabic Nights picture + picture life ----------
+   Picture life is one small effects layer drawn over a theme's picture, inside the pad: moon glow, twinkling stars,
+   flickering distant lights and a shimmer on the water. Each theme gets its own settings below (per orientation);
+   x/y are 0-1 across the picture, so everything follows the picture when the pad is resized or turned. */
+GAME_IMGS.arabic = { land: ["theme-arabic-landscape.webp", .652], port: ["theme-arabic-portrait.webp", .592] };
+const GAME_ATMOS = {
+  arabic: {
+    // moon: [x, y, radius as part of picture width]; stars/lights: areas [x0, y0, x1, y1] where they may appear
+    port: { moon: [.675, .118, .085], stars: [[.3, .01, .98, .2]], lights: [[.44, .26, .9, .36], [.05, .43, .62, .55]], nStars: 34, nLights: 12 },
+    land: { moon: [.857, .136, .03], stars: [[.2, .01, .97, .3]], lights: [[.66, .28, .92, .5], [.02, .42, .32, .6], [.62, .52, .95, .6]], nStars: 40, nLights: 14 },
+    water: true
+  }
+};
+const atm = { on: true, key: "", stars: null, lights: null, shim: null, spr: null };
+try { const a = localStorage.getItem("glasspad.atmos"); if (a !== null) atm.on = a === "1"; } catch (_) {}
+const atmRM = matchMedia("(prefers-reduced-motion: reduce)");
+// soft dot sprites, made once
+function atmSprites() {
+  if (atm.spr && !ctxLost(atm.spr.dot)) return atm.spr;
+  const dot = (rgb, n = 32) => { const c = document.createElement("canvas"); c.width = c.height = n; const g = c.getContext("2d"), gr = g.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2);
+    gr.addColorStop(0, `rgba(${rgb},1)`); gr.addColorStop(.25, `rgba(${rgb},.55)`); gr.addColorStop(1, `rgba(${rgb},0)`); g.fillStyle = gr; g.fillRect(0, 0, n, n); return c; };
+  const glow = document.createElement("canvas"); glow.width = glow.height = 128;
+  { const g = glow.getContext("2d"), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, "rgba(255,236,200,1)"); gr.addColorStop(.3, "rgba(255,226,180,.5)"); gr.addColorStop(1, "rgba(255,220,170,0)"); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); }
+  const streak = (rgb) => { const c = document.createElement("canvas"); c.width = 64; c.height = 8; const g = c.getContext("2d");
+    const gr = g.createRadialGradient(32, 4, 0, 32, 4, 32); gr.addColorStop(0, `rgba(${rgb},1)`); gr.addColorStop(1, `rgba(${rgb},0)`); g.setTransform(1, 0, 0, .125, 0, 3.5); g.fillStyle = gr; g.fillRect(0, -28, 64, 64); return c; };
+  return (atm.spr = { dot: dot("255,250,240"), warm: dot("255,214,160"), amber: dot("255,170,70"), glow, wA: streak("255,190,110"), wB: streak("190,235,245") });
+}
+// pick star spots on dark sky and light spots on bright, warm pixels of the picture itself (once per picture)
+function atmSetup(cfg, im) {
+  const n = 160, sc = n / im.naturalWidth, w = n, h = Math.max(1, Math.round(im.naturalHeight * sc));
+  let px = null;
+  try { const c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d"); g.drawImage(im, 0, 0, w, h); px = g.getImageData(0, 0, w, h).data; } catch (_) {}
+  const at = (u, v) => { if (!px) return [0, 0, 0]; const i = (Math.min(h - 1, Math.floor(v * h)) * w + Math.min(w - 1, Math.floor(u * w))) * 4; return [px[i], px[i + 1], px[i + 2]]; };
+  const pick = (areas, ok, count) => { const out = []; for (let t = 0; t < count * 40 && out.length < count; t++) { const a = areas[t % areas.length], u = a[0] + Math.random() * (a[2] - a[0]), v = a[1] + Math.random() * (a[3] - a[1]); if (ok(...at(u, v))) out.push([u, v]); } return out; };
+  const sp = pick(cfg.stars, (r, g, b) => r + g + b < 150, cfg.nStars);
+  const now = performance.now();
+  atm.stars = sp.map(([u, v]) => ({ u, v, warm: Math.random() < .15, size: 1.6 + Math.random() * 1.4, peak: .35 + Math.random() * .4, dur: 2000 + Math.random() * 4000, start: now + Math.random() * 12000 }));
+  const lp = pick(cfg.lights, (r, g, b) => r > 190 && g > 100 && b < 140 && r > b + 80, cfg.nLights);
+  atm.lights = lp.map(([u, v]) => ({ u, v, a: Math.random() * 6.28, b: Math.random() * 6.28, sa: .7 + Math.random() * 1.6, sb: 2.3 + Math.random() * 3, size: 5 + Math.random() * 5 }));
+  atm.shim = Array.from({ length: 8 }, () => atmShimNew(now, true));
+}
+function atmShimNew(now, first) {
+  return { x: Math.random(), y: Math.pow(Math.random(), 1.6), len: 30 + Math.random() * 70, vx: (Math.random() < .5 ? -1 : 1) * (3 + Math.random() * 6), dur: 4000 + Math.random() * 5000,
+    start: now + (first ? -Math.random() * 4000 : Math.random() * 2500), warm: Math.random() < .6, peak: .07 + Math.random() * .07 };
+}
+function gameAtmos(now, LH) {
+  const cfg0 = GAME_ATMOS[gameKey()]; if (!cfg0 || !atm.on) return;
+  const ori = H > W * 1.1 ? "port" : "land", cfg = cfg0[ori], set = GAME_IMGS[gameKey()], im = game.img; if (!cfg || !set || !im || !im.naturalWidth) return;
+  const wl = set[ori][1], iw = im.naturalWidth, ih = im.naturalHeight;
+  const sc = Math.max(W / iw, LH / (wl * ih), (H - LH) / ((1 - wl) * ih)), ox = (W - iw * sc) / 2, oy = LH - wl * ih * sc;   // the same fit as the picture
+  const key = gameKey() + ori + im.src; if (atm.key !== key) { atm.key = key; atmSetup(cfg, im); }
+  const S = atmSprites(), still = atmRM.matches, low = game.lowFx, t = now / 1000;
+  cx.save(); cx.beginPath(); cx.rect(0, 0, W, H); cx.clip(); cx.globalCompositeOperation = "screen";
+  // moon glow: slow breathing, about 10 s
+  if (cfg.moon) {
+    const [mu, mv, mr] = cfg.moon, x = ox + mu * iw * sc, y = oy + mv * ih * sc, r = mr * iw * sc * 3.4;
+    const br = still || low ? .5 : .5 - .5 * Math.cos(t * 6.283 / 10.5);
+    if (y < LH) { cx.globalAlpha = .045 + .065 * br; cx.drawImage(S.glow, x - r, y - r, r * 2, r * 2); }
+  }
+  if (!still && !low) {
+    // stars: each one fades in and out on its own, with long pauses
+    for (const s of atm.stars) {
+      if (now > s.start + s.dur) { s.start = now + 3000 + Math.random() * 10000; s.dur = 2000 + Math.random() * 4000; continue; }
+      if (now < s.start) continue;
+      const y = oy + s.v * ih * sc; if (y > LH - 4) continue;
+      const p = (now - s.start) / s.dur, a = Math.sin(Math.PI * p) * s.peak, z = s.size * 2.4;
+      cx.globalAlpha = a; cx.drawImage(s.warm ? S.warm : S.dot, ox + s.u * iw * sc - z / 2, y - z / 2, z, z);
+    }
+    // distant lights: a gentle, uneven flicker
+    for (const l of atm.lights) {
+      const y = oy + l.v * ih * sc; if (y > LH - 2) continue;
+      const f = (.5 + .5 * Math.sin(t * l.sa + l.a)) * (.6 + .4 * Math.sin(t * l.sb + l.b));
+      cx.globalAlpha = .06 + .16 * f; cx.drawImage(S.amber, ox + l.u * iw * sc - l.size, y - l.size, l.size * 2, l.size * 2);
+    }
+    // water shimmer: soft streaks of reflected light drifting on the bass, always inside the bass area
+    if (cfg0.water && LH < H) {
+      const bh = H - LH;
+      for (let i = 0; i < atm.shim.length; i++) {
+        let s = atm.shim[i];
+        if (now > s.start + s.dur) { s = atm.shim[i] = atmShimNew(now, false); continue; }
+        if (now < s.start) continue;
+        const p = (now - s.start) / s.dur, a = Math.sin(Math.PI * p) * s.peak;
+        const x = s.x * W + s.vx * (now - s.start) / 1000, y = LH + 6 + s.y * (bh - 12), len = s.len * (.85 + .15 * Math.sin(t * 1.3 + i));
+        cx.globalAlpha = a; cx.drawImage(s.warm ? S.wA : S.wB, x - len / 2, y - 2.5, len, 5);
+      }
+    }
+  }
+  cx.restore();
+}
+const gameBg525 = gameBg;
+gameBg = function () { const ok = gameBg525(); if (ok) { try { gameAtmos(performance.now(), leadH()); } catch (_) {} } return ok; };
+// its test switch
+const gameSheetSync525 = gameSheetSync;
+gameSheetSync = function () { gameSheetSync525(); $("gAtmos").setAttribute("aria-pressed", atm.on); };
+$("gAtmos").addEventListener("click", () => { atm.on = !atm.on; try { localStorage.setItem("glasspad.atmos", atm.on ? "1" : "0"); } catch (_) {} gameSheetSync(); });
 $("gameBtn").addEventListener("click", () => setGame(true));
 setGame(game.on);
 

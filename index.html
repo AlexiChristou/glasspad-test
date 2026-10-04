@@ -861,7 +861,9 @@
   body.game .recBtn[data-state="recording"], body.game .recBtn[data-state="overdub"] { background: #c8453a; border-color: #c8453a; color: #fff; }
   #gLoopX { width: 30px; height: 30px; padding: 0 !important; border-radius: 50% !important; margin-left: -16px; margin-top: -24px; font-size: 13px !important; color: #ffd21f; border: 1.5px solid #ffd21f !important; background: #1a1608 !important; z-index: 3; flex: none; }
   #gLoopX[hidden] { display: none; }
-  #gArps { flex: none; display: flex; gap: 8px; }
+  #gArps { flex: none; display: flex; gap: 8px; align-items: center; }
+  @media (orientation: landscape) { body.game .gspA { display: block; } body.game #gSeq { flex: none; padding: 0 6px; } body.game #gSeq i { width: 16px; max-width: none; }
+    body.game #gDock { height: 36px; bottom: max(0px, calc(var(--lift, 80px) - 44px)); } body.game #gDock button { height: 36px; } body.game #gBand { padding-bottom: 8px; } }
   .gsp { flex: 1; } .gspA { display: none; }
   #gDock .garp { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0 12px; color: var(--muted); border: 2px solid rgba(255,255,255,.16); }
   .garp svg { width: 22px; height: 12px; } .garp span { font: 600 9.5px var(--mono); letter-spacing: .14em; }
@@ -873,6 +875,7 @@
     body.game #gDock { gap: 6px; } body.game #gBand { padding: 0 10px 11px; } body.game #gBand em { margin-right: 2px; letter-spacing: .08em; } #gDock .garp { padding: 0 9px; } #gArps { gap: 6px; } }
   @media (orientation: portrait) { body.game #gDock { bottom: max(0px, calc(var(--lift, 80px) - 70px)); } body.game #gSeq { position: absolute; left: 0; right: 0; bottom: 51px; height: 12px; } body.game #gSeq i { max-width: none; width: 24px; } body.game #gShift { margin-left: auto; } }
   body.game.g-border #pad { box-shadow: 0 0 0 1px rgba(var(--g-lead-rgb, 242,176,74), .4); }
+  #gSheet .gr[hidden] { display: none; }
   #gSheet .gtest { margin-top: 12px; padding: 4px 12px; border: 1px dashed #6a5a3a; border-radius: 12px; }
   #gSheet .gtest h3 { margin: 6px 0 2px; font: 600 11px var(--mono); letter-spacing: .14em; color: var(--amber); text-transform: uppercase; }
   #gBand em { font: 600 11px var(--mono); font-style: normal; letter-spacing: .12em; color: var(--muted); align-self: center; margin-right: 4px; padding-top: 10px; }
@@ -1340,7 +1343,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.24 TEST · game mode · 3 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.25 TEST · game mode · 4 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1354,15 +1357,18 @@
   <div class="gr"><div><label>Smooth sound</label><small>Turn on if the sound crackles</small></div><button class="gsw" id="gSmooth" aria-pressed="false"></button></div>
   <div class="gr"><div><label>How to play</label></div><button id="gHow">Show me</button></div>
   <div class="gtest"><h3>Test only</h3>
-    <div class="gr"><div><label>Strip line colour</label><small>How solid the theme-colour band in each line is</small></div><div class="gseg" id="gLineA"><button data-v="0.95">95%</button><button data-v="0.7">70%</button></div></div>
-    <div class="gr"><div><label>Strip lines</label><small>With the picture on</small></div><div class="gseg" id="gLines"><button data-v="neon">Neon</button><button data-v="soft">Soft</button><button data-v="pro">Pro</button><button data-v="none">None</button></div></div>
-    <div class="gr"><div><label>Bend style</label><small>How a line looks while it bends</small></div><div class="gseg" id="gBendStyle"><button data-v="pro">Pro lines</button><button data-v="same">Same style</button></div></div>
-    <div class="gr"><div><label>Line whiteness</label><small>The thin core of the neon lines</small></div><div class="gseg" id="gCore"><button data-v="0.75">75%</button><button data-v="0.5">50%</button><button data-v="0.25">25%</button></div></div>
-    <div class="gr"><div><label>Strip bend</label><small>Lines wobble like water when you press</small></div><button class="gsw" id="gBend" aria-pressed="true"></button></div>
+    <div class="gr" hidden><div><label>Strip line colour</label><small>How solid the theme-colour band in each line is</small></div><div class="gseg" id="gLineA"><button data-v="0.95">95%</button><button data-v="0.7">70%</button></div></div>
+    <div class="gr"><div><label>Strip lines</label><small>With the picture on</small></div><div class="gseg" id="gLines"><button data-v="pro">Pro</button><button data-v="soft">Soft</button><button data-v="none">None</button></div></div>
+    <div class="gr"><div><label>Neighbour light</label><small>A press sends a gentle wave of light across the lines</small></div><button class="gsw" id="gNLight" aria-pressed="true"></button></div>
+    <div class="gr"><div><label>Wobble</label><small>The lines of the strip you hold hum like electricity</small></div><div class="gseg" id="gWobble"><button data-v="off">Off</button><button data-v="touched">Touched</button><button data-v="near">+ Neighbours</button></div></div>
+    <div class="gr" hidden><div><label>Bend style</label><small>How a line looks while it bends</small></div><div class="gseg" id="gBendStyle"><button data-v="pro">Pro lines</button><button data-v="same">Same style</button></div></div>
+    <div class="gr" hidden><div><label>Line whiteness</label><small>The thin core of the neon lines</small></div><div class="gseg" id="gCore"><button data-v="0.75">75%</button><button data-v="0.5">50%</button><button data-v="0.25">25%</button></div></div>
+    <div class="gr"><div><label>Strip bend</label><small>The live app's bend, on whichever lines you pick</small></div><button class="gsw" id="gBend" aria-pressed="true"></button></div>
     <div class="gr"><div><label>Pad border</label></div><button class="gsw" id="gBorder" aria-pressed="true"></button></div>
     <div class="gr"><div><label>Charge length</label><small>Bars of charge before the key change lands</small></div><div class="gseg" id="gCharge"><button data-v="1">1 bar</button><button data-v="2">2 bars</button></div></div>
     <div class="gr"><div><label>Shake</label></div><div class="gseg" id="gShake"><button data-v="0">Off</button><button data-v="1">Light</button><button data-v="2">Strong</button></div></div>
     <div class="gr"><div><label>Riser sound</label></div><button class="gsw" id="gRiser" aria-pressed="true"></button></div>
+    <div class="gr"><div><label>Speed</label><small id="gFx"></small></div><button id="gFxOn" hidden>Full effects on</button></div>
     <div class="gr"><div><label>Copy setup</label><small>Sound, chords, colours and more, to paste to Claude</small></div><button id="gCopy">Copy</button></div>
   </div>
 </div></div>
@@ -1389,7 +1395,7 @@
     <div class="side"><button id="gHold" aria-pressed="false">Lead hold</button><button id="gLatch" aria-pressed="false">Bass hold</button></div>
   </div>
   <div id="kbNav" hidden><button id="kbDown" aria-label="Octave down">◀ Oct</button><output id="kbRange">C4–C5</output><button id="kbUp" aria-label="Octave up">Oct ▶</button></div>
-  <div id="gDock" class="g-only"><button id="gBand" aria-label="Band: how busy the drums and bass are"><em>BAND</em><b></b><b></b><b></b></button><div id="gSeq" aria-hidden="true"></div><i class="gsp gspA"></i><div id="gArps"><button id="gArpB" class="garp" aria-pressed="false" aria-label="Bass arp"><svg viewBox="0 0 22 14"><path d="M1 12 L5 2 L9 12 L13 2 L17 12 L21 2" fill="none" stroke-width="2" stroke-linejoin="round"/></svg><span>BASS</span></button><button id="gArpL" class="garp" aria-pressed="false" aria-label="Lead arp"><svg viewBox="0 0 22 14"><path d="M1 12 L5 2 L9 12 L13 2 L17 12 L21 2" fill="none" stroke-width="2" stroke-linejoin="round"/></svg><span>LEAD</span></button></div><i class="gsp"></i><button id="gShift"><u></u><i></i><span>SHIFT ▲</span></button></div>
+  <div id="gDock" class="g-only"><button id="gBand" aria-label="Band: how busy the drums and bass are"><em>BAND</em><b></b><b></b><b></b></button><i class="gsp gspA"></i><div id="gArps"><button id="gArpB" class="garp" aria-pressed="false" aria-label="Bass arp"><svg viewBox="0 0 22 14"><path d="M1 12 L5 2 L9 12 L13 2 L17 12 L21 2" fill="none" stroke-width="2" stroke-linejoin="round"/></svg><span>BASS</span></button><div id="gSeq" aria-hidden="true"></div><button id="gArpL" class="garp" aria-pressed="false" aria-label="Lead arp"><svg viewBox="0 0 22 14"><path d="M1 12 L5 2 L9 12 L13 2 L17 12 L21 2" fill="none" stroke-width="2" stroke-linejoin="round"/></svg><span>LEAD</span></button></div><i class="gsp"></i><button id="gShift"><u></u><i></i><span>SHIFT ▲</span></button></div>
   <div id="gHint" class="g-only off"><div>Tap or slide a finger across the glass</div><div class="fing"></div></div>
   <div id="toast" hidden></div>
   <div id="tip" hidden><b>How to play</b>Put several fingers on the screen. Left–right picks the note, up–down opens the filter. Press ▶ Play to bring in the band; pick a progression in the Band tab. Tap ▲ on the pad's right edge to lift the whole band a tone.</div>
@@ -1437,7 +1443,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.24 TEST · game mode · 3 Oct 2026</p>
+      <p class="ver">GlassPad 5.25 TEST · game mode · 4 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -1445,7 +1451,7 @@
 <script>
 const $ = id => document.getElementById(id);
 /* ---------- 5.21 game mode state (the code is near the end) ---------- */
-const game = { on: true, band: 1, bandPend: null, bandFillBar: -9, bandVol: 1, bass: true, ls: "full", chargeBars: 1, bg: true, dim: 60, lineA: .95, border: false, shake: 1, riserOn: true, arpB: false, arpL: false, lines: "soft", core: .5, bend: true, bendStyle: "same", restA: 0,
+const game = { on: true, band: 1, bandPend: null, bandFillBar: -9, bandVol: 1, bass: true, ls: "full", chargeBars: 1, bg: true, dim: 60, lineA: .95, border: false, shake: 1, riserOn: true, arpB: false, arpL: false, lines: "soft", core: .5, bend: true, bendStyle: "same", nLight: true, wobble: "touched", restA: 0,
   autoV: [], ripples: [], lastTouch: 0, idleA: 0, slow: 0, lowFx: false, bassPids: new Set(), lastBassUp: -99, bassHeld: false,
   riser: null, local: null, dir: 1, flash: null, sparks: [], bassFlash: {}, img: null, imgKey: "", hinted: false, liftUsed: false, pro: null };
 try { const g = JSON.parse(localStorage.getItem("glasspad.game") || "{}");
@@ -3043,7 +3049,7 @@ function octGains(src) {
 const voices = new Map();   // voiceKey -> voice
 const active = new Map();   // pointerId -> voiceKey
 let nextKey = 1;
-const leadH = () => bass.on ? Math.round(H * (game.on ? .7 : .66)) : H;
+const leadH = () => bass.on ? Math.round(H * (game.on ? (W > H ? .64 : .7) : .66)) : H;
 
 // sliding a finger past the left or right edge of the pad (into the margin) plays one more note:
 // the next scale note below the lowest, or above the highest. Nothing extra is drawn.
@@ -6441,8 +6447,8 @@ function drawClimb(now) {
     for (let i = 0; i < max; i++) {
       const lit = i < n, yy = side > 0 ? LH - 12 - (i + 1) * segH : 12 + i * segH;
       cx.fillStyle = lit ? `hsla(${v.hue},100%,${62 + (i === n - 1 ? pulse * 25 : 0)}%,.85)` : "rgba(255,255,255,.07)";
-      cx.fillRect(bx, yy + 1.5, 5, Math.max(2, segH - 3));
-      if (lit && i === n - 1 && pulse > 0) { cx.fillStyle = `hsla(${v.hue},100%,75%,${pulse * .5})`; cx.fillRect(bx - 4, yy, 13, segH); }
+      if (game.on && cx.roundRect) { cx.beginPath(); cx.roundRect(bx, yy + 1.5, 5, Math.max(2, segH - 3), 2.5); cx.fill(); } else cx.fillRect(bx, yy + 1.5, 5, Math.max(2, segH - 3));
+      if (lit && i === n - 1 && pulse > 0) { cx.fillStyle = `hsla(${v.hue},100%,75%,${pulse * .5})`; if (game.on && cx.roundRect) { cx.beginPath(); cx.roundRect(bx - 4, yy, 13, segH, 6); cx.fill(); } else cx.fillRect(bx - 4, yy, 13, segH); }
     }
     // the finger gets hotter as it climbs
     const r = 46 + k * 22, fg = cx.createRadialGradient(fx, fy, 0, fx, fy, r);
@@ -8374,7 +8380,7 @@ function setLift(px, save) {
   // on its side the screen is short, so the lift is capped (just room for the bar under the pad)
   // never lower than the row of buttons under the pad (octaves, holds), so it can't cover them
   px = Math.max(48, px);
-  const eff = window.innerWidth > window.innerHeight ? Math.min(px, game.on ? 58 : 40) : px + (game.on ? 18 : 0);   // game mode, upright: room for the sequence strip   // game mode: room for BAND and SHIFT
+  const eff = window.innerWidth > window.innerHeight ? Math.min(px, game.on ? 50 : 40) : px + (game.on ? 18 : 0);   // game mode, upright: room for the sequence strip   // game mode: room for BAND and SHIFT
   document.documentElement.style.setProperty("--lift", eff + "px");
   $("gapBar").hidden = eff < 36;   // the bar needs room under the pad
   kbNavShow();
@@ -8883,7 +8889,7 @@ function gameBg() {
   const c = game.bgC, now = performance.now(), tn = now / 1000;
   cx.drawImage(c, 0, 0, c.width, LH * DPR, 0, 0, W, LH);
   if (LH < H) {
-    if (game.lowFx) cx.drawImage(c, 0, LH * DPR, c.width, (H - LH) * DPR, 0, LH, W, H - LH);
+    if (game.lowFx && !game.ripples.some(r => now >= r.t && now - r.t < 1400)) cx.drawImage(c, 0, LH * DPR, c.width, (H - LH) * DPR, 0, LH, W, H - LH);
     else {
       const tw = 24, th = 10, live = game.ripples.filter(r => now >= r.t && now - r.t < 1400), ia = Math.max(game.idleA, game.restA);
       for (let y = LH; y < H; y += th) for (let x = 0; x < W; x += tw) {
@@ -8941,24 +8947,7 @@ function gameBassStep(s, t, t0, dur) {
   gameBassNote(root + (P.iv[k] === 7 ? fifth : P.iv[k]), t, P.len[k] * dur, gm);
 }
 // every frame: the sequence strip, the resting look, the loop ✕, and the frame-rate safety net (no glass sheen in game mode)
-function gameExtras(now, LH) {
-  const dt = Math.min(200, now - (game.lastFrame || now)); game.lastFrame = now;
-  game.fps = (game.fps || 16) * .95 + dt * .05;
-  if (game.imgOn && game.fps > 26) { if ((game.slow += dt) > 2500) game.lowFx = true; } else game.slow = Math.max(0, game.slow - dt);
-  if (voices.size) game.lastTouch = now;
-  const quiet = now - game.lastTouch > 3000;
-  const wantIdle = game.imgOn && !game.lowFx && quiet ? 1 : 0;
-  game.idleA += (wantIdle - game.idleA) * Math.min(1, dt / (wantIdle ? 900 : 180));
-  const wantRest = game.imgOn && !T.playing && !voices.size && now - game.lastTouch > 1200 ? 1 : 0;   // band stopped, nobody playing: the strips step back
-  game.restA += (wantRest - game.restA) * Math.min(1, dt / (wantRest ? 1200 : 150));
-  const L = Math.max(1, Math.min(16, passBars())), stp = T.meter.steps, pend = !!(keyLift.pend && T.playing) || !!game.local;
-  const cur = T.playing ? Math.floor(Math.max(0, audAbs()) / stp) % L : -1;
-  const st = [...Array(L).keys()].map(i => (cur >= 0 && i < cur ? "done" : i === cur ? "now" : "") + (pend && i >= L - game.chargeBars && i !== cur ? " chg" : "") + (pend && i === 0 ? " land" : "")).join("|");
-  if (st !== game.seqTxt) { game.seqTxt = st; $("gSeq").innerHTML = st.split("|").map(c => `<i class="${c.trim()}"></i>`).join(""); }
-  gameLoopX();
-  const t = audio ? audio.ctx.currentTime : 0;
-  if (game.autoV.length > 40) game.autoV = game.autoV.filter(a => a.te > t - 1);
-}
+// gameExtras: see the 5.25 block below
 // gameSheetSync: see the 5.24 block below
 gSeg("gCore", "core");
 $("gLines").addEventListener("click", e => { const x = e.target.closest("button"); if (!x) return; game.lines = x.dataset.v; gameSheetSync(); gameSave(); });
@@ -8980,9 +8969,7 @@ function loopNotesForCopy() {
 }
 
 /* ---------- 5.24 game mode additions ---------- */
-function gameSave() { try { localStorage.setItem("glasspad.game", JSON.stringify({ on: game.on, bandVol: game.bandVol, bass: game.bass, ls: game.ls, hinted: game.hinted,
-  bg: game.bg, dim: game.dim, lineA: game.lineA, border: game.border, shake: game.shake, riserOn: game.riserOn, chargeBars: game.chargeBars,
-  lines: game.lines, core: game.core, bend: game.bend, bendStyle: game.bendStyle })); } catch (_) {} }
+// gameSave: see the 5.25 block below
 const gameTheme523 = gameTheme;
 gameTheme = function () { gameTheme523(); document.body.style.setProperty("--g-bass-rgb", rgbOf(TH.acc2)); };
 // two arps: BASS (left, keeps going after you let go; tap again to stop) and LEAD (right, while your finger is down)
@@ -8994,32 +8981,64 @@ $("gArpL").addEventListener("click", () => { game.arpL = !game.arpL; $("gArpL").
 // strip lines with the picture on: Neon, Soft, Pro (the full app's lines) or None. Returns false to let the Pro lines draw.
 // Bend style: "pro" bends with the Pro line; "same" keeps the line's own look and just wobbles it.
 function gameBending(x, now) { return game.bend && ls.rip.bend && ripples.length && ripples.some(r => now - r.t < 600 && Math.abs(r.x - x) < (now - r.t) * .45 + 50); }
+// gameLine: see the 5.25 block below
+// gameSheetSync: see the 5.25 block below
+$("gBendStyle").addEventListener("click", e => { const x = e.target.closest("button"); if (!x) return; game.bendStyle = x.dataset.v; gameSheetSync(); gameSave(); });
+
+/* ---------- 5.25 game mode: strip line options ----------
+   Lines: Pro (the full app's lines), Soft or None. Strip bend: the live app's own bend, on whichever lines you pick.
+   Neighbour light: each press sends a gentle wave of light out across the lines. Wobble: the lines of the strip
+   you're holding hum like electricity (Off / Touched strip / Touched + neighbours). */
+function gameSave() { try { localStorage.setItem("glasspad.game", JSON.stringify({ on: game.on, bandVol: game.bandVol, bass: game.bass, ls: game.ls, hinted: game.hinted,
+  bg: game.bg, dim: game.dim, lineA: game.lineA, border: game.border, shake: game.shake, riserOn: game.riserOn, chargeBars: game.chargeBars,
+  lines: game.lines, core: game.core, bend: game.bend, bendStyle: game.bendStyle, nLight: game.nLight, wobble: game.wobble })); } catch (_) {} }
+try { const g = JSON.parse(localStorage.getItem("glasspad.game") || "{}"); if (typeof g.nLight === "boolean") game.nLight = g.nLight; if (["off", "touched", "near"].includes(g.wobble)) game.wobble = g.wobble;
+  if (game.lines === "neon") game.lines = "soft"; } catch (_) {}
 function gameLine(x, y0, h, hex, now, isBass) {
-  if (game.lines === "pro") return false;
-  const bending = gameBending(x, now);
-  if (bending && game.bendStyle === "pro") { ripLine(x, y0, h, hex, now); return true; }
   if (game.lines === "none") return true;
-  const rest = 1 - .6 * game.restA, b = T.playing ? Math.max(0, 1 - (now - flashAt) / 260) : 0, rgb = rgbOf(hex);
-  const segs = bending ? Math.ceil(h / 6) : 1, sh = bending ? 6 : h;
-  if (game.lines === "neon") {
-    for (const k in neonCache) if (ctxLost(neonCache[k])) delete neonCache[k];
-    const sp = neonSprite(hex);
-    for (let k = 0; k < segs; k++) {
-      const y = y0 + k * sh, hh = Math.min(sh, y0 + h - y), xx = x + (bending ? ripDx(x, y, now) : 0);
-      cx.globalAlpha = rest; cx.drawImage(sp, 0, 1, sp.width, 2, xx - 12, y, 24, hh);
-      if (b > .03) { cx.globalAlpha = b * .35 * rest; cx.drawImage(sp, 0, 1, sp.width, 2, xx - 12, y, 24, hh); }
-    }
-    cx.globalAlpha = 1; return true;
+  const LH = leadH(), n = isBass ? bassLanes.length : lanes.length, lw = W / Math.max(1, n), rest = 1 - .6 * game.restA, rgb = rgbOf(hex);
+  // neighbour light: a gentle wave travelling out from each press (the app's own press list)
+  let wave = 0;
+  if (game.nLight) for (const r of ripples) {
+    if ((r.y >= LH) !== isBass) continue;
+    const age = (now - r.t) / 900; if (age < 0 || age >= 1) continue;
+    const front = age * W * .85, d = Math.abs(x - r.x);
+    wave = Math.max(wave, Math.exp(-Math.pow((d - front) / (lw * 1.3), 2)) * (1 - age) * .5);
   }
-  // soft: a faint line that brightens near your finger and on the beat
-  let near = 0; const lw = W / (isBass ? bassLanes.length : lanes.length);
-  for (const v of voices.values()) if ((v.kind === "bass") === isBass) near = Math.max(near, 1 - Math.min(1, Math.abs(v.x - x) / (lw * 1.6)));
-  const a = (.3 + .15 * b + .55 * near) * rest;
-  for (let k = 0; k < segs; k++) {
-    const y = y0 + k * sh, hh = Math.min(sh, y0 + h - y), xx = x + (bending ? ripDx(x, y, now) : 0);
-    if (near > .05) { const g = cx.createLinearGradient(xx - 6, 0, xx + 6, 0); g.addColorStop(0, `rgba(${rgb},0)`); g.addColorStop(.5, `rgba(${rgb},${.35 * near})`); g.addColorStop(1, `rgba(${rgb},0)`); cx.fillStyle = g; cx.fillRect(xx - 6, y, 12, hh); }
-    cx.fillStyle = `rgba(${rgb},${a})`; cx.fillRect(xx - .6, y, 1.2, hh);
+  // soft lines also brighten next to a finger
+  let near = 0;
+  if (game.lines === "soft") for (const v of voices.values()) if ((v.kind === "bass") === isBass) near = Math.max(near, 1 - Math.min(1, Math.abs(v.x - x) / (lw * 1.6)));
+  // wobble: the two lines of the strip you're holding (and, if chosen, the next ones out)
+  let wob = 0;
+  if (game.wobble !== "off") for (const v of voices.values()) {
+    if ((v.kind === "bass") !== isBass || v.released) continue;
+    const l = v.lane * lw, r2 = (v.lane + 1) * lw;
+    if (Math.abs(x - l) < 1 || Math.abs(x - r2) < 1) wob = Math.max(wob, 1);
+    else if (game.wobble === "near" && (Math.abs(x - (l - lw)) < 1 || Math.abs(x - (r2 + lw)) < 1)) wob = Math.max(wob, .5);
   }
+  const bend = game.bend && ls.rip.bend && ripples.length && ripples.some(r => now - r.t < 600 && Math.abs(r.x - x) < (now - r.t) * .45 + 50);
+  const lit = Math.max(near, wave);
+  if (lit > .03) {   // the soft glow either side of a lit line
+    const g = cx.createLinearGradient(x - 7, 0, x + 7, 0); g.addColorStop(0, `rgba(${rgb},0)`); g.addColorStop(.5, `rgba(${rgb},${.4 * lit * rest})`); g.addColorStop(1, `rgba(${rgb},0)`);
+    cx.fillStyle = g; cx.fillRect(x - 7, y0, 14, h);
+  }
+  const pro = game.lines === "pro", col = pro ? (isBass ? TH.bline : TH.leadLine || TH.line) : hex;
+  const width = pro ? (TH.glow ? 1.5 : 1) / DPR * (1 + lit) : 1.2;
+  const alpha = pro ? rest : (.3 + .15 * (T.playing ? Math.max(0, 1 - (now - flashAt) / 260) : 0) + .55 * lit) * rest;
+  const style = pro ? col : `rgba(${rgb},${Math.min(1, alpha)})`;
+  if (!bend && !wob) {
+    if (pro && TH.glow) { cx.fillStyle = col + "40"; cx.globalAlpha = rest; cx.fillRect(x - 1.5, y0, 4, h); }
+    cx.globalAlpha = pro ? rest : 1; cx.fillStyle = style; cx.fillRect(x - (pro ? 0 : .6), y0, width, h); cx.globalAlpha = 1;
+    return true;
+  }
+  // bent or humming: draw the line as a path that moves
+  cx.save(); cx.globalAlpha = pro ? rest : 1; cx.strokeStyle = style; cx.lineWidth = Math.max(1, width); cx.beginPath();
+  for (let y = y0; y <= y0 + h; y += 5) {
+    let dx = bend ? ripDx(x, y, now) : 0;
+    if (wob) dx += wob * 1.3 * (Math.sin(now / 23 + y * .9) * .6 + Math.sin(now / 41 - y * .37) * .4);
+    y === y0 ? cx.moveTo(x + dx, y) : cx.lineTo(x + dx, y);
+  }
+  cx.stroke(); cx.restore();
   return true;
 }
 function gameSheetSync() {
@@ -9028,11 +9047,36 @@ function gameSheetSync() {
   $("gSmooth").setAttribute("aria-pressed", $("smoothBtn").getAttribute("aria-pressed") === "true");
   $("gBg").setAttribute("aria-pressed", game.bg); $("gBright").value = 100 - game.dim;
   $("gBorder").setAttribute("aria-pressed", game.border); $("gRiser").setAttribute("aria-pressed", game.riserOn); $("gBend").setAttribute("aria-pressed", game.bend);
+  $("gNLight").setAttribute("aria-pressed", game.nLight);
   $("gLines").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x.dataset.v === game.lines));
-  $("gBendStyle").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x.dataset.v === game.bendStyle));
-  for (const [id, v] of [["gLineA", game.lineA], ["gCharge", game.chargeBars], ["gShake", game.shake], ["gCore", game.core]]) $(id).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", +x.dataset.v === v));
+  $("gWobble").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x.dataset.v === game.wobble));
+  for (const [id, v] of [["gCharge", game.chargeBars], ["gShake", game.shake]]) $(id).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", +x.dataset.v === v));
+  $("gFx").textContent = `${(game.fps || 16).toFixed(0)} ms a frame · ${game.lowFx ? "effects simplified" : "full effects"}`;
+  $("gFxOn").hidden = !game.lowFx;
 }
-$("gBendStyle").addEventListener("click", e => { const x = e.target.closest("button"); if (!x) return; game.bendStyle = x.dataset.v; gameSheetSync(); gameSave(); });
+$("gNLight").addEventListener("click", () => { game.nLight = !game.nLight; gameSheetSync(); gameSave(); });
+$("gWobble").addEventListener("click", e => { const x = e.target.closest("button"); if (!x) return; game.wobble = x.dataset.v; gameSheetSync(); gameSave(); });
+$("gFxOn").addEventListener("click", () => { game.lowFx = false; game.slow = -15000; gameSheetSync(); });
+setInterval(() => { if (!$("gSheet").hidden) gameSheetSync(); }, 1000);
+// the safety net is slower to step in now: frames over 34 ms for 4 s (it was 26 ms for 2.5 s)
+function gameExtras(now, LH) {
+  const dt = Math.min(200, now - (game.lastFrame || now)); game.lastFrame = now;
+  game.fps = (game.fps || 16) * .95 + dt * .05;
+  if (game.imgOn && game.fps > 34) { if ((game.slow += dt) > 4000) game.lowFx = true; } else game.slow = Math.max(game.slow < 0 ? game.slow + dt : 0, game.slow - dt);
+  if (voices.size) game.lastTouch = now;
+  const quiet = now - game.lastTouch > 3000;
+  const wantIdle = game.imgOn && !game.lowFx && quiet ? 1 : 0;
+  game.idleA += (wantIdle - game.idleA) * Math.min(1, dt / (wantIdle ? 900 : 180));
+  const wantRest = game.imgOn && !T.playing && !voices.size && now - game.lastTouch > 1200 ? 1 : 0;
+  game.restA += (wantRest - game.restA) * Math.min(1, dt / (wantRest ? 1200 : 150));
+  const L = Math.max(1, Math.min(16, passBars())), stp = T.meter.steps, pend = !!(keyLift.pend && T.playing) || !!game.local;
+  const cur = T.playing ? Math.floor(Math.max(0, audAbs()) / stp) % L : -1;
+  const st = [...Array(L).keys()].map(i => (cur >= 0 && i < cur ? "done" : i === cur ? "now" : "") + (pend && i >= L - game.chargeBars && i !== cur ? " chg" : "") + (pend && i === 0 ? " land" : "")).join("|");
+  if (st !== game.seqTxt) { game.seqTxt = st; $("gSeq").innerHTML = st.split("|").map(c => `<i class="${c.trim()}"></i>`).join(""); }
+  gameLoopX();
+  const t = audio ? audio.ctx.currentTime : 0;
+  if (game.autoV.length > 40) game.autoV = game.autoV.filter(a => a.te > t - 1);
+}
 
 $("gameBtn").addEventListener("click", () => setGame(true));
 setGame(game.on);

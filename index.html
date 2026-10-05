@@ -1345,7 +1345,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.34 TEST · game mode · 5 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.35 TEST · game mode · 6 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1447,7 +1447,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.34 TEST · game mode · 5 Oct 2026</p>
+      <p class="ver">GlassPad 5.35 TEST · game mode · 6 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -2198,7 +2198,7 @@ const crash = out => [...out.filter(([i]) => i !== "hat" && i !== "kick"), ["cra
 function drumKind(s, kind) {
   const base = drum.pat[s] || [], P = T.meter.pulses;
   if (game.on && kind === "sparse") return base.filter(([i]) => ["kick", "dum", "snare", "clap", "bkick", "k808"].includes(i)).map(([i, v, o]) => [i, v * .7, o]);   // Band low: kick and snare, softer
-  if (game.on && kind === "busy") {   // Band high: 16th hats, an open hat into each beat, an extra kick and ghost snares
+  if (game.on && kind === "busy" && !(drum.swing > .3)) {   // Band high (straight styles; swung ones use the full app's Busy below): 16th hats, an open hat into each beat, an extra kick and ghost snares
     const out = base.filter(([i]) => i !== "hat"), S = T.meter.steps;
     out.push(["hat", s % 2 ? .22 : .38]);
     if (S === 16 && s % 4 === 3) out.push(["ohat", .3]);
@@ -9208,6 +9208,44 @@ const gameSheetSync526 = gameSheetSync;
 gameSheetSync = function () { gameSheetSync526(); $("gPx").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", (x.dataset.v === "px") === game.px)); };
 $("gPx").addEventListener("click", e => { const x = e.target.closest("button"); if (!x) return; game.px = x.dataset.v === "px";
   try { localStorage.setItem("glasspad.px", game.px ? "1" : "0"); } catch (_) {} gamePxApply(); gameSheetSync(); });
+/* ---------- 5.35 game mode: theme bass lines ----------
+   GAME_BASS_THEME[theme][band level] replaces the built-in bass line for that theme and level.
+   A line is { st: 16th steps, iv: semitones above the chord root (7 = the chord's 5th, 10 = its 7th), len: in 16ths },
+   or "walk": the live app's held bass with Walk the scale (quarter notes up and down the scale from the chord's root,
+   back to the root at each chord change and every 2 bars). Swing comes from the drums, as for every built-in note. */
+const GAME_BASS_THEME = {
+  // Alexi's line (recorded 6 Oct 2026): root, octave, b7, 5th, b7 on the swung "and" of 4
+  blues: { 1: { st: [0, 4, 8, 12, 14], iv: [0, 12, 10, 7, 10], len: [3.5, 3.2, 2.9, 1.5, 1.2] }, 2: "walk" }
+};
+gameBassStep = function (s, t, t0, dur) {
+  if (!game.bass || !bass.on || !pad.cur || !audio) return;
+  const loopBass = [...loop.live].some(v => v.kind === "bass");
+  if (loopBass || [...voices.values()].some(v => v.kind === "bass")) { game.bassHeld = true; return; }
+  if (game.bassHeld) { game.bassHeld = false; game.lastBassUp = Math.max(game.lastBassUp, t0); }
+  const beats = (t0 - game.lastBassUp) / (dur * 4); if (beats < 2) return;
+  const gm = Math.min(1, .12 + .88 * (beats - 2) / 4);
+  const ch = pad.cur, r0 = ch.tones[0], rootPc = mod12(cbase(ch) + r0), root = 33 + mod12(rootPc - 9);
+  const rel = ch.tones.map(x => mod12(x - r0)), fifth = rel.includes(7) ? 7 : (rel.find(x => x >= 6 && x <= 8) ?? 7), third = rel.find(x => x === 3 || x === 4) ?? 0;
+  const sev = rel.find(x => x === 10 || x === 11) ?? 10;
+  const own = (GAME_BASS_THEME[gameKey()] || {})[game.band];
+  if (own === "walk") {   // the live app's walking bass: a quarter note on each beat
+    const S = T.meter.steps, B = T.meter.pulses || [0, 4, 8, 12];
+    if (!B.includes(s)) return;
+    const notes = arpNotes("bass", 0, root, false, "walk", null, ch);
+    const k = bassArpK({ arp: "walk", beats: 1 }, t0);
+    gameBassNote(arpPick("walk", notes, Math.max(0, k), {}), t, (S === 16 ? 3.4 : 1.7) * dur, gm);
+    return;
+  }
+  if (!own && game.band === 2) {   // High: an arp up and down the chord in 16ths
+    if (T.meter.steps !== 16 && s % 2) return;
+    const seq = [0, third, fifth, 12, fifth, third];
+    gameBassNote(root + seq[s % seq.length], t, .85 * dur, gm * .9); return;
+  }
+  const P = own || GAME_BASS[game.band], k = T.meter.steps === 16 ? P.st.indexOf(s) : (s === 0 ? 0 : -1);
+  if (k < 0) return;
+  const iv = P.iv[k], n = iv === 7 ? fifth : iv === 10 ? sev : iv === 19 ? 12 + fifth : iv;
+  gameBassNote(root + n, t, P.len[k] * dur, gm);
+};
 $("gameBtn").addEventListener("click", () => setGame(true));
 setGame(game.on);
 

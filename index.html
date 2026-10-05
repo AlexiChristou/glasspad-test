@@ -1345,7 +1345,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.32 TEST · game mode · 5 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.33 TEST · game mode · 5 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1447,7 +1447,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.32 TEST · game mode · 5 Oct 2026</p>
+      <p class="ver">GlassPad 5.33 TEST · game mode · 5 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -8869,7 +8869,7 @@ $("gLoopX").addEventListener("click", e => { e.stopPropagation(); loopClear(); t
 function gameLoopX() { const show = game.on && loop.layers.length > 0 && loop.state !== "armed"; if ($("gLoopX").hidden === show) $("gLoopX").hidden = !show; }
 
 // each picture and where its waterline is (0-1 down the picture): the app lines that up with the lead/bass split
-const GAME_IMGS = { tokyo: { land: ["theme-tokyo-landscape-b.webp", .717], port: ["theme-tokyo-portrait-b.webp", .731] } };
+const GAME_IMGS = { tokyo: { land: ["theme-tokyo-landscape-c.webp", .672], port: ["theme-tokyo-portrait-c.webp", .605] } };
 const ctxLost = c => { try { const g = c.getContext("2d"); return !!(g.isContextLost && g.isContextLost()); } catch (_) { return true; } };
 document.addEventListener("visibilitychange", () => { if (!document.hidden) { game.bgKey = ""; for (const k in neonCache) delete neonCache[k]; } });
 function gameBg() {
@@ -9090,7 +9090,7 @@ function gameExtras(now, LH) {
    x/y are 0-1 across the picture, so everything follows the picture when the pad is resized or turned. */
 GAME_IMGS.arabic = { land: ["theme-arabic-landscape-b.webp", .65], port: ["theme-arabic-portrait-b.webp", .68] };
 GAME_IMGS.blues = { land: ["theme-blues-landscape-b.webp", .786], port: ["theme-blues-portrait.webp", .652] };
-GAME_IMGS.hunter = { land: ["theme-hunter-landscape-b.webp", .703], port: ["theme-hunter-portrait.webp", .649] };
+GAME_IMGS.hunter = { land: ["theme-hunter-landscape-c.webp", .698], port: ["theme-hunter-portrait.webp", .649] };
 GAME_IMGS.sunset = { land: ["theme-sunset-landscape.webp", .634], port: ["theme-sunset-portrait.webp", .621] };
 GAME_IMGS.epic = { land: ["theme-epic-landscape-b.webp", .69], port: ["theme-epic-portrait-b.webp", .658] };
 GAME_IMGS.spanish = { land: ["theme-spanish-landscape-b.webp", .732], port: ["theme-spanish-portrait.webp", .668] };

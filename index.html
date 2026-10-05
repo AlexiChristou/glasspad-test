@@ -1345,7 +1345,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.26 TEST · game mode · 4 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.27 TEST · game mode · 5 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1364,6 +1364,7 @@
     <div class="gr"><div><label>Neighbour light</label><small>A press sends a gentle wave of light across the lines</small></div><button class="gsw" id="gNLight" aria-pressed="true"></button></div>
     <div class="gr"><div><label>Wobble</label><small>The lines of the strip you hold hum like electricity</small></div><div class="gseg" id="gWobble"><button data-v="off">Off</button><button data-v="touched">Touched</button><button data-v="near">+ Neighbours</button></div></div>
     <div class="gr"><div><label>Picture life</label><small>Moon glow, twinkling stars, flickering lights and a shimmer on the water (Arabic Nights)</small></div><button class="gsw" id="gAtmos" aria-pressed="true"></button></div>
+    <div class="gr"><div><label>Picture style</label><small>Painted or 8-bit pictures (Tokyo Drift and Arabic Nights)</small></div><div class="gseg" id="gPx"><button data-v="paint">Painted</button><button data-v="px">8-bit</button></div></div>
     <div class="gr" hidden><div><label>Bend style</label><small>How a line looks while it bends</small></div><div class="gseg" id="gBendStyle"><button data-v="pro">Pro lines</button><button data-v="same">Same style</button></div></div>
     <div class="gr" hidden><div><label>Line whiteness</label><small>The thin core of the neon lines</small></div><div class="gseg" id="gCore"><button data-v="0.75">75%</button><button data-v="0.5">50%</button><button data-v="0.25">25%</button></div></div>
     <div class="gr"><div><label>Strip bend</label><small>The live app's bend, on whichever lines you pick</small></div><button class="gsw" id="gBend" aria-pressed="true"></button></div>
@@ -1446,7 +1447,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.26 TEST · game mode · 4 Oct 2026</p>
+      <p class="ver">GlassPad 5.27 TEST · game mode · 5 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -8884,6 +8885,7 @@ function gameBg() {
     game.bgKey = key;
     const c = game.bgC || (game.bgC = document.createElement("canvas")); c.width = Math.round(W * DPR); c.height = Math.round(H * DPR);
     const g = c.getContext("2d"), iw = im.naturalWidth, ih = im.naturalHeight;
+    g.imageSmoothingEnabled = !game.px;   // 8-bit pictures: keep the pixels crisp
     // scale so the picture covers the pad, with its waterline exactly on the lead/bass split (never stretched)
     const sc = Math.max(W / iw, LH / (wl * ih), (H - LH) / ((1 - wl) * ih)) * DPR;
     g.drawImage(im, (c.width - iw * sc) / 2, LH * DPR - wl * ih * sc, iw * sc, ih * sc);
@@ -9147,7 +9149,9 @@ function gameAtmos(now, LH) {
       if (now < s.start) continue;
       const y = oy + s.v * ih * sc; if (y > LH - 4) continue;
       const p = (now - s.start) / s.dur, a = Math.sin(Math.PI * p) * s.peak, z = s.size * 2.4;
-      cx.globalAlpha = a; cx.drawImage(s.warm ? S.warm : S.dot, ox + s.u * iw * sc - z / 2, y - z / 2, z, z);
+      cx.globalAlpha = a;
+      if (game.px) { cx.fillStyle = s.warm ? "#ffd6a0" : "#fffaf0"; const q = s.size > 2.4 ? 3 : 2; cx.fillRect(Math.round(ox + s.u * iw * sc - q / 2), Math.round(y - q / 2), q, q); }
+      else cx.drawImage(s.warm ? S.warm : S.dot, ox + s.u * iw * sc - z / 2, y - z / 2, z, z);
     }
     // distant lights: a gentle, uneven flicker
     for (const l of atm.lights) {
@@ -9176,6 +9180,35 @@ gameBg = function () { const ok = gameBg525(); if (ok) { try { gameAtmos(perform
 const gameSheetSync525 = gameSheetSync;
 gameSheetSync = function () { gameSheetSync525(); $("gAtmos").setAttribute("aria-pressed", atm.on); };
 $("gAtmos").addEventListener("click", () => { atm.on = !atm.on; try { localStorage.setItem("glasspad.atmos", atm.on ? "1" : "0"); } catch (_) {} gameSheetSync(); });
+/* ---------- 5.27 game mode: 8-bit pictures (test switch) ----------
+   Picture style: Painted or 8-bit. 8-bit pictures are drawn without smoothing so the pixels stay crisp,
+   and the twinkling stars become little square pixels. */
+const GAME_IMGS_PAINT = { ...GAME_IMGS }, GAME_ATMOS_PAINT = { ...GAME_ATMOS };
+const GAME_IMGS_PX = {
+  tokyo: { land: ["theme-tokyo-landscape-8bit.webp", .738], port: ["theme-tokyo-portrait-8bit.webp", .639] },
+  arabic: { land: ["theme-arabic-landscape-8bit.webp", .709], port: ["theme-arabic-portrait-8bit.webp", .694] }
+};
+const GAME_ATMOS_PX = {
+  arabic: {
+    port: { moon: [.817, .113, .072], stars: [[.3, .01, .98, .25]], lights: [[.5, .29, .97, .4], [.08, .5, .97, .66]], nStars: 34, nLights: 12 },
+    land: { moon: [.843, .128, .026], stars: [[.15, .01, .97, .3]], lights: [[.66, .25, .93, .5], [.02, .4, .3, .66], [.5, .55, .95, .68]], nStars: 40, nLights: 14 },
+    water: true
+  }
+};
+game.px = false;
+try { game.px = localStorage.getItem("glasspad.px") === "1"; } catch (_) {}
+function gamePxApply() {
+  for (const k of Object.keys(GAME_IMGS)) delete GAME_IMGS[k];
+  for (const k of Object.keys(GAME_ATMOS)) delete GAME_ATMOS[k];
+  Object.assign(GAME_IMGS, game.px ? { ...GAME_IMGS_PAINT, ...GAME_IMGS_PX } : GAME_IMGS_PAINT);
+  Object.assign(GAME_ATMOS, game.px ? { ...GAME_ATMOS_PAINT, ...GAME_ATMOS_PX } : GAME_ATMOS_PAINT);
+  game.bgKey = ""; atm.key = "";
+}
+gamePxApply();
+const gameSheetSync526 = gameSheetSync;
+gameSheetSync = function () { gameSheetSync526(); $("gPx").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", (x.dataset.v === "px") === game.px)); };
+$("gPx").addEventListener("click", e => { const x = e.target.closest("button"); if (!x) return; game.px = x.dataset.v === "px";
+  try { localStorage.setItem("glasspad.px", game.px ? "1" : "0"); } catch (_) {} gamePxApply(); gameSheetSync(); });
 $("gameBtn").addEventListener("click", () => setGame(true));
 setGame(game.on);
 

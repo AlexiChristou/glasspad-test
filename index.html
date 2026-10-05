@@ -1345,7 +1345,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.27 TEST · game mode · 5 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.28 TEST · game mode · 5 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1447,7 +1447,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.27 TEST · game mode · 5 Oct 2026</p>
+      <p class="ver">GlassPad 5.28 TEST · game mode · 5 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -8876,7 +8876,8 @@ function gameBg() {
   game.imgOn = false;
   if (!game.bg) return false;
   const set = GAME_IMGS[gameKey()]; if (!set) return false;
-  const [src, wl] = set[H > W * 1.1 ? "port" : "land"];
+  const pic = set[H > W * 1.1 ? "port" : "land"]; if (!pic) return false;   // a theme may have only one orientation so far
+  const [src, wl] = pic;
   if (game.imgKey !== src) { game.imgKey = src; game.img = new Image(); game.img.src = src; game.bgKey = ""; }
   const im = game.img; if (!im.complete || !im.naturalWidth || W < 2 || H < 2) return false;
   const LH = leadH(), key = [W, H, LH, DPR, game.dim, TH.ink, src].join();
@@ -9087,11 +9088,13 @@ function gameExtras(now, LH) {
    Picture life is one small effects layer drawn over a theme's picture, inside the pad: moon glow, twinkling stars,
    flickering distant lights and a shimmer on the water. Each theme gets its own settings below (per orientation);
    x/y are 0-1 across the picture, so everything follows the picture when the pad is resized or turned. */
-GAME_IMGS.arabic = { land: ["theme-arabic-landscape.webp", .652], port: ["theme-arabic-portrait.webp", .592] };
+GAME_IMGS.arabic = { land: ["theme-arabic-landscape.webp", .652], port: ["theme-arabic-portrait-v2.webp", .637] };
+GAME_IMGS.epic = { land: ["theme-epic-landscape.webp", .745], port: ["theme-epic-portrait.webp", .65] };
+GAME_IMGS.spanish = { land: ["theme-spanish-landscape.webp", .822] };
 const GAME_ATMOS = {
   arabic: {
     // moon: [x, y, radius as part of picture width]; stars/lights: areas [x0, y0, x1, y1] where they may appear
-    port: { moon: [.675, .118, .085], stars: [[.3, .01, .98, .2]], lights: [[.44, .26, .9, .36], [.05, .43, .62, .55]], nStars: 34, nLights: 12 },
+    port: { moon: [.735, .156, .076], stars: [[.28, .03, .82, .3]], lights: [[.12, .5, .9, .6], [.1, .66, .88, .76]], nStars: 34, nLights: 12 },
     land: { moon: [.857, .136, .03], stars: [[.2, .01, .97, .3]], lights: [[.66, .28, .92, .5], [.02, .42, .32, .6], [.62, .52, .95, .6]], nStars: 40, nLights: 14 },
     water: true
   }
@@ -9185,7 +9188,7 @@ $("gAtmos").addEventListener("click", () => { atm.on = !atm.on; try { localStora
    and the twinkling stars become little square pixels. */
 const GAME_IMGS_PAINT = { ...GAME_IMGS }, GAME_ATMOS_PAINT = { ...GAME_ATMOS };
 const GAME_IMGS_PX = {
-  tokyo: { land: ["theme-tokyo-landscape-8bit.webp", .738], port: ["theme-tokyo-portrait-8bit.webp", .639] },
+  tokyo: { land: ["theme-tokyo-landscape-8bit.webp", .738], port: ["theme-tokyo-portrait-8bit-v2.webp", .676] },
   arabic: { land: ["theme-arabic-landscape-8bit.webp", .709], port: ["theme-arabic-portrait-8bit.webp", .694] }
 };
 const GAME_ATMOS_PX = {

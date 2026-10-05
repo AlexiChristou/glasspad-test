@@ -1345,7 +1345,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.35 TEST · game mode · 6 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.36 TEST · game mode · 6 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1447,7 +1447,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.35 TEST · game mode · 6 Oct 2026</p>
+      <p class="ver">GlassPad 5.36 TEST · game mode · 6 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -7847,7 +7847,11 @@ const FACTORY = [
   ["Maqam drone", makePreset({ scale: "bayati", root: 2, wave: "triangle", bpm: 80,
     fx: { echo: { on: true, time: .6, fb: .5 }, reverb: { on: true, size: 1, mix: .6 } },
     drums: { style: "maqsum", vol: .5 }, pad: { sound: "organ", prog: "drone" }, bass: { on: false } })],
+  // Alexi's Space Odyssey (6 Oct 2026, made in Pro from Arabic Nights): D minor, Dm–B♭–C–Dm two bars each, sine lead, glass pad, sub bass. Might become a theme.
+  ["Space Odyssey", makePreset({"scale":"minor","root":2,"wave":"sine","glide":false,"autoVib":true,"fx":{"octave":{"on":true,"mode":"down","level":0.2},"drive":{"on":false,"amt":0.45,"tone":0.55},"chorus":{"on":false,"rate":0.25,"depth":0.6},"flanger":{"on":true,"rate":0.15,"fb":0.5},"phaser":{"on":false,"rate":0.2,"depth":0.7},"trem":{"on":false,"rate":0.35,"depth":0.7},"echo":{"on":true,"time":0.5,"fb":0.4,"send":0.5,"sync":"free"},"reverb":{"on":true,"size":0.7,"mix":0.4,"tone":0.8}},"bpm":100,"sig":"4/4","drums":{"on":true,"style":"bighalf","swing":0.1,"vol":0.49,"fills":0},"pad":{"on":true,"sound":"glass","prog":"dark","every":2,"rhythm":"sustain","strum":false,"pump":0.35,"feel":"natural","arp":"off","arpRate":"hit","arpStyle":"bed","vol":0.6,"mode":"auto","manual":""},"bass":{"on":true,"sound":"sub","vol":0.56,"layout":"same","pat":"hold","arp":"off","rate":"hit","range":1,"oct":0},"lead":{"vol":1,"snd2":"triangle","vol2":0.5,"oct":0,"arp":"off","rate":"1/8","range":1,"follow":"fixed","flavour":"match"},"parts":{"auto":false,"form":"vc","start":"verse"},"tone":{"attack":0,"release":0.86,"res":0.47,"detune":0.55,"vib":0.77},"bassTone":{"attack":0.21,"release":0.33},"bal":{"lead":0,"pad":0.1,"bass":0,"drums":-2.4},"pfx":{"lead2":{"octave":{"on":false,"mode":"up","level":0.5},"drive":{"on":false,"amt":0.3,"tone":0.55},"chorus":{"on":false,"rate":0.25,"depth":0.6},"phaser":{"on":false,"rate":0.2,"depth":0},"trem":{"on":false,"sync":"free","rate":0.35,"depth":0.6},"echo":{"on":true,"send":0.5},"reverb":{"on":false,"send":0.4}},"pad":{"filter":{"on":false,"mode":"sweep","cut":0.6,"depth":0.4,"res":0.25,"speed":0.5},"ens":{"on":true,"width":1,"depth":0.6},"phaser":{"on":true,"rate":0.42,"depth":0.93},"trem":{"on":true,"sync":"time","rate":0.66,"depth":0.8},"echo":{"on":true,"send":0.47},"reverb":{"on":true,"send":0.7}},"bass":{"octave":{"on":true,"mode":"both","level":0.5},"drive":{"on":false,"amt":0.09,"tone":0.4},"comp":{"on":true,"amt":0.45,"punch":0.5},"filter":{"on":true,"mode":"sweep","cut":0.38,"depth":0.79,"res":0.64,"speed":0},"chorus":{"on":false,"rate":0.2,"depth":0.4},"echo":{"on":false,"send":0.25},"reverb":{"on":false,"send":0.15}},"drums":{"comp":{"on":true,"amt":0.4,"punch":0.6},"drive":{"on":false,"amt":0.2,"tone":0.5},"reverb":{"on":true,"send":0.25}}}})],
 ];
+// a factory preset can bring its own Custom theme colours
+const FACTORY_COLS = { "Space Odyssey": { lead: "#3a7bff", bass: "#e8f4ff", hi: "#1fd6ff" } };
 const PKEY = "glasspad-presets-v1";
 let userPresets = [], currentPreset = "GlassPad";
 try { userPresets = JSON.parse(localStorage.getItem(PKEY) || "[]"); } catch (_) { userPresets = []; }
@@ -7869,7 +7873,9 @@ function renderPresets() {
     }
     list.appendChild(c);
   };
-  FACTORY.forEach(([name, p]) => chip(name, () => { applyPreset(p); currentPreset = name; renderPresets(); try { goManual(); } catch (_) {} }));
+  FACTORY.forEach(([name, p]) => chip(name, () => { applyPreset(p); currentPreset = name;
+    const fc = FACTORY_COLS[name]; if (fc) { Object.assign(customCols, fc); try { localStorage.setItem("glasspad.customTheme", JSON.stringify(customCols)); } catch (_) {} setTheme("custom"); $("themeSel").value = "custom"; renderCustom(); }
+    renderPresets(); try { goManual(); } catch (_) {} }));
   userPresets.forEach((u, i) => chip(u.name, () => { applyPreset(makePreset(u.data)); currentPreset = u.name; renderPresets(); try { goManual(); } catch (_) {} },
     () => { userPresets.splice(i, 1); storePresets(); if (currentPreset === u.name) currentPreset = ""; renderPresets(); }));
   $("sum-presets").textContent = currentPreset || "custom";

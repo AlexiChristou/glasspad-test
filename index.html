@@ -85,6 +85,14 @@
   .snd-save .snd-del { padding: 4px 9px; }
   .snd-save .snd-del.confirm { color: #ff6b6b; }
   .snd-save .snd-name { width: 110px; }
+  /* 5.39: My chords chips sized by length, with a stretch grip; the Your own +7th switch */
+  .mc-strip .chip { width: auto; }
+  .mc-strip .chip .len { position: absolute; right: 6px; bottom: 2px; font: 9px "IBM Plex Mono", monospace; color: var(--muted); pointer-events: none; }
+  .mc-strip .chip.sel .len { right: 18px; }
+  .mc-strip .chip .grip { position: absolute; right: 0; top: 0; bottom: 0; width: 16px; cursor: ew-resize; touch-action: none; background: linear-gradient(90deg, transparent, rgba(var(--acc-rgb), .45)); border-left: 1px dashed rgba(var(--acc-rgb), .7); }
+  .mc-strip .chip.empty .nm { opacity: .55; }
+  .own7 { margin-top: 4px; }
+  .own7[aria-pressed="true"] { color: var(--amber); border-color: var(--amber); }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&family=Tomorrow:wght@400;500;600&family=Orbitron:wght@500;700&display=swap">
@@ -1222,7 +1230,7 @@
           <div class="group"><label for="mcRoot">Root</label><select id="mcRoot"></select></div>
           <div class="group"><label for="mcType">Type</label><select id="mcType"><option value="maj">Major</option><option value="m">Minor</option><option value="7">7</option><option value="m7">m7</option><option value="maj7">maj7</option><option value="dim">dim</option><option value="aug">aug</option><option value="sus2">sus2</option><option value="sus4">sus4</option></select></div>
           <div class="group"><label for="mcExt">Extra</label><select id="mcExt"><option value="">None</option><option value="6">6</option><option value="9">9</option><option value="add9">add9</option><option value="11">11</option><option value="13">13</option><option value="b5">♭5</option><option value="#5">♯5</option><option value="b9">♭9</option><option value="#9">♯9</option></select></div>
-          <div class="group"><label for="mcLen">Length</label><select id="mcLen"><option value="0.5">½ bar</option><option value="1">1 bar</option><option value="2">2 bars</option><option value="4">4 bars</option></select></div>
+          <div class="group"><label for="mcLen">Length</label><select id="mcLen"><option value="0.25">1 beat</option><option value="0.5">½ bar</option><option value="0.75">3 beats</option><option value="1">1 bar</option><option value="1.5">1½ bars</option><option value="2">2 bars</option><option value="3">3 bars</option><option value="4">4 bars</option></select></div>
           <div class="group"><label>Move</label><button id="cbLeft" aria-label="Move earlier">◀</button><button id="cbRight" aria-label="Move later">▶</button><button id="cbDel" aria-label="Delete this chord">🗑</button></div>
         </div>
         <div class="mc-more"><button type="button" class="linkish" id="mcTypeLink">Type chords instead…</button><button id="cbClear">Clear all</button></div>
@@ -1410,7 +1418,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.38 TEST · game mode · 6 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.39 TEST · game mode · 7 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1420,23 +1428,26 @@
   <div class="gr"><div><label>Built-in bass</label><small>Plays a bass line until you touch the bass pad</small></div><button class="gsw" id="gBassSw" aria-pressed="true"></button></div>
   <div class="gr"><div><label>Background picture</label><small>Off: plain strips, as in Pro</small></div><button class="gsw" id="gBg" aria-pressed="true"></button></div>
   <div class="gr"><div><label>Picture brightness</label><small>Darker keeps the strips clearer</small></div><input type="range" id="gBright" min="20" max="70" step="1" value="40"></div>
+  <div class="gr"><div><label>Strip lines</label><small>How the strips are drawn over the picture</small></div><div class="gseg" id="gLines"><button data-v="soft">Soft</button><button data-v="pro">Pro</button><button data-v="none">None</button></div></div>
+  <div class="gr"><div><label>Picture life</label><small>The picture comes alive: moon glow, stars, lights, water</small></div><button class="gsw" id="gAtmos" aria-pressed="true"></button></div>
+  <div class="gr"><div><label>Motion</label><small>Calm: no shake, wobble or bend. Off: a still pad</small></div><div class="gseg" id="gMotion"><button data-v="full">Full</button><button data-v="calm">Calm</button><button data-v="off">Off</button></div></div>
+  <div class="gr"><div><label>Riser sound</label><small>The whoosh that builds into a SHIFT</small></div><button class="gsw" id="gRiser" aria-pressed="true"></button></div>
   <div class="gr"><div><label>Light show</label></div><div class="gseg" id="gLs"><button data-v="off">Off</button><button data-v="subtle">Subtle</button><button data-v="full">Full</button></div></div>
   <div class="gr"><div><label>Smooth sound</label><small>Turn on if the sound crackles</small></div><button class="gsw" id="gSmooth" aria-pressed="false"></button></div>
   <div class="gr"><div><label>How to play</label></div><button id="gHow">Show me</button></div>
   <div class="gtest"><h3>Test only</h3>
     <div class="gr" hidden><div><label>Strip line colour</label><small>How solid the theme-colour band in each line is</small></div><div class="gseg" id="gLineA"><button data-v="0.95">95%</button><button data-v="0.7">70%</button></div></div>
-    <div class="gr"><div><label>Strip lines</label><small>With the picture on</small></div><div class="gseg" id="gLines"><button data-v="pro">Pro</button><button data-v="soft">Soft</button><button data-v="none">None</button></div></div>
-    <div class="gr"><div><label>Neighbour light</label><small>A press sends a gentle wave of light across the lines</small></div><button class="gsw" id="gNLight" aria-pressed="true"></button></div>
-    <div class="gr"><div><label>Wobble</label><small>The lines of the strip you hold hum like electricity</small></div><div class="gseg" id="gWobble"><button data-v="off">Off</button><button data-v="touched">Touched</button><button data-v="near">+ Neighbours</button></div></div>
-    <div class="gr"><div><label>Picture life</label><small>Moon glow, twinkling stars, flickering lights and a shimmer on the water (Arabic Nights)</small></div><button class="gsw" id="gAtmos" aria-pressed="true"></button></div>
-    <div class="gr"><div><label>Picture style</label><small>Painted or 8-bit pictures (Tokyo Drift and Arabic Nights)</small></div><div class="gseg" id="gPx"><button data-v="paint">Painted</button><button data-v="px">8-bit</button></div></div>
+        <div class="gr" hidden><div><label>Neighbour light</label><small>A press sends a gentle wave of light across the lines</small></div><button class="gsw" id="gNLight" aria-pressed="true"></button></div>
+    <div class="gr" hidden><div><label>Wobble</label><small>The lines of the strip you hold hum like electricity</small></div><div class="gseg" id="gWobble"><button data-v="off">Off</button><button data-v="touched">Touched</button><button data-v="near">+ Neighbours</button></div></div>
+        <div class="gr" hidden><div><label>Picture style</label><small>Painted or 8-bit pictures (Tokyo Drift and Arabic Nights)</small></div><div class="gseg" id="gPx"><button data-v="paint">Painted</button><button data-v="px">8-bit</button></div></div>
     <div class="gr" hidden><div><label>Bend style</label><small>How a line looks while it bends</small></div><div class="gseg" id="gBendStyle"><button data-v="pro">Pro lines</button><button data-v="same">Same style</button></div></div>
     <div class="gr" hidden><div><label>Line whiteness</label><small>The thin core of the neon lines</small></div><div class="gseg" id="gCore"><button data-v="0.75">75%</button><button data-v="0.5">50%</button><button data-v="0.25">25%</button></div></div>
-    <div class="gr"><div><label>Strip bend</label><small>The live app's bend, on whichever lines you pick</small></div><button class="gsw" id="gBend" aria-pressed="true"></button></div>
-    <div class="gr"><div><label>Pad border</label></div><button class="gsw" id="gBorder" aria-pressed="true"></button></div>
-    <div class="gr"><div><label>Charge length</label><small>Bars of charge before the key change lands</small></div><div class="gseg" id="gCharge"><button data-v="1">1 bar</button><button data-v="2">2 bars</button></div></div>
-    <div class="gr"><div><label>Shake</label></div><div class="gseg" id="gShake"><button data-v="0">Off</button><button data-v="1">Light</button><button data-v="2">Strong</button></div></div>
-    <div class="gr"><div><label>Riser sound</label></div><button class="gsw" id="gRiser" aria-pressed="true"></button></div>
+    <div class="gr" hidden><div><label>Strip bend</label><small>The live app's bend, on whichever lines you pick</small></div><button class="gsw" id="gBend" aria-pressed="true"></button></div>
+    <div class="gr" hidden><div><label>Pad border</label></div><button class="gsw" id="gBorder" aria-pressed="true"></button></div>
+    <div class="gr" hidden><div><label>Charge length</label><small>Bars of charge before the key change lands</small></div><div class="gseg" id="gCharge"><button data-v="1">1 bar</button><button data-v="2">2 bars</button></div></div>
+    <div class="gr" hidden><div><label>Shake</label></div><div class="gseg" id="gShake"><button data-v="0">Off</button><button data-v="1">Light</button><button data-v="2">Strong</button></div></div>
+        <div class="gr" style="flex-wrap:wrap;gap:8px"><div><label>Toms</label><small>Merged should sound right on both</small></div><div class="gseg" id="gToms"><button data-v="merged">Merged</button><button data-v="speaker">Speaker</button><button data-v="headphones">Headphones</button></div></div>
+    <div class="gr"><div><label>Low latency</label><small>Notes sound sooner after your touch. If it crackles, turn it off. Takes effect when you reopen the app</small></div><button class="gsw" id="gLowLat" aria-pressed="false"></button></div>
     <div class="gr"><div><label>Speed</label><small id="gFx"></small></div><button id="gFxOn" hidden>Full effects on</button></div>
     <div class="gr"><div><label>Copy setup</label><small>Sound, chords, colours and more, to paste to Claude</small></div><button id="gCopy">Copy</button></div>
   </div>
@@ -1512,7 +1523,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.38 TEST · game mode · 6 Oct 2026</p>
+      <p class="ver">GlassPad 5.39 TEST · game mode · 7 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -1937,7 +1948,7 @@ function chordAtIndex(i) {
   let ch;
   if (e.part === "end") ch = p ? progChordAt(p[0], homeBase()) : { tones: [0, 7, 12], drone: true, base: homeBase(), name: noteName(homeBase()) + " drone" };
   else if (!p || mv.drone) ch = { tones: [0, 7, 12], drone: true, base: base + (e.lift || 0), name: noteName(base + (e.lift || 0)) + " drone" };
-  else ch = progChordAt(p[(i - e.i0 + mv.rot) % p.length], base + (e.lift || 0));
+  else ch = progChordAt(p[mod(i - e.i0 + mv.rot, p.length)], base + (e.lift || 0));
   ch.sec = sec; ch.part = e.part; ch.lift = e.part === "end" ? 0 : (e.lift || 0);
   return ch;
 }
@@ -2062,10 +2073,10 @@ function manualSteps(bars) {
 }
 function manualTimeline() {
   let at = 0; const list = [];
-  manual.chords.forEach((c, i) => { const len = manualSteps(c.bars); list.push({ i, start: at, len, ch: manualChordObj(c.sym) }); at += len; });
+  manual.chords.forEach((c, i) => { if (!c.sym) return; const len = manualSteps(c.bars); list.push({ i, start: at, len, ch: manualChordObj(c.sym) }); at += len; });
   return { list, total: at };
 }
-const isManual = () => pad.mode === "manual" && manual.chords.length > 0;
+const isManual = () => pad.mode === "manual" && manual.chords.some(c => c.sym);
 // the chord playing at an absolute 16th-note step (and where it started)
 function manualAt(abs) {
   const tl = manualTimeline(), pos = mod(abs, tl.total);
@@ -2580,7 +2591,7 @@ const PFX_DEF = {
     trem: { on: false, sync: "time", rate: .66, depth: .8 }, echo: { on: false, send: .25 }, reverb: { on: true, send: .4 } },
   bass: { octave: { on: false, mode: "up", level: .5 }, drive: { on: false, amt: .25, tone: .4 }, comp: { on: false, amt: .5, punch: .5 },
     filter: { on: false, mode: "env", cut: .35, depth: .6, res: .4, speed: .5 }, chorus: { on: false, rate: .2, depth: .4 }, echo: { on: false, send: .25 }, reverb: { on: false, send: .15 } },
-  drums: { comp: { on: false, amt: .45, punch: .6 }, drive: { on: false, amt: .2, tone: .5 }, reverb: { on: false, send: .2 } },
+  drums: { comp: { on: false, amt: .45, punch: .6 }, drive: { on: false, amt: .2, tone: .5 }, echo: { on: false, send: .2 }, reverb: { on: false, send: .2 } },
 };
 const PFX = JSON.parse(JSON.stringify(PFX_DEF));
 const PFX_FILTER = { id: "filter", name: "Filter", p: [["cut", "Cutoff"], ["depth", "Depth"], ["res", "Resonance"], ["speed", "Speed"]], choice: { key: "mode", opts: [["sweep", "Sweep"], ["env", "Env"], ["still", "Still"]] } };
@@ -2598,7 +2609,7 @@ const PART_FX = {
     { id: "drive", name: "Drive", p: [["amt", "Gain"], ["tone", "Tone"]] }, { id: "comp", name: "Compressor", p: [["amt", "Amount"], ["punch", "Punch"]] }, PFX_FILTER,
     { id: "chorus", name: "Chorus", p: [["rate", "Rate"], ["depth", "Depth"]] }, { id: "echo", name: "Echo", p: [["send", "Send"]] }, { id: "reverb", name: "Reverb", p: [["send", "Send"]] }],
   drums: [{ id: "comp", name: "Compressor", p: [["amt", "Amount"], ["punch", "Punch"]] }, { id: "drive", name: "Drive", p: [["amt", "Gain"], ["tone", "Tone"]] },
-    { id: "reverb", name: "Reverb", p: [["send", "Send"]] }],
+    { id: "echo", name: "Echo", p: [["send", "Send"]] }, { id: "reverb", name: "Reverb", p: [["send", "Send"]] }],
 };
 const PART_NAME = { lead: "Lead", lead2: "2nd", pad: "Chords", bass: "Bass", drums: "Drums" };
 const PART_COL = { lead: "#ff5a7a", lead2: "#ff9a3c", pad: "#4f8cff", bass: "#c65bff", drums: "#2fe0c8" };
@@ -2807,7 +2818,7 @@ function initAudio() {
   // iPhone: play as media, so the silent switch doesn't mute it and calls/other apps interrupt less
   try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (_) {}
   let ctx;
-  try { ctx = new AudioContext({ latencyHint: audioSmooth() ? "playback" : "balanced" }); } catch (_) { ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+  try { ctx = new AudioContext({ latencyHint: audioSmooth() ? "playback" : (() => { try { return localStorage.getItem("glasspad.lowlat") === "1"; } catch (_) { return false; } })() ? "interactive" : "balanced" }); } catch (_) { ctx = new (window.AudioContext || window.webkitAudioContext)(); }
   const A = { ctx };
   A.master = ctx.createGain(); A.master.gain.value = MASTER_G * mix.master;
   const lim = ctx.createDynamicsCompressor();
@@ -2907,7 +2918,7 @@ function initAudio() {
   // the chords', bass's and drums' sends, taken after their levels and Balance
   for (const [part, from] of [["lead2", A.bal2], ["pad", A.padOut], ["bass", A.bassTrim], ["drums", A.drumTrim]]) {
     const P = A.pfx[part]; P.revSend = ctx.createGain(); P.revSend.gain.value = 0; from.connect(P.revSend).connect(A.revIn);
-    if (part !== "drums") { P.echoSend = ctx.createGain(); P.echoSend.gain.value = 0; from.connect(P.echoSend).connect(A.echoIn); }
+    P.echoSend = ctx.createGain(); P.echoSend.gain.value = 0; from.connect(P.echoSend).connect(A.echoIn);   // 5.39: drums too
   }
 
   audio = A;
@@ -4906,7 +4917,7 @@ function updateSummaries() {
   $("sum-key").textContent = (pad.mode === "manual" ? "My chords" : selText("prog").replace(/ \(.*\)$/, "")) + " · " + keyTxt;
   $("jamScaleDesc").textContent = SCALE_DESC[scaleSel.value] || "";
   if (pad.mode !== "song" && PROGS[pad.prog]) { const dg = PROGS[pad.prog][1]; $("jamChordsLine").textContent = dg ? "Chords: " + [...new Set(dg.map(d => progChordAt(d, homeBase()).name))].slice(0, 8).join(" · ") : "Chords: a drone on the key note"; }
-  document.querySelector('#tabs [data-tab="fx"]').classList.toggle("dot", PARTS.some(pt => fxCount(pt)));
+  document.querySelector('#tabs [data-tab="fx"]').classList.toggle("dot", false);
   try { renderOwn(); } catch (_) {}
   $("sum-sound").textContent = (kb.on ? "Keyboard · " : "") + `${selText("wave")}${lead.snd2 !== "off" ? " + " + selText("wave2") : ""} · ${keyTxt}` + (leadMode() === "scale" ? " · bends to chords" : leadMode() === "chords" ? " · follows chords" : leadMode() === "root" ? " · starts on each chord" : leadMode() === "tones" ? " · chord notes" : "") + (leadArp.style !== "off" ? ` · arp ${selText("leadArp").toLowerCase()}` : "");
   const onFx = PARTS.filter(pt => pt !== "lead2" || lead.snd2 !== "off").map(pt => [pt, PART_FX[pt].filter(f => fxS(pt, f.id).on).map(f => f.name)]).filter(([, l]) => l.length);
@@ -4958,7 +4969,7 @@ $("prog").addEventListener("change", e => {
 function showProgDel() { $("progDel").hidden = !pad.prog.startsWith("u:"); renderOwn(); }
 /* ---------- Your own: tap the chord numbers to build a sequence ---------- */
 let ownSel = -1;
-try { const o = JSON.parse(localStorage.getItem("glasspad.own") || "null"); if (Array.isArray(o) && o.every(d => d >= 0 && d <= 6)) PROGS.own[1] = o.length ? o.slice(0, 8) : [0], PROGS.own.list = o.slice(0, 8); } catch (_) {}
+try { const o = JSON.parse(localStorage.getItem("glasspad.own") || "null"); if (Array.isArray(o) && o.every(d => (d >= 0 && d <= 6) || (d >= 10 && d <= 16))) PROGS.own[1] = o.length ? o.slice(0, 8) : [0], PROGS.own.list = o.slice(0, 8); } catch (_) {}
 if (!PROGS.own.list) PROGS.own.list = [];
 function ownChanged() {
   const l = PROGS.own.list; PROGS.own[1] = l.length ? l : [0];
@@ -5010,7 +5021,7 @@ $("progIn").addEventListener("keydown", e => { if (e.key === "Enter") { e.preven
 const cb = { sel: -1, msg: "" };
 const MC_MAX = 16;
 const MC_TYPE = { maj: "", m: "m", "7": "7", m7: "m7", maj7: "maj7", dim: "dim", aug: "aug", sus2: "sus2", sus4: "sus4" };
-const lenLabel = b => b === .5 ? "½" : b === .25 ? "¼" : String(+b.toFixed(2));
+const lenLabel = b => { const w = Math.floor(b + 1e-6), fr = { 25: "¼", 50: "½", 75: "¾" }[Math.round((b - w) * 100)] || ""; return fr ? (w ? w + fr : fr) : String(+b.toFixed(2)); };
 function mcSymbol(b) {
   const root = NAMES[b.r], t = b.q, x = b.x || "";
   let q = MC_TYPE[t] + x;
@@ -5028,16 +5039,16 @@ function mcDerive(sym) {
     : iv.has(4) ? (iv.has(11) ? "maj7" : iv.has(10) ? "7" : "maj") : iv.has(5) ? "sus4" : iv.has(2) ? "sus2" : "maj";
   return { r: mod12(p.root), q, x: "" };
 }
-for (let r = 0; r < 12; r++) $("mcRoot").add(new Option(NAMES[r], r));
+$("mcRoot").add(new Option("—", "")); for (let r = 0; r < 12; r++) $("mcRoot").add(new Option(NAMES[r], r));
 const noteLetters = pcs => pcs.map(pc => NAMES[pc]).join(" ");
 function renderCb() {
   const ch = manual.chords;
   if (cb.sel >= ch.length) cb.sel = ch.length - 1;
   $("chips2").innerHTML = ch.map((c, i) => {
-    const p = parseChord(c.sym), w = c.bars <= .5 ? 46 : c.bars <= 1 ? 58 : c.bars <= 2 ? 100 : 180;
+    const p = parseChord(c.sym), w = Math.max(40, c.bars * 64);
     let ticks = ""; if (c.bars > 1) for (let k = 1; k < c.bars; k++) ticks += `<i style="left:${k / c.bars * 100}%"></i>`;
-    const nm = p ? p.name : c.sym;
-    return `<button class="chip${i === cb.sel ? " sel" : ""}${i === playingChip ? " now" : ""}" data-i="${i}" style="width:${w}px" aria-label="${nm}, ${c.bars === .5 ? "half a bar" : lenLabel(c.bars) + (c.bars === 1 ? " bar" : " bars")}"><span class="fill"></span>${ticks}${c.bars < 1 ? `<span class="half">${lenLabel(c.bars)}</span>` : ""}<span class="nm">${nm}</span></button>`;
+    const nm = p ? p.name : (c.sym || "?");
+    return `<button class="chip${i === cb.sel ? " sel" : ""}${i === playingChip ? " now" : ""}${c.sym ? "" : " empty"}" data-i="${i}" style="min-width:${w}px" aria-label="${p ? nm : "Empty chord"}, ${c.bars === .5 ? "half a bar" : lenLabel(c.bars) + (c.bars === 1 ? " bar" : " bars")}"><span class="fill"></span>${ticks}<span class="len">${lenLabel(c.bars)}</span><span class="nm">${nm}</span>${i === cb.sel ? `<span class="grip" aria-hidden="true"></span>` : ""}</button>`;
   }).join("") + `<button class="chip add" id="mcAdd" aria-label="Add a chord"${ch.length >= MC_MAX ? " disabled" : ""}>+</button>`;
   $("manualHint").textContent = cb.msg || (!ch.length ? "Tap + to add your first chord. They play in order and loop round." : ch.length >= MC_MAX ? `${MC_MAX} chords is the most for now.` : "Tap a chord to change it. + adds one after the chord you've picked.");
   cb.msg = "";
@@ -5045,10 +5056,10 @@ function renderCb() {
   $("mcEd").hidden = !sel;
   if (sel) {
     const c = ch[cb.sel], b = c.b && c.b.r !== undefined ? c.b : (c.b = mcDerive(c.sym));
-    $("mcRoot").value = b.r; $("mcType").value = b.q; $("mcExt").value = b.x || ""; $("mcLen").value = String(c.bars);
-    if ($("mcLen").value !== String(c.bars)) $("mcLen").value = "1";
+    $("mcRoot").value = b.r == null ? "" : b.r; $("mcType").value = b.q; $("mcExt").value = b.x || ""; $("mcLen").value = String(c.bars);
+    if ($("mcLen").value !== String(c.bars)) { $("mcLen").add(new Option(lenLabel(c.bars) + " bars", String(c.bars))); $("mcLen").value = String(c.bars); }
     const p = parseChord(c.sym);
-    $("cbName").textContent = p ? p.name : c.sym;
+    $("cbName").textContent = p ? p.name : "Pick a root";
     $("cbNotes").textContent = p ? noteLetters([...new Set(p.iv.map(i => mod12(p.root + i)))]) : "";
   }
   if (document.activeElement !== $("manualText")) $("manualText").value = manualTextOf();
@@ -5067,7 +5078,7 @@ function markPlayingChip(i) {
   playingChip = i;
   $("chips2").querySelectorAll("button").forEach(b => b.classList.toggle("now", +b.dataset.i === i));
 }
-const manualTextOf = (list = manual.chords) => list.map(c => c.sym + (c.bars !== 1 ? ":" + lenLabel(c.bars) : "")).join(" ");
+const manualTextOf = (list = manual.chords) => list.filter(c => c.sym).map(c => c.sym + (c.bars !== 1 ? ":" + (+c.bars.toFixed(3)) : "")).join(" ");
 function parseLen(x) {
   if (x == null || x === "") return 1;
   const v = x === "½" ? .5 : x === "¼" ? .25 : /^\d+\/\d+$/.test(x) ? x.split("/")[0] / x.split("/")[1] : +x;
@@ -5897,7 +5908,7 @@ $("manualBox").addEventListener("click", e => {
   }
   if (b.id === "mcAdd") {
     if (ch.length >= MC_MAX) return;
-    const base = cb.sel >= 0 ? { ...ch[cb.sel], b: { ...(ch[cb.sel].b || mcDerive(ch[cb.sel].sym)) } } : (() => { const bb = { r: mod12(+rootSel.value), q: curScale().harm.some(x => Math.abs(x - 3) < .01) ? "m" : "maj", x: "" }; return { sym: mcSymbol(bb), bars: 1, b: bb }; })();
+    const base = pad.mode !== "song" ? { sym: "", bars: 1, b: { r: null, q: "maj", x: "" } } : cb.sel >= 0 ? { ...ch[cb.sel], b: { ...(ch[cb.sel].b || mcDerive(ch[cb.sel].sym)) } } : (() => { const bb = { r: mod12(+rootSel.value), q: curScale().harm.some(x => Math.abs(x - 3) < .01) ? "m" : "maj", x: "" }; return { sym: mcSymbol(bb), bars: 1, b: bb }; })();
     const at = cb.sel >= 0 ? cb.sel + 1 : ch.length;
     ch.splice(at, 0, base); cb.sel = at; manualChanged(true); return;
   }
@@ -5916,7 +5927,7 @@ $("manualBox").addEventListener("click", e => {
 for (const id of ["mcRoot", "mcType", "mcExt", "mcLen"]) $(id).addEventListener("change", () => {
   const c = manual.chords[cb.sel]; if (!c) return;
   if (id === "mcLen") c.bars = +$("mcLen").value;
-  else { c.b = { r: +$("mcRoot").value, q: $("mcType").value, x: $("mcExt").value }; c.sym = mcSymbol(c.b); }
+  else { const rv = $("mcRoot").value; c.b = { r: rv === "" ? null : +rv, q: $("mcType").value, x: $("mcExt").value }; c.sym = c.b.r == null ? "" : mcSymbol(c.b); }
   manualChanged(true);
   if (audio && !T.playing && id !== "mcLen") { const o = manualChordObj(c.sym); if (o) { try { releasePad(); padChord(transposeCh(o, keyLift.now), audio.ctx.currentTime + .02, stepDur() * 8); } catch (_) {} } }
 });
@@ -6596,7 +6607,7 @@ function drawRoots(now, LH, lw) {
   // the ring, sliding from the old root to the new one
   const e = 1 - Math.pow(1 - Math.min(1, since / 320), 3);
   roots.forEach((ri, j) => {
-    const from = R.prev.length ? R.prev[Math.min(j, R.prev.length - 1)] : ri;
+    const from = R.prev.length ? R.prev.reduce((a, b) => Math.abs(b - ri) < Math.abs(a - ri) ? b : a) : ri;   // 5.39: the nearest old root
     const x = (from + (ri - from) * e) * lw + lw / 2;
     const pulse = since < 400 ? 1 + .35 * (1 - since / 400) : 1 + .06 * Math.sin(now / 300);
     const g = cx.createRadialGradient(x, y, 0, x, y, 16 * pulse); g.addColorStop(0, `rgba(${A},.45)`); g.addColorStop(1, `rgba(${A},0)`);
@@ -7887,7 +7898,7 @@ function makePreset(over) {
   const p = JSON.parse(JSON.stringify(DEFAULT_PRESET));
   for (const [k, v] of Object.entries(over)) {
     if (k === "fx") for (const [id, fv] of Object.entries(v)) Object.assign(p.fx[id], fv);
-    else if (typeof v === "object") Object.assign(p[k], v); else p[k] = v;
+    else if (v && typeof v === "object" && p[k] && typeof p[k] === "object") Object.assign(p[k], v); else p[k] = v;
   }
   return p;
 }
@@ -8904,7 +8915,7 @@ function gameBassRoots(now, LH, bw) {
 }
 // the loop's line along the top: bass-to-lead colours, a glowing head, a glass bead per bar, a pulse each time round; red while recording
 function gameLoopLine(p, rec, bars) {
-  const a = rec ? "#ff3b4e" : TH.acc2, b = rec ? "#ff8a96" : (TH.leadLine || TH.acc), x = W * p;
+  const a = rec ? "#ff1f35" : TH.acc2, b = rec ? "#ff2a3c" : (TH.leadLine || TH.acc), x = W * p;
   cx.fillStyle = `rgba(${rgbOf(b)},.12)`; cx.fillRect(0, 0, W, 2);
   const g = cx.createLinearGradient(Math.max(0, x - 180), 0, x, 0); g.addColorStop(0, `rgba(${rgbOf(a)},0)`); g.addColorStop(1, `rgba(${rgbOf(b)},.95)`);
   cx.fillStyle = g; cx.fillRect(Math.max(0, x - 180), 0, Math.min(180, x), 2.5);
@@ -8960,16 +8971,15 @@ function gameBg() {
     game.bgKey = key;
     const c = game.bgC || (game.bgC = document.createElement("canvas")); c.width = Math.round(W * DPR); c.height = Math.round(H * DPR);
     const g = c.getContext("2d"), iw = im.naturalWidth, ih = im.naturalHeight;
-    g.imageSmoothingEnabled = !game.px;   // 8-bit pictures: keep the pixels crisp
     // scale so the picture covers the pad, with its waterline exactly on the lead/bass split (never stretched)
     const sc = Math.max(W / iw, LH / (wl * ih), (H - LH) / ((1 - wl) * ih)) * DPR;
     g.drawImage(im, (c.width - iw * sc) / 2, LH * DPR - wl * ih * sc, iw * sc, ih * sc);
-    g.fillStyle = `rgba(${rgbOf(TH.ink)},${game.dim / 100})`; g.fillRect(0, 0, c.width, c.height);
+    g.fillStyle = `rgba(${rgbOf(TH.ink)},${gameRestDim() / 100})`; g.fillRect(0, 0, c.width, c.height);   // 5.39: brighter at rest, dimmed while the band plays
   }
   const c = game.bgC, now = performance.now(), tn = now / 1000;
   cx.drawImage(c, 0, 0, c.width, LH * DPR, 0, 0, W, LH);
   if (LH < H) {
-    if (game.lowFx && !game.ripples.some(r => now >= r.t && now - r.t < 1400)) cx.drawImage(c, 0, LH * DPR, c.width, (H - LH) * DPR, 0, LH, W, H - LH);
+    if ((game.lowFx || game.motion === "off") && !game.ripples.some(r => now >= r.t && now - r.t < 1400)) cx.drawImage(c, 0, LH * DPR, c.width, (H - LH) * DPR, 0, LH, W, H - LH);
     else {
       const tw = 24, th = 10, live = game.ripples.filter(r => now >= r.t && now - r.t < 1400), ia = Math.max(game.idleA, game.restA);
       for (let y = LH; y < H; y += th) for (let x = 0; x < W; x += tw) {
@@ -9083,7 +9093,7 @@ function gameLine(x, y0, h, hex, now, isBass) {
     if ((r.y >= LH) !== isBass) continue;
     const age = (now - r.t) / 900; if (age < 0 || age >= 1) continue;
     const front = age * W * .85, d = Math.abs(x - r.x);
-    wave = Math.max(wave, Math.exp(-Math.pow((d - front) / (lw * 1.3), 2)) * (1 - age) * .5);
+    wave = Math.max(wave, Math.exp(-Math.pow((d - front) / (lw * 1.3), 2)) * (1 - age) * .5 * Math.exp(-d / (lw * 2.5)));   // 5.39: and fainter the further it travels
   }
   // soft lines also brighten next to a finger
   let near = 0;
@@ -9214,7 +9224,7 @@ function gameAtmos(now, LH) {
   const wl = set[ori][1], iw = im.naturalWidth, ih = im.naturalHeight;
   const sc = Math.max(W / iw, LH / (wl * ih), (H - LH) / ((1 - wl) * ih)), ox = (W - iw * sc) / 2, oy = LH - wl * ih * sc;   // the same fit as the picture
   const key = gameKey() + ori + im.src; if (atm.key !== key) { atm.key = key; atmSetup(cfg, im); }
-  const S = atmSprites(), still = atmRM.matches, low = game.lowFx, t = now / 1000;
+  const S = atmSprites(), still = atmRM.matches || game.motion === "off", low = game.lowFx, t = now / 1000;
   cx.save(); cx.beginPath(); cx.rect(0, 0, W, H); cx.clip(); cx.globalCompositeOperation = "screen";
   // moon glow: slow breathing, about 10 s
   if (cfg.moon) {
@@ -9230,8 +9240,7 @@ function gameAtmos(now, LH) {
       const y = oy + s.v * ih * sc; if (y > LH - 4) continue;
       const p = (now - s.start) / s.dur, a = Math.sin(Math.PI * p) * s.peak, z = s.size * 2.4;
       cx.globalAlpha = a;
-      if (game.px) { cx.fillStyle = s.warm ? "#ffd6a0" : "#fffaf0"; const q = s.size > 2.4 ? 3 : 2; cx.fillRect(Math.round(ox + s.u * iw * sc - q / 2), Math.round(y - q / 2), q, q); }
-      else cx.drawImage(s.warm ? S.warm : S.dot, ox + s.u * iw * sc - z / 2, y - z / 2, z, z);
+      cx.drawImage(s.warm ? S.warm : S.dot, ox + s.u * iw * sc - z / 2, y - z / 2, z, z);
     }
     // distant lights: a gentle, uneven flicker
     for (const l of atm.lights) {
@@ -9260,28 +9269,8 @@ gameBg = function () { const ok = gameBg525(); if (ok) { try { gameAtmos(perform
 const gameSheetSync525 = gameSheetSync;
 gameSheetSync = function () { gameSheetSync525(); $("gAtmos").setAttribute("aria-pressed", atm.on); };
 $("gAtmos").addEventListener("click", () => { atm.on = !atm.on; try { localStorage.setItem("glasspad.atmos", atm.on ? "1" : "0"); } catch (_) {} gameSheetSync(); });
-/* ---------- 5.27 game mode: 8-bit pictures (test switch) ----------
-   Picture style: Painted or 8-bit. 8-bit pictures are drawn without smoothing so the pixels stay crisp,
-   and the twinkling stars become little square pixels. */
+/* (5.27's 8-bit pictures and their switch were removed in 5.39) */
 const GAME_IMGS_PAINT = { ...GAME_IMGS }, GAME_ATMOS_PAINT = { ...GAME_ATMOS };
-const GAME_IMGS_PX = {
-  tokyo: { land: ["theme-tokyo-landscape-8bit.webp", .738], port: ["theme-tokyo-portrait-8bit-v2.webp", .676] }
-};
-const GAME_ATMOS_PX = {};
-game.px = false;
-try { game.px = localStorage.getItem("glasspad.px") === "1"; } catch (_) {}
-function gamePxApply() {
-  for (const k of Object.keys(GAME_IMGS)) delete GAME_IMGS[k];
-  for (const k of Object.keys(GAME_ATMOS)) delete GAME_ATMOS[k];
-  Object.assign(GAME_IMGS, game.px ? { ...GAME_IMGS_PAINT, ...GAME_IMGS_PX } : GAME_IMGS_PAINT);
-  Object.assign(GAME_ATMOS, game.px ? { ...GAME_ATMOS_PAINT, ...GAME_ATMOS_PX } : GAME_ATMOS_PAINT);
-  game.bgKey = ""; atm.key = "";
-}
-gamePxApply();
-const gameSheetSync526 = gameSheetSync;
-gameSheetSync = function () { gameSheetSync526(); $("gPx").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", (x.dataset.v === "px") === game.px)); };
-$("gPx").addEventListener("click", e => { const x = e.target.closest("button"); if (!x) return; game.px = x.dataset.v === "px";
-  try { localStorage.setItem("glasspad.px", game.px ? "1" : "0"); } catch (_) {} gamePxApply(); gameSheetSync(); });
 /* ---------- 5.35 game mode: theme bass lines ----------
    GAME_BASS_THEME[theme][band level] replaces the built-in bass line for that theme and level.
    A line is { st: 16th steps, iv: semitones above the chord root (7 = the chord's 5th, 10 = its 7th), len: in 16ths },
@@ -9365,14 +9354,21 @@ hit = function (inst, t, vel) {
       env(nz("highpass", 6500, 0, .1), vel * .22, .08);
       const o = src(ctx.createOscillator()); o.type = "triangle"; o.frequency.setValueAtTime(245, t); o.frequency.exponentialRampToValueAtTime(185, t + .06);
       env(o, vel * .38, .08); o.start(t); o.stop(t + .1);
-    } else {   // toms: pitched drum heads, high enough for a phone speaker, each a clear step apart
-      const [f0, f1, dec] = { tom1: [300, 238, .26], tom2: [214, 168, .32], tom3: [152, 116, .4] }[inst];
-      const o = src(ctx.createOscillator()); o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + .16);
-      env(o, vel * .75, dec); o.start(t); o.stop(t + dec + .05);
-      const o2 = src(ctx.createOscillator()); o2.type = "triangle"; o2.frequency.setValueAtTime(f0 * 1.52, t); o2.frequency.exponentialRampToValueAtTime(f1 * 1.52, t + .16);   // the head's overtone
-      env(o2, vel * .28, dec * .55); o2.start(t); o2.stop(t + dec);
-      env(nz("bandpass", f0 * 4, 1.2, .08), vel * .2, .06);   // the skin
-      env(nz("highpass", 3200, 0, .03), vel * .1, .015);   // the stick
+    } else {   // toms: Merged (default), Speaker (5.38) or Headphones (5.37), from the Test box
+      const mode = game.toms || "merged", tm = { tom1: 0, tom2: 1, tom3: 2 }[inst];
+      const P = mode === "speaker" ? [[300, 238, .26], [214, 168, .32], [152, 116, .4]][tm] : [[215, 160, .32], [158, 116, .38], [112, 78, .46]][tm];
+      const [f0, f1, dec] = P;
+      const tone = (mult, type, lvl, d) => { const o = src(ctx.createOscillator()); o.type = type; o.frequency.setValueAtTime(f0 * mult, t); o.frequency.exponentialRampToValueAtTime(f1 * mult, t + .16); env(o, lvl, d); o.start(t); o.stop(t + d + .05); };
+      if (mode === "speaker") {
+        tone(1, "sine", vel * .75, dec); tone(1.52, "triangle", vel * .28, dec * .55);
+        env(nz("bandpass", f0 * 4, 1.2, .08), vel * .2, .06); env(nz("highpass", 3200, 0, .03), vel * .1, .015);
+      } else if (mode === "headphones") {
+        tone(1, "sine", vel * .85, dec); tone(1.52, "triangle", vel * .1, dec * .5);
+        env(nz("bandpass", 1300, 1.5, .05), vel * .12, .03);
+      } else {   // merged: the deep thump plus its 2nd and 3rd harmonics, which a phone speaker can play, so the ear still hears the low note
+        tone(1, "sine", vel * .78, dec); tone(2, "sine", vel * .3, dec * .7); tone(3, "sine", vel * .16, dec * .5);
+        env(nz("bandpass", f0 * 4, 1.2, .08), vel * .17, .055); env(nz("highpass", 3200, 0, .03), vel * .1, .015);
+      }
     }
     if (srcs.length) cleanWhenDone(srcs, made);
     return;
@@ -9774,8 +9770,232 @@ for (const k of ["lead", "bass", "pad"]) {
   box.querySelector(".snd-ok").addEventListener("click", save);
   nm.addEventListener("keydown", e => { if (e.key === "Enter") save(); });
 }
+/* ---------- 5.39: settings tidy-up, toms, fixes, game mode and Pro kept apart ---------- */
+
+/* ----- game Settings: Strip lines, Picture life, Motion, Riser sound. Neighbour light, wobble and strip bend are
+   fixed parts of the pad's look; Motion Calm drops shake, wobble and bend, Off makes the pad still. ----- */
+game.border = false; game.chargeBars = 1; document.body.classList.remove("g-border");
+game.motion = "full";
+try { const m = localStorage.getItem("glasspad.motion"); if (["full", "calm", "off"].includes(m)) game.motion = m; } catch (_) {}
+function gameMotionApply() {
+  const m = game.motion;
+  game.bend = m === "full"; game.wobble = m === "full" ? "touched" : "off"; game.nLight = m !== "off"; game.shake = m === "full" ? 1 : 0;
+  try { gameLsApply(); } catch (_) {}
+}
+gameMotionApply();
+$("gMotion").addEventListener("click", e => {
+  const x = e.target.closest("button"); if (!x) return;
+  game.motion = x.dataset.v; try { localStorage.setItem("glasspad.motion", game.motion); } catch (_) {}
+  gameMotionApply(); gameSheetSync(); gameSave();
+});
+// the toms: Merged (a deep thump with its 2nd and 3rd harmonics, so the pitch carries on a phone speaker too),
+// Speaker (5.38's higher toms) or Headphones (5.37's deeper ones). Test switch.
+game.toms = "merged";
+try { const t = localStorage.getItem("glasspad.toms"); if (["merged", "speaker", "headphones"].includes(t)) game.toms = t; } catch (_) {}
+$("gToms").addEventListener("click", e => {
+  const x = e.target.closest("button"); if (!x) return;
+  game.toms = x.dataset.v; try { localStorage.setItem("glasspad.toms", game.toms); } catch (_) {}
+  gameSheetSync(); if (audio) hit("tom1", audio.ctx.currentTime + .02, .85), hit("tom2", audio.ctx.currentTime + .22, .85), hit("tom3", audio.ctx.currentTime + .42, .85);
+});
+// low latency (test): the audio engine asks the phone for the shortest delay it can manage
+const lowLat = () => { try { return localStorage.getItem("glasspad.lowlat") === "1"; } catch (_) { return false; } };
+$("gLowLat").addEventListener("click", () => {
+  const on = !lowLat(); try { localStorage.setItem("glasspad.lowlat", on ? "1" : "0"); } catch (_) {}
+  gameSheetSync(); toast("Close and reopen the app to hear the change");
+});
+const gameSheetSync538 = gameSheetSync;
+gameSheetSync = function () {
+  gameSheetSync538();
+  $("gMotion").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x.dataset.v === game.motion));
+  $("gToms").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x.dataset.v === game.toms));
+  $("gLowLat").setAttribute("aria-pressed", lowLat());
+};
+
+/* ----- the picture is brighter at rest and dims while the band plays (playing looks as before) ----- */
+const gameRestDim = () => Math.max(0, game.dim - 15);
+game.playA = 0;
+const gameBg538 = gameBg;
+gameBg = function () {
+  const ok = gameBg538(); if (!ok) return ok;
+  const now = performance.now(), dt = Math.min(200, now - (game.playAt || now)); game.playAt = now;
+  const want = T.playing ? 1 : 0;
+  game.playA += (want - game.playA) * Math.min(1, dt / (want ? 700 : 1200));
+  if (game.playA > .01) {
+    const a = gameRestDim() / 100, d = game.dim / 100, extra = a < 1 ? Math.max(0, (d - a) / (1 - a)) : 0;
+    cx.fillStyle = `rgba(${rgbOf(TH.ink)},${extra * game.playA})`; cx.fillRect(0, 0, W, H);
+  }
+  return ok;
+};
+
+/* ----- SHIFT pressed in the last bar of the chords still lands on the very next bar; the charge starts at once ----- */
+const liftLandAbs538 = liftLandAbs;
+liftLandAbs = function () {
+  if (!game.on || isManual() || !T.playing) return liftLandAbs538();
+  const st = T.meter.steps, L = passBars(), a = audAbs(), barStart = T.abs - T.step;
+  let b = T.bar + Math.floor((a - barStart) / st);   // the bar you can hear now (the scheduler runs a little ahead)
+  for (let k = 0; k < 400; k++, b++) if ((b + 1) % pad.every === 0 && (keyLift.when === "bar" || b % L === L - 1)) break;
+  const land = barStart + (b + 1 - T.bar) * st;
+  return land > T.abs ? land : liftLandAbs538();
+};
+
+/* ----- the arp and SHIFT buttons react the moment a finger lands: a phone sends no "tap" while another finger
+   is down on the pad, so switching the lead arp off mid-note never arrived ----- */
+for (const id of ["gArpL", "gArpB", "gShift", "gBand"]) {
+  const btn = $(id); let fired = 0;
+  btn.addEventListener("pointerdown", () => { if (voices.size) { fired = performance.now(); btn.click(); } });
+  btn.addEventListener("click", e => { if (e.isTrusted && performance.now() - fired < 800) e.stopImmediatePropagation(); }, true);
+}
+// switching the lead arp on mid-note starts it on the held note
+$("gArpL").addEventListener("click", () => { if (game.arpL) armHeld("lead"); try { syncSampRepeat(); } catch (_) {} });
+$("gArpB").addEventListener("click", () => { if (game.arpB) armHeld("bass"); try { syncSampRepeat(); } catch (_) {} });
+
+/* ----- lead octave buttons: in Follow chords the strips were snapped back to the nearest notes, undoing the octave ----- */
+setLeadOct = function (d) {
+  if (kb.on) { kbShift(d); octLabels(); return; }
+  leadOct = Math.max(-2, Math.min(2, leadOct + d));
+  try { localStorage.setItem("glasspad.leadOct", leadOct); } catch (_) {}
+  lanes = []; lanes = leadLanesFor(liveChord); retuneLead(); octLabels();
+};
+
+/* ----- My sounds: evened out by loudness (a short, spiky sound used to play quietly), and an arp turns on
+   "Repeat while held" for the lead too ----- */
+const clipBuf538 = clipBuf;
+clipBuf = function (c) {
+  const buf = clipBuf538(c);
+  try {
+    for (let ch = 0; ch < buf.numberOfChannels; ch++) {
+      const d = buf.getChannelData(ch); let s = 0, n = 0, pk = 0;
+      for (let i = 0; i < d.length; i++) { const v = Math.abs(d[i]); pk = Math.max(pk, v); if (v > .02) { s += d[i] * d[i]; n++; } }
+      if (!n || pk < 1e-4) continue;
+      const rms = Math.sqrt(s / n), g = Math.min(3, Math.max(1, .3 / rms));
+      if (g > 1.05) for (let i = 0; i < d.length; i++) d[i] = Math.tanh(d[i] * g * 1.1) * .92;
+    }
+  } catch (_) {}
+  return buf;
+};
+syncSampRepeat = function () {
+  const leadArpOn = $("wave").value === "sampler" && (game.on ? game.arpL : leadArp.style !== "off");
+  const want = (bass.sound === "sampler" && (game.on ? game.arpB : bassPat.arp !== "off")) || leadArpOn;
+  if (want && !samp.hold) { $("sampHold").click(); sampRepAuto = true; }
+  else if (!want && sampRepAuto) { if (samp.hold) $("sampHold").click(); sampRepAuto = false; }
+};
+$("leadArp").addEventListener("change", () => syncSampRepeat());
+$("wave").addEventListener("change", () => syncSampRepeat());
+try { for (const c of samples) c.buf = clipBuf(c); } catch (_) {}
+
+/* ----- the root ring slides from the nearest old root, not across the pad ----- */
+// (drawRoots: see the patched line inside it)
+
+/* ----- Your own chords: a 7ths switch (numbers 10-16 in the list are 7th chords) ----- */
+let own7 = false;
+const chordFromDegAt538 = chordFromDegAt;
+chordFromDegAt = function (deg, base) {
+  if (deg < 10) return chordFromDegAt538(deg, base);
+  const d = deg - 10, c = chordFromDegAt538(d, base), h = curScale().harm, n = h.length, pick = i => h[i % n] + 12 * Math.floor(i / n);
+  const sev = pick(d + 6), iv = +(sev - c.tones[0]).toFixed(2), third = +(c.tones[1] - c.tones[0]).toFixed(2), fifth = +(c.tones[2] - c.tones[0]).toFixed(2);
+  const root = noteName(base + c.tones[0]);
+  const q = fifth === 6 ? (iv === 9 ? "°7" : "m7♭5") : third === 3 ? (iv === 11 ? "m(maj7)" : "m7") : third === 4 ? (iv === 11 ? "maj7" : "7") : c.name.slice(root.length) + "7";
+  return { tones: [...c.tones, sev], base, name: root + q };
+};
+$("ownDegs").insertAdjacentHTML("afterend", `<button id="own7" class="own7" aria-pressed="false" title="Add the 7th to the chords you tap">+7th</button>`);
+$("own7").addEventListener("click", () => { own7 = !own7; $("own7").setAttribute("aria-pressed", own7); renderOwn(); });
+renderOwn = function () {
+  const box = $("ownBox"); box.hidden = pad.prog !== "own" || pad.mode !== "auto"; if (box.hidden) return;
+  const l = PROGS.own.list; if (ownSel >= l.length) ownSel = -1;
+  $("ownDegs").innerHTML = [0, 1, 2, 3, 4, 5, 6].map(d => `<button data-od="${d + (own7 ? 10 : 0)}">${d + 1}${own7 ? "<sup>7</sup>" : ""}<small>${chordFromDeg(d + (own7 ? 10 : 0)).name}</small></button>`).join("");
+  $("ownChips").innerHTML = l.map((d, i) => `<button data-oc="${i}" class="${i === ownSel ? "sel" : ""}">${chordFromDeg(d).name}</button>`).join("") || `<span class="cb-notes">Tap the numbers in the order you want them (up to 8). +7th makes them 7th chords.</span>`;
+  $("ownDel").hidden = ownSel < 0;
+};
+try { renderOwn(); } catch (_) {}
+
+/* ----- My chords: chips as long as their chords (64 px a bar, names always fit), drag the selected chip's right
+   edge to stretch it by beats, a new chip starts empty, and the scale follows the chords ----- */
+const MC_BAR_PX = 64;
+let mcDragEnd = 0;
+$("chips2").addEventListener("click", e => { if (performance.now() - mcDragEnd < 400) e.stopPropagation(); }, true);   // a drag isn't a tap
+document.addEventListener("pointerdown", e => {
+  const g = e.target.closest && e.target.closest("#chips2 .grip"); if (!g) return;
+  e.preventDefault(); e.stopPropagation();
+  const chip = g.closest(".chip"), c = manual.chords[+chip.dataset.i]; if (!c) return;
+  const x0 = e.clientX, b0 = c.bars;
+  const move = ev => { const nb = Math.max(.25, Math.min(8, Math.round((b0 * MC_BAR_PX + ev.clientX - x0) / (MC_BAR_PX / 4)) / 4)); if (nb !== c.bars) { c.bars = nb; chip.style.minWidth = Math.max(40, nb * MC_BAR_PX) + "px"; chip.querySelector(".len").textContent = lenLabel(nb); } };
+  const up = () => { removeEventListener("pointermove", move); removeEventListener("pointerup", up); removeEventListener("pointercancel", up); mcDragEnd = performance.now(); manualChanged(true); };
+  addEventListener("pointermove", move); addEventListener("pointerup", up); addEventListener("pointercancel", up);
+}, true);
+// the scale follows your chords: when the chosen scale leaves out some of their notes, the best scale that fits
+// them all is picked; when no single scale does, the lead notes follow each chord instead
+function chordsFit(r, id) {
+  const set = new Set(SC[id].steps.map(x => mod12(r + x)));
+  return manual.chords.every(c => { const p = parseChord(c.sym); if (!p) return true; const pcs = p.iv.map(i => mod12(p.root + i)); if (p.bass !== null) pcs.push(p.bass); return pcs.every(x => set.has(x)); });
+}
+const manualChanged538 = manualChanged;
+manualChanged = function (keepSel) {
+  manualChanged538(keepSel);
+  if (pad.mode !== "manual" || !manual.chords.some(c => parseChord(c.sym))) return;
+  if (chordsFit(+rootSel.value, scaleSel.value)) return;
+  const best = suggestScales().find(c => c.fit > .999);
+  if (best) {
+    rootSel.value = best.r; setScale(best.id); buildLanes(); pad.cur = null; refreshChordNow(); updateSummaries(); renderSuggestions();
+    toast(`Scale changed to ${NAMES[best.r]} ${SC[best.id].name} to fit your chords`);
+  } else if (leadFollow.mode !== "chords") {
+    setLeadFollow("chords"); try { $("leadFollow").value = "chords"; } catch (_) {}
+    toast("No single scale fits these chords, so the lead notes now follow each chord");
+  }
+};
+
+/* ----- presets keep their colour theme ----- */
+const capture538 = capture;
+capture = function () { const p = capture538(); p.colours = { theme: TH.id, custom: { ...customCols } }; return p; };
+const applyPreset538 = applyPreset;
+applyPreset = function (p) {
+  applyPreset538(p);
+  if (p && p.colours && p.colours.theme && !game.on) {
+    if (p.colours.custom) Object.assign(customCols, p.colours.custom);
+    try { setTheme(p.colours.theme); $("themeSel").value = TH.id; renderCustom(); updateSummaries(); } catch (_) {}
+  }
+};
+
+/* ----- game mode and Pro kept apart: each has its own last setup, and switching puts the other one away ----- */
+const LAST_GAME_KEY = "glasspad.last.game";
+const saveLast538 = saveLast, readLast538 = readLast;
+saveLast = function () {
+  if (!game.on) return saveLast538();
+  if (qs.fresh) return;
+  try { localStorage.setItem(LAST_GAME_KEY, JSON.stringify({ setup: capture(), qs: { id: qs.id, name: qs.name, cols: qs.cols, base: qs.base }, theme: TH.id })); } catch (_) {}
+};
+readLast = function () { if (!game.on) return readLast538(); try { return JSON.parse(localStorage.getItem(LAST_GAME_KEY) || "null"); } catch (_) { return null; } };
+let gameBooted = false;
+const setGame538 = setGame;
+setGame = function (on) {
+  if (!gameBooted || on === game.on) { setGame538(on); return; }
+  try {
+    if (on) {
+      // Pro → game: keep Pro's setup, levels and mutes, then the last theme played in game mode
+      saveLast538();
+      game.proMute = { ...mix.mute }; game.proOct = [leadOct, bassOct]; game.proKit = drum.kit;
+      for (const p of Object.keys(mix.mute)) if (mix.mute[p]) { mix.mute[p] = false; applyMute(p); }
+      setGame538(true);
+      if (leadOct) setLeadOct(-leadOct); if (bassOct) setBassOct(-bassOct);
+      if (drum.kit && drum.kit !== "synth") setKit("synth");
+      const l = readLast();
+      if (l && l.qs && l.qs.base && QSTYLES()[l.qs.base]) loadStyle(styleOf(l.qs.base));
+      else if (l) restoreLast(l);
+      else if (qs.base && QSTYLES()[qs.base]) loadStyle(styleOf(qs.base));
+      else loadStyle(styleOf("epic"));
+    } else {
+      // game → Pro: keep the game theme, then Pro's own setup comes back exactly
+      saveLast();
+      setGame538(false);
+      const l = readLast538(); if (l) restoreLast(l);
+      if (game.proMute) { for (const p of Object.keys(game.proMute)) if (mix.mute[p] !== game.proMute[p]) { mix.mute[p] = game.proMute[p]; applyMute(p); } try { syncMix(); } catch (_) {} }
+      if (game.proOct) { const [lo, bo] = game.proOct; if (lo !== leadOct) setLeadOct(lo - leadOct); if (bo !== bassOct) setBassOct(bo - bassOct); }
+      if (game.proKit && game.proKit !== drum.kit) setKit(game.proKit);
+    }
+  } catch (err) { console.warn(err); }
+};
 $("gameBtn").addEventListener("click", () => setGame(true));
 setGame(game.on);
+gameBooted = true;   // 5.39: from here on, switching modes keeps game mode and Pro apart
 
 requestAnimationFrame(draw);
 </script>

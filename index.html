@@ -20,6 +20,51 @@
   body { margin: 0; overscroll-behavior: none; }
   img { max-width: 100%; }
   [hidden] { display: none !important; }
+  /* 5.37: Beat maker and Chord rhythm maker */
+  #bmSheet { position: fixed; inset: 0; z-index: 70; background: var(--ink); display: flex; flex-direction: column; --bm-name: 64px; }
+  #bmSheet[hidden] { display: none; }
+  #bmSheet .bm-box { display: flex; flex-direction: column; height: 100%; padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); }
+  .bm-top { display: flex; gap: 6px; align-items: center; padding-bottom: 8px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .bm-sp { flex: 1; }
+  .bm-body { flex: 1; overflow-y: auto; padding-top: 8px; }
+  .bm-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+  .bm-seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+  .bm-seg button { font: 600 12px var(--mono); background: none; border: 0; border-radius: 0; color: var(--muted); padding: 7px 10px; min-height: 0; }
+  .bm-seg button[aria-pressed="true"] { background: var(--panel2); color: var(--text); }
+  .bm-seg button.lv[aria-pressed="true"], #bmTabs button[aria-pressed="true"] { background: var(--amber); color: #111; }
+  .bm-sel { font: 12px var(--mono); background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; max-width: 46vw; }
+  .bm-btn { font: 600 12px var(--mono); border-radius: 9px; padding: 8px 11px; border: 1.5px solid var(--line); background: var(--panel2); color: var(--text); }
+  .bm-btn.sm { padding: 5px 9px; font-size: 11px; }
+  .bm-btn[aria-pressed="true"] { border-color: var(--teal); color: var(--teal); }
+  .bm-play { background: var(--teal); color: var(--ink); border-color: var(--teal); }
+  .bm-save { border-color: var(--amber); color: var(--amber); }
+  .bm-lbl { font: 11px var(--mono); color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+  .bm-lbl input[type=range] { width: 100px; accent-color: var(--amber); }
+  .bm-name { font: 12px var(--mono); background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 7px 8px; width: 120px; }
+  .bm-mini { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 8px; }
+  .bm-mini.two { grid-template-columns: 1fr 1fr; }
+  .bm-mini button { font: 10px var(--mono); padding: 5px 2px; border-radius: 6px; background: #151c2c; border: 1px solid var(--line); color: var(--muted); min-height: 0; }
+  .bm-mini button[aria-pressed="true"] { border-color: var(--amber); color: var(--text); background: rgba(var(--acc-rgb),.15); }
+  .bm-grid { display: grid; gap: 3px; }
+  .bm-n { font: 600 11px var(--mono); color: var(--muted); display: flex; align-items: center; white-space: nowrap; overflow: hidden; }
+  .bm-grp { grid-column: 1 / -1; font: 10px var(--mono); color: var(--muted); opacity: .6; margin-top: 4px; letter-spacing: .1em; }
+  .bm-c { height: 28px; min-height: 0; padding: 0; border-radius: 5px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.07); }
+  .bm-c.b4 { background: rgba(255,255,255,.085); }
+  .bm-c.v1 { background: rgba(var(--acc-rgb),.38); border-color: rgba(var(--acc-rgb),.55); }
+  .bm-c.v2 { background: var(--amber); border-color: var(--amber); box-shadow: 0 0 8px -2px var(--amber); }
+  .bm-c.pre { opacity: .25; }
+  .bm-grid.auto .bm-c.v1, .bm-grid.auto .bm-c.v2 { border-style: dashed; opacity: .8; }
+  .crow .bm-c { height: 44px; }
+  .crow .bm-c.v1 { background: rgba(var(--acc2-rgb),.4); border-color: rgba(var(--acc2-rgb),.6); box-shadow: none; }
+  .crow .bm-c.v2 { background: var(--teal); border-color: var(--teal); box-shadow: 0 0 8px -2px var(--teal); }
+  .crow .bm-c.hold { background: rgba(var(--acc2-rgb),.2); border-color: rgba(var(--acc2-rgb),.35); }
+  .bm-prev { position: relative; height: 40px; border-radius: 8px; background: rgba(255,255,255,.04); border: 1px solid var(--line); overflow: hidden; margin-top: 4px; }
+  .bm-prev i { position: absolute; top: 8px; bottom: 8px; background: var(--teal); border-radius: 4px; }
+  .bm-auto { font-size: 11px; color: var(--amber); background: rgba(var(--acc-rgb),.1); border: 1px solid rgba(var(--acc-rgb),.35); border-radius: 8px; padding: 5px 8px; margin-bottom: 6px; }
+  .bm-note { color: var(--muted); font-size: 12px; line-height: 1.45; margin: 8px 0 0; }
+  .bm-foot { margin-top: 10px; }
+  .bm-open { font: 600 12px var(--mono); }
+  @media (orientation: landscape) { #bmSheet { --bm-name: 58px; } .bm-c { height: 18px; } .bm-n { font-size: 10px; } .bm-grid { row-gap: 2px; } .bm-row { margin-bottom: 6px; } .bm-top { padding-bottom: 6px; } .crow .bm-c { height: 40px; } }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&family=Tomorrow:wght@400;500;600&family=Orbitron:wght@500;700&display=swap">
@@ -1345,7 +1390,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.36 TEST · game mode · 6 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.37 TEST · game mode · 6 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1447,7 +1492,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.36 TEST · game mode · 6 Oct 2026</p>
+      <p class="ver">GlassPad 5.37 TEST · game mode · 6 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -2193,7 +2238,8 @@ function fillHit(pos, from, end) {
   if (rel % 4 === 0) out.push(["kick", .8]);
   return out;
 }
-const crash = out => [...out.filter(([i]) => i !== "hat" && i !== "kick"), ["crash", .55], ["kick", 1]];
+const crash = out => { const bt = typeof drum !== "undefined" && drum.beat && T.meter.steps === 16, K = bt ? (BEAT_KITS[drum.beat.kit] || BEAT_KITS.synth)[1] : {};
+  return [...out.filter(([i]) => i !== "hat" && i !== "kick" && !KICKS.includes(i)), [bt ? "crash2" : "crash", .55], [K.kick || "kick", 1]]; };
 // the normal drums (not a song): a fill every 4 or 8 bars, then a crash on the next downbeat
 function drumKind(s, kind) {
   const base = drum.pat[s] || [], P = T.meter.pulses;
@@ -2219,7 +2265,8 @@ function bandDrums(s) {
   if (game.on && game.bandPend != null) {   // game mode: a fill into the new Band level, which lands on the next bar
     const S0 = T.meter.steps, up = game.bandPend > game.band;
     if (game.bandFillBar > T.bar + 1) game.bandFillBar = T.bar;   // the bar count went back (new chords, a loop): land on the next bar anyway
-    if (T.bar === game.bandFillBar) { const from = S0 - (up ? fillSteps("beat") : 2); if (s >= from) { const f = fillHit(s, from, S0); return up ? f : f.map(([i, v, o]) => [i, v * .6, o]); } }
+    if (T.bar === game.bandFillBar && drum.beat && T.meter.steps === 16) { const bf = beatFillAt(s, ["low", "normal", "high"][game.bandPend]); if (bf) return bf; }
+    else if (T.bar === game.bandFillBar) { const from = S0 - (up ? fillSteps("beat") : 2); if (s >= from) { const f = fillHit(s, from, S0); return up ? f : f.map(([i, v, o]) => [i, v * .6, o]); } }
     else if (T.bar > game.bandFillBar && s === 0) {
       game.band = game.bandPend; game.bandPend = null; uiQueue.push({ t: T.next, gameUI: true });
       const o = drumKind(s, GAME_KIND[game.band]); return up ? crash(o) : o;
@@ -2227,11 +2274,12 @@ function bandDrums(s) {
   }
   const out = drumKind(s, game.on ? GAME_KIND[game.band] : partDrums()), F = drum.fills, S = T.meter.steps;
   // a fill into every new part, whatever the Fills setting, and a crash on its first beat
-  if (parts.fillBar === T.bar) { const from = S - fillSteps("beat"); if (s >= from) return fillHit(s, from, S); }
+  const lvNow = game.on ? ["low", "normal", "high"][game.band] : ({ sparse: "low", busy: "high" })[partDrums()] || "normal";
+  if (parts.fillBar === T.bar) { if (drum.beat && T.meter.steps === 16) { const bf = beatFillAt(s, lvNow); if (bf) return bf; } else { const from = S - fillSteps("beat"); if (s >= from) return fillHit(s, from, S); } }
   if (parts.fillBar === T.bar - 1 && s === 0) return crash(out);
   if (!F) return out;
   const inCycle = T.bar % F;
-  if (inCycle === F - 1) { const from = S - fillSteps("beat"); if (s >= from) return fillHit(s, from, S); }
+  if (inCycle === F - 1) { if (drum.beat && T.meter.steps === 16) { const bf = beatFillAt(s, lvNow); if (bf) return bf; } else { const from = S - fillSteps("beat"); if (s >= from) return fillHit(s, from, S); } }
   if (inCycle === 0 && T.bar > 0 && s === 0) return crash(out);
   return out;
 }
@@ -4315,7 +4363,7 @@ function scheduler() {
       if (fx) { uiQueue.push({ t: th, fx, down: s === 0, vel }); stepFx.push(fx); }
     }
     if (drum.on && !grooveOn) for (const [inst0, vel, off] of (sd ? songDrums(s, sd.pos, sd.blk) : bandDrums(s))) {
-      const th = off ? t0 + off * dur : t, inst = KIT[drum.style]?.[inst0] || inst0;
+      const th = off ? t0 + off * dur : t, inst = (drum.beat && T.meter.steps === 16 ? null : KIT[drum.style]?.[inst0]) || inst0;
       hit(inst, th, vel);
       const fx = KICKS.includes(inst) ? "kick" : SNARES.includes(inst) ? "snare" : inst === "hat" || inst === "shaker" ? "hat" : null;
       if (fx === "kick" && inst !== "dum") pumpAt(th, vel);
@@ -9252,6 +9300,333 @@ gameBassStep = function (s, t, t0, dur) {
   const iv = P.iv[k], n = iv === 7 ? fifth : iv === 10 ? sev : iv === 19 ? 12 + fifth : iv;
   gameBassNote(root + n, t, P.len[k] * dur, gm);
 };
+/* ---------- 5.37: Beat maker and Chord rhythm maker (Pro) ----------
+   A beat: three 2-bar patterns (Low / Normal / High: what BAND switches between in game mode, and the song parts'
+   sparse / normal / busy in Pro) and a fill for each level (an empty one is made from Normal's). A chord rhythm:
+   the same three levels, each step off / hit / accent / hold. Both are saved in their own lists, and a preset keeps
+   its own copy of the ones it uses. 4/4 only (other time signatures play the style as before). */
+const BM_INST = [["Crash", "crash"], ["Ride", "ride"], ["Open hat", "ohat"], ["Hat", "hat"], ["Shaker", "shaker"], ["Clap", "clap"], ["Snare", "snare"], ["Rim", "rim"], ["Tom hi", "tomhi"], ["Tom mid", "tommid"], ["Tom lo", "tomlo"], ["Kick", "kick"]];
+const BM_GROUPS = { crash: "CYMBALS", clap: "SNARES", tomhi: "TOMS", kick: "KICK" };
+const BM_LV = ["low", "normal", "high"], BM_LVN = { low: "Low", normal: "Normal", high: "High" };
+const BM_FLEN = { beat: 4, "2": 8, bar: 16 }, BM_FLEN_N = { beat: "Last beat", "2": "2 beats", bar: "Whole bar" };
+// the beat's sound set: the synth kit with its kick/snare flavour, or a sampled kit
+const BEAT_KITS = { synth: ["Synth kit", {}], "80s": ["80s machine", { kick: "bkick", snare: "gsnare" }], electro: ["Electro", { kick: "bkick", snare: "clap" }],
+  "808": ["808", { kick: "k808", snare: "clap" }], linn: ["LinnDrum", {}], ferros: ["Acoustic", {}] };
+// the grid's crash, ride and toms have their own synth sounds (the built-in styles keep theirs)
+const BM_SYN = { crash: "crash2", ride: "ride2", tomhi: "tom1", tommid: "tom2", tomlo: "tom3" }, BM_SYN_BACK = { crash2: "crash", ride2: "ride", tom1: "tomhi", tom2: "tommid", tom3: "tomlo" };
+const bmEmpty = n => Object.fromEntries(BM_INST.map(([, k]) => [k, Array(n).fill(0)]));
+const bmClone = o => o ? JSON.parse(JSON.stringify(o)) : null;
+const bmHas = p => !!p && Object.values(p).some(a => a.some(v => v));
+drum.beat = null; pad.crh = null;
+const bm = { open: false, tab: "drums", lv: "normal", mode: "pattern", page: 0, clv: "normal", cpage: 0 };
+
+/* ----- sounds ----- */
+const hit536 = hit;
+hit = function (inst, t, vel) {
+  if (BM_SYN_BACK[inst]) {
+    if (drum.kit && drum.kit !== "synth" && kitHit(BM_SYN_BACK[inst], t, vel)) return;
+    if (!audio) return;
+    const { ctx, drums, noise } = audio, made = [], srcs = [];
+    const mk = n => (made.push(n), n), src = n => (srcs.push(n), made.push(n), n);
+    const env = (node, peak, dec, att = 0) => { const g = mk(ctx.createGain()); if (att) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + att); } else g.gain.setValueAtTime(peak, t); g.gain.exponentialRampToValueAtTime(.001, t + dec); node.connect(g).connect(drums); return g; };
+    const nz = (type, freq, q, len) => { const s = src(ctx.createBufferSource()); s.buffer = noise; s.loop = true; const f = mk(ctx.createBiquadFilter()); f.type = type; f.frequency.value = freq; if (q) f.Q.value = q; s.connect(f); s.start(t); s.stop(t + len); return f; };
+    if (inst === "crash2") {   // a washy cymbal: bright noise with a long tail
+      env(nz("highpass", 4200, 0, 1.8), vel * .26, 1.6, .004);
+      env(nz("bandpass", 7600, .8, 1.2), vel * .14, 1.1, .004);
+    } else if (inst === "ride2") {   // a ping with a bell-like ring
+      for (const f of [3150, 4420]) { const o = src(ctx.createOscillator()); o.type = "square"; o.frequency.value = f; const b = mk(ctx.createBiquadFilter()); b.type = "bandpass"; b.frequency.value = 5200; b.Q.value = 1.2; o.connect(b); env(b, vel * .035, .7); o.start(t); o.stop(t + .75); }
+      env(nz("highpass", 8500, 0, .4), vel * .12, .32);
+    } else {   // toms: a pitched thump falling a little, with a soft stick click
+      const [f0, f1, dec] = { tom1: [215, 160, .32], tom2: [158, 116, .38], tom3: [112, 78, .46] }[inst];
+      const o = src(ctx.createOscillator()); o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + .2);
+      env(o, vel * .85, dec); o.start(t); o.stop(t + dec + .05);
+      env(nz("bandpass", 1300, 1.5, .05), vel * .12, .03);
+    }
+    if (srcs.length) cleanWhenDone(srcs, made);
+    return;
+  }
+  return hit536(inst, t, vel);
+};
+
+/* ----- which level is playing ----- */
+const BM_KIND_LV = { sparse: "low", normal: "normal", busy: "high" };
+function bmLevel(kind) { if (bm.open && bm.tab === "drums") return bm.lv; return BM_KIND_LV[kind] || "normal"; }
+function bmChordLevel() {
+  if (bm.open && bm.tab === "chords") return bm.clv;
+  if (game.on) return BM_LV[game.band] || "normal";
+  return BM_KIND_LV[partDrums()] || "normal";
+}
+const beatOn = () => !!drum.beat && T.meter.steps === 16;
+
+/* ----- beat playback ----- */
+const bmVel = (inst, v) => inst === "crash" ? (v === 2 ? .7 : .45) : (v === 2 ? .85 : .45);
+function bmHitsAt(p, s) {   // the hits at one step of a pattern, as the band plays them
+  const out = [], map = (BEAT_KITS[drum.beat.kit] || BEAT_KITS.synth)[1];
+  for (const [, k] of BM_INST) { const v = p[k] && p[k][s]; if (v) out.push([BM_SYN[k] || map[k] || k, bmVel(k, v)]); }
+  return out;
+}
+function bmPattern(lv) { const b = drum.beat, p = b.lv[lv]; return bmHas(p) ? p : b.lv.normal; }
+// an empty fill is made from Normal's: Low keeps only its loud hits, played soft; High doubles them into quicker rolls
+function bmAutoFill(lv) {
+  const n = drum.beat.fill.normal, o = bmEmpty(16);
+  if (!bmHas(n)) return o;
+  for (const k in n) for (let s = 0; s < 16; s++) {
+    const v = n[k][s]; if (!v) continue;
+    if (lv === "low") { if (v === 2 && k !== "kick") o[k][s] = 1; }
+    else { o[k][s] = 2; if (s + 1 < 16 && !n[k][s + 1] && k !== "kick" && k !== "crash") o[k][s + 1] = 1; }
+  }
+  if (lv === "high") { for (let s = 0; s < 8; s += 2) if (!o.snare[s]) o.snare[s] = 1; o.kick[0] = 2; }
+  return o;
+}
+const bmFill = lv => lv === "normal" || bmHas(drum.beat.fill[lv]) ? drum.beat.fill[lv] : bmAutoFill(lv);
+// the fill's hits at a step of the fill bar (null before the fill starts, or no beat)
+function beatFillAt(s, lv) {
+  if (!beatOn()) return null;
+  const f = bmFill(lv), from = 16 - (BM_FLEN[drum.beat.flen[lv]] || 8);
+  if (s < from || !bmHas(f)) return null;
+  return bmHitsAt(f, s);
+}
+const drumKind536 = drumKind;
+drumKind = function (s, kind) {
+  if (!beatOn()) return drumKind536(s, kind);
+  if (kind === "off") return [];
+  const lv = bmLevel(kind);
+  // in the maker's Fill view: one bar of the pattern, then the fill, round and round
+  if (bm.open && bm.tab === "drums" && bm.mode === "fill" && T.bar % 2 === 1) { const f = beatFillAt(s, lv); if (f) return f; }
+  return bmHitsAt(bmPattern(lv), (T.bar % 2) * 16 + s);
+};
+
+/* ----- chord rhythm playback ----- */
+PAD_RHYTHM_NAME.custom = "My rhythm";
+const rhythmHits536 = rhythmHits;
+rhythmHits = function (style) {
+  if (style !== "custom" || !pad.crh || T.meter.steps !== 16) return rhythmHits536(style === "custom" ? "sustain" : style);
+  const lv = bmChordLevel(), a0 = pad.crh.lv[lv], a = a0 && a0.some(v => v === 1 || v === 2) ? a0 : pad.crh.lv.normal, b = (T.bar % 2) * 16, hits = [];
+  if (!a.some(v => v === 1 || v === 2)) return [{ s: 0, len: 16 * .95, vel: 1, next: false }];
+  for (let s = 0; s < 16; s++) {
+    const v = a[b + s]; if (v !== 1 && v !== 2) continue;
+    let h = 0; while (b + s + 1 + h < 32 && a[b + s + 1 + h] === 3) h++;
+    const nxt = a[b + s + 1];
+    hits.push({ s, len: h ? (1 + h) * .95 : (nxt === 1 || nxt === 2 ? .9 : 1.5), vel: v === 2 ? 1 : .75, next: false });
+  }
+  return hits;
+};
+
+/* ----- starting points: a new beat or rhythm made from what's playing now ----- */
+const BM_FROM = { bkick: "kick", k808: "kick", gsnare: "snare", dum: "tomlo", tek: "rim", phat: "hat", fill: "snare", crash: "crash", ride: "ride" };
+function bmFromStyle() {
+  const b = { name: "", kit: "synth", swing: drum.swing, lv: {}, fill: { low: null, normal: null, high: null }, flen: { low: "beat", normal: "2", high: "bar" } };
+  const K = KIT[drum.style] || {};
+  for (const [id, [, m]] of Object.entries(BEAT_KITS)) if (m.kick && m.kick === K.kick && m.snare === (K.snare || "snare")) b.kit = id;
+  const was = drum.beat; drum.beat = null;
+  const m0 = T.meter; if (m0.steps !== 16) T.meter = METERS["4/4"];
+  try {
+    if (!drum.pat || drum.pat.length !== 16) buildPattern();
+    for (const [lv, kind] of [["low", "sparse"], ["normal", "normal"], ["high", "busy"]]) {
+      const p = bmEmpty(32);
+      for (let s = 0; s < 16; s++) for (const [i, v] of drumKind536(s, kind)) {
+        const k = BM_FROM[i] || i; if (!p[k]) continue;
+        const lvl = v >= .6 ? 2 : 1; p[k][s] = p[k][s + 16] = Math.max(p[k][s], lvl);
+      }
+      b.lv[lv] = p;
+    }
+  } finally { T.meter = m0; drum.beat = was; }
+  // Normal's fill: snare, then round the toms
+  const f = bmEmpty(16); f.kick[8] = 2; f.snare[8] = 2; f.snare[10] = 1; f.tomhi[12] = 2; f.tommid[13] = 1; f.tommid[14] = 2; f.tomlo[15] = 2;
+  b.fill.normal = f;
+  return b;
+}
+function bmRhythmFromCurrent() {
+  const r = { name: "", lv: { low: null, normal: Array(32).fill(0), high: null } }, st = pad.rhythm === "custom" ? "sustain" : pad.rhythm;
+  const m0 = T.meter; if (m0.steps !== 16) T.meter = METERS["4/4"];
+  try {
+    if (st === "sustain" || st === "swell") { for (const b of [0, 16]) { r.lv.normal[b] = 2; for (let s = 1; s < 16; s++) r.lv.normal[b + s] = 3; } }
+    else for (const h of rhythmHits536(st)) for (const b of [0, 16]) {
+      if (h.s >= 16) continue; r.lv.normal[b + h.s] = h.vel >= .95 ? 2 : 1;
+      for (let k = 1; k < Math.round(h.len) && h.s + k < 16; k++) if (!r.lv.normal[b + h.s + k]) r.lv.normal[b + h.s + k] = 3;
+    }
+  } finally { T.meter = m0; }
+  return r;
+}
+
+/* ----- saved lists ----- */
+const BM_KEYS = { beats: "glasspad.beats", rhythms: "glasspad.rhythms" };
+function bmList(kind) { try { return JSON.parse(localStorage.getItem(BM_KEYS[kind]) || "[]"); } catch (_) { return []; } }
+function bmStore(kind, list) { try { localStorage.setItem(BM_KEYS[kind], JSON.stringify(list)); return true; } catch (_) { return false; } }
+
+/* ----- presets carry a copy ----- */
+const capture536 = capture;
+capture = function () { const p = capture536(); p.drums.beat = bmClone(drum.beat); p.pad.crh = bmClone(pad.crh); if (p.pad.rhythm === "custom" && !p.pad.crh) p.pad.rhythm = "sustain"; return p; };
+const applyPreset536 = applyPreset;
+applyPreset = function (p) {
+  applyPreset536(p);
+  setBeat(bmClone(p.drums && p.drums.beat) || null, true);
+  pad.crh = bmClone(p.pad && p.pad.crh) || null;
+  if (pad.rhythm === "custom" && !pad.crh) pad.rhythm = "sustain";
+  bmSyncSelects(); updateSummaries();
+};
+function setBeat(b, quiet) {
+  drum.beat = b;
+  if (b) {
+    if (typeof b.swing === "number") { drum.swing = b.swing; $("swing").value = drum.swing; $("swingOut").textContent = pct(drum.swing); }
+    const sample = b.kit === "linn" || b.kit === "ferros";
+    if (sample && drum.kit !== b.kit) setKit(b.kit); else if (!sample && drum.kit && drum.kit !== "synth") setKit("synth");
+  }
+  bmSyncSelects(); if (!quiet) updateSummaries();
+}
+// the Style and Rhythm lists show "My beat" / "My rhythm" while one is in use
+function bmSyncSelects() {
+  const st = $("style"); let o = st.querySelector('option[value="__beat"]');
+  if (drum.beat) { if (!o) { o = new Option("", "__beat"); st.add(o, 0); } o.textContent = "My beat" + (drum.beat.name ? ": " + drum.beat.name : ""); st.value = "__beat"; }
+  else if (o) { o.remove(); st.value = drum.style; }
+  const rh = $("rhythm"); let r = rh.querySelector('option[value="custom"]');
+  if (pad.crh) { if (!r) { r = new Option("", "custom"); rh.add(r, 0); } r.textContent = "My rhythm" + (pad.crh.name ? ": " + pad.crh.name : ""); }
+  else if (r) { if (pad.rhythm === "custom") pad.rhythm = "sustain"; r.remove(); }
+  rh.value = pad.rhythm;
+}
+// picking a built-in style or rhythm leaves the beat / rhythm (they stay in their lists)
+$("style").addEventListener("change", e => { if (e.target.value !== "__beat" && drum.beat) { drum.beat = null; bmSyncSelects(); updateSummaries(); } }, true);
+{ // the built-in style handler must not take "__beat" as a style
+  const st = $("style");
+  st.addEventListener("change", e => { if (st.value === "__beat") { e.stopImmediatePropagation(); if (!drum.beat) bmSyncSelects(); } }, true);
+}
+
+/* ----- the maker's screen ----- */
+function bmEl(html) { const d = document.createElement("div"); d.innerHTML = html; return d.firstElementChild; }
+document.body.appendChild(bmEl(`<div id="bmSheet" hidden role="dialog" aria-label="Beat maker"><div class="bm-box">
+  <div class="bm-top"><div class="bm-seg" id="bmTabs"><button data-tab="drums">Drums</button><button data-tab="chords">Chords</button></div>
+    <select id="bmPick" class="bm-sel"></select><span class="bm-sp"></span><button id="bmPlay" class="bm-btn bm-play">▶ Hear it</button><button id="bmClose" class="bm-btn">Done</button></div>
+  <div class="bm-body" id="bmBody"></div></div></div>`));
+const bmIsPort = () => innerHeight > innerWidth;
+function bmOpen(tab) {
+  bm.tab = tab || bm.tab; bm.open = true;
+  if (bm.tab === "drums" && !drum.beat) setBeat(bmFromStyle());
+  if (bm.tab === "chords" && !pad.crh) bmUseRhythm(bmRhythmFromCurrent());
+  $("bmSheet").hidden = false; bmRender();
+}
+function bmClose() { bm.open = false; $("bmSheet").hidden = true; updateSummaries(); }
+function bmUseRhythm(r) { pad.crh = r; pad.rhythm = r ? "custom" : (pad.rhythm === "custom" ? "sustain" : pad.rhythm); pad.rNow = pad.rhythm; bmSyncSelects(); updateSummaries(); }
+const bmCellCls = (i, v, extra = "") => `bm-c${Math.floor(i / 4) % 2 ? " b4" : ""}${v ? " v" + v : ""}${extra}`;
+function bmRender() {
+  const port = bmIsPort(), per = port ? 8 : 16, B = $("bmBody");
+  $("bmTabs").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.tab === bm.tab));
+  $("bmPlay").textContent = T.playing ? "■ Stop" : "▶ Hear it";
+  const pick = $("bmPick"), kind = bm.tab === "drums" ? "beats" : "rhythms", list = bmList(kind), cur = bm.tab === "drums" ? drum.beat : pad.crh;
+  pick.innerHTML = `<option value="__cur">${cur ? (cur.name || (bm.tab === "drums" ? "New beat (not saved)" : "New rhythm (not saved)")) : "—"}</option>` +
+    list.map((x, i) => `<option value="${i}">${x.name}</option>`).join("") +
+    `<option value="__new">+ New from ${bm.tab === "drums" ? "the style" : "the rhythm"} playing</option><option value="__off">Off (use the built-in ${bm.tab === "drums" ? "style" : "rhythm"})</option>`;
+  pick.value = "__cur";
+  let h = "";
+  if (bm.tab === "drums") {
+    const b = drum.beat; if (!b) { B.innerHTML = `<p class="bm-note">No beat in use. Pick one above, or make a new one.</p>`; return; }
+    const isF = bm.mode === "fill", lv = bm.lv, auto = isF && lv !== "normal" && !bmHas(b.fill[lv]);
+    const P = isF ? bmFill(lv) : b.lv[lv], from = 16 - BM_FLEN[b.flen[lv]];
+    const off = isF ? (port ? (bm.page % 2) * 8 : 0) : (port ? bm.page * 8 : (bm.page >> 1) * 16);
+    h += `<div class="bm-row"><div class="bm-seg">${BM_LV.map(v => `<button data-lv="${v}" class="lv" aria-pressed="${v === lv}">${BM_LVN[v]}</button>`).join("")}</div>`;
+    h += `<div class="bm-seg">${["pattern", "fill"].map(v => `<button data-mode="${v}" aria-pressed="${bm.mode === v}">${v === "fill" ? "Fill" : "Pattern"}</button>`).join("")}</div>`;
+    if (isF) h += `<label class="bm-lbl">Length <select class="bm-sel" id="bmFlen">${Object.entries(BM_FLEN_N).map(([k, n]) => `<option value="${k}"${b.flen[lv] === k ? " selected" : ""}>${n}</option>`).join("")}</select></label>${lv !== "normal" && bmHas(b.fill[lv]) ? `<button class="bm-btn sm" id="bmAuto">Auto</button>` : ""}`;
+    else if (!port) h += `<div class="bm-seg">${[0, 1].map(i => `<button data-page="${i * 2}" aria-pressed="${(bm.page >> 1) === i}">Bar ${i + 1}</button>`).join("")}</div>`;
+    h += `</div>`;
+    if (port) h += isF ? `<div class="bm-mini two">${[0, 1].map(i => `<button data-page="${i}" aria-pressed="${bm.page % 2 === i}">Fill bar · ${i ? "beats 3–4" : "beats 1–2"}</button>`).join("")}</div>`
+      : `<div class="bm-mini">${[0, 1, 2, 3].map(i => `<button data-page="${i}" aria-pressed="${bm.page === i}">Bar ${(i >> 1) + 1} · ${i % 2 ? "3–4" : "1–2"}</button>`).join("")}</div>`;
+    if (auto) h += `<div class="bm-auto">Made from Normal's fill (${lv === "low" ? "loud hits only, played soft" : "hits doubled into quicker rolls"}). Tap any step to make it your own.</div>`;
+    if (!isF && lv !== "normal" && !bmHas(b.lv[lv])) h += `<div class="bm-auto">Empty, so ${BM_LVN[lv]} plays Normal. Tap steps, or Copy from Normal to start from it.</div>`;
+    h += `<div class="bm-grid${auto ? " auto" : ""}" style="grid-template-columns:var(--bm-name) repeat(${per},1fr)">`;
+    for (const [n, k] of BM_INST) {
+      if (port && BM_GROUPS[k]) h += `<div class="bm-grp">${BM_GROUPS[k]}</div>`;
+      h += `<div class="bm-n">${n}</div>`;
+      for (let i = 0; i < per; i++) { const s = off + i, pre = isF && s < from; h += `<button class="${bmCellCls(i, pre ? 0 : P[k][s], pre ? " pre" : "")}" data-k="${k}" data-s="${s}" aria-label="${n} step ${s + 1}"></button>`; }
+    }
+    h += `</div><div class="bm-row bm-foot">`;
+    if (!isF) h += `<label class="bm-lbl">Sounds <select class="bm-sel" id="bmKit">${Object.entries(BEAT_KITS).map(([k, [n]]) => `<option value="${k}"${b.kit === k ? " selected" : ""}>${n}</option>`).join("")}</select></label><label class="bm-lbl">Swing <input type="range" id="bmSwing" min="0" max="1" step="0.01" value="${drum.swing}"></label>`;
+    if (lv !== "normal") h += `<button class="bm-btn" id="bmCopy">Copy from Normal</button>`;
+    h += `<button class="bm-btn" id="bmClear">Clear</button><input id="bmName" class="bm-name" maxlength="24" placeholder="Name" value="${(b.name || "").replace(/"/g, "")}"><button class="bm-btn bm-save" id="bmSave">Save beat</button>${list.some(x => x.name === b.name) ? `<button class="bm-btn sm" id="bmDel">Delete</button>` : ""}</div>`;
+    h += `<p class="bm-note">${isF ? "The dim steps are the beat carrying on before the fill. Here the fill plays every second bar so you can hear it land. In game mode the fill that plays is the one for the level BAND is going to." : "Tap a step: soft, loud, off. Low / Normal / High are BAND's levels in game mode (and the song parts' sparse / normal / busy here). You're hearing the level you're editing."}</p>`;
+  } else {
+    const r = pad.crh; if (!r) { B.innerHTML = `<p class="bm-note">No chord rhythm in use. Pick one above, or make a new one.</p>`; return; }
+    const lv = bm.clv, P = r.lv[lv] || Array(32).fill(0), off = port ? bm.cpage * 8 : (bm.cpage >> 1) * 16;
+    h += `<div class="bm-row"><div class="bm-seg">${BM_LV.map(v => `<button data-clv="${v}" class="lv" aria-pressed="${v === lv}">${BM_LVN[v]}</button>`).join("")}</div>`;
+    if (!port) h += `<div class="bm-seg">${[0, 1].map(i => `<button data-cpage="${i * 2}" aria-pressed="${(bm.cpage >> 1) === i}">Bar ${i + 1}</button>`).join("")}</div>`;
+    h += `<button class="bm-btn sm" id="bmStrum" aria-pressed="${!!pad.strum}">Strum</button></div>`;
+    if (port) h += `<div class="bm-mini">${[0, 1, 2, 3].map(i => `<button data-cpage="${i}" aria-pressed="${bm.cpage === i}">Bar ${(i >> 1) + 1} · ${i % 2 ? "3–4" : "1–2"}</button>`).join("")}</div>`;
+    if (lv !== "normal" && !(r.lv[lv] && r.lv[lv].some(v => v === 1 || v === 2))) h += `<div class="bm-auto">Empty, so ${BM_LVN[lv]} plays Normal. Tap steps, or Copy from Normal to start from it.</div>`;
+    h += `<div class="bm-grid crow" style="grid-template-columns:var(--bm-name) repeat(${per},1fr)"><div class="bm-n">Chord</div>`;
+    for (let i = 0; i < per; i++) { const s = off + i, v = P[s]; h += `<button class="${bmCellCls(i, v === 3 ? 0 : v, v === 3 ? " hold" : "")}" data-cs="${s}" aria-label="Chord step ${s + 1}"></button>`; }
+    h += `</div><div class="bm-lbl" style="margin-top:8px">How it sounds (2 bars)</div><div class="bm-prev">`;
+    for (let s = 0; s < 32; s++) if (P[s] === 1 || P[s] === 2) { let e = s + 1; while (e < 32 && P[e] === 3) e++; const len = e - s > 1 ? e - s : .7; h += `<i style="left:${s / 32 * 100}%;width:calc(${len / 32 * 100}% - 2px);opacity:${P[s] === 2 ? .95 : .55}"></i>`; }
+    h += `</div><div class="bm-row bm-foot">${lv !== "normal" ? `<button class="bm-btn" id="bmCopy">Copy from Normal</button>` : ""}<button class="bm-btn" id="bmClear">Clear</button><input id="bmName" class="bm-name" maxlength="24" placeholder="Name" value="${(r.name || "").replace(/"/g, "")}"><button class="bm-btn bm-save" id="bmSave">Save rhythm</button>${list.some(x => x.name === r.name) ? `<button class="bm-btn sm" id="bmDel">Delete</button>` : ""}</div>`;
+    h += `<p class="bm-note">Tap a step: hit, accent, hold (keeps the chord sounding), off. Feel still plays on top. You're hearing the level you're editing.</p>`;
+  }
+  B.innerHTML = h;
+}
+$("bmSheet").addEventListener("click", e => {
+  const t = e.target.closest("button"); if (!t) return;
+  const d = t.dataset, b = drum.beat, r = pad.crh;
+  if (t.id === "bmClose") return bmClose();
+  if (t.id === "bmPlay") { $("play").click(); setTimeout(bmRender, 60); return; }
+  if (d.tab) { bm.tab = d.tab; if (bm.tab === "drums" && !drum.beat) setBeat(bmFromStyle()); if (bm.tab === "chords" && !pad.crh) bmUseRhythm(bmRhythmFromCurrent()); }
+  else if (d.lv) { bm.lv = d.lv; }
+  else if (d.mode) { bm.mode = d.mode; bm.page = d.mode === "fill" ? 1 : 0; }
+  else if (d.page !== undefined) { bm.page = +d.page; }
+  else if (d.clv) { bm.clv = d.clv; }
+  else if (d.cpage !== undefined) { bm.cpage = +d.cpage; }
+  else if (d.k && b) {
+    if (t.classList.contains("pre")) return;
+    let P;
+    if (bm.mode === "fill") { if (bm.lv !== "normal" && !bmHas(b.fill[bm.lv])) b.fill[bm.lv] = bmAutoFill(bm.lv); P = b.fill[bm.lv] || (b.fill[bm.lv] = bmEmpty(16)); }
+    else P = b.lv[bm.lv] || (b.lv[bm.lv] = bmEmpty(32));
+    const s = +d.s; P[d.k][s] = (P[d.k][s] + 1) % 3;
+    if (P[d.k][s] && audio) hit(BM_SYN[d.k] || (BEAT_KITS[b.kit] || BEAT_KITS.synth)[1][d.k] || d.k, audio.ctx.currentTime + .01, bmVel(d.k, P[d.k][s]));   // hear the sound you just added
+  }
+  else if (d.cs !== undefined && r) { const P = r.lv[bm.clv] || (r.lv[bm.clv] = Array(32).fill(0)), s = +d.cs; P[s] = (P[s] + 1) % 4; }
+  else if (t.id === "bmAuto" && b) { b.fill[bm.lv] = null; }
+  else if (t.id === "bmCopy") {
+    if (bm.tab === "drums" && b) { if (bm.mode === "fill") b.fill[bm.lv] = bmClone(b.fill.normal); else b.lv[bm.lv] = bmClone(b.lv.normal); }
+    else if (r) r.lv[bm.clv] = [...r.lv.normal];
+  }
+  else if (t.id === "bmClear") {
+    if (bm.tab === "drums" && b) { if (bm.mode === "fill") b.fill[bm.lv] = bm.lv === "normal" ? bmEmpty(16) : null; else b.lv[bm.lv] = bmEmpty(32); }
+    else if (r) r.lv[bm.clv] = bm.clv === "normal" ? Array(32).fill(0) : null;
+  }
+  else if (t.id === "bmStrum") { $("padStrum").click(); }
+  else if (t.id === "bmSave" || t.id === "bmDel") {
+    const kind = bm.tab === "drums" ? "beats" : "rhythms", cur = kind === "beats" ? b : r, list = bmList(kind);
+    if (!cur) return;
+    if (t.id === "bmDel") { const i = list.findIndex(x => x.name === cur.name); if (i >= 0) { list.splice(i, 1); bmStore(kind, list); toast(`Deleted "${cur.name}" from your ${kind}`); } }
+    else {
+      const name = $("bmName").value.trim(); if (!name) { toast("Type a name first"); $("bmName").focus(); return; }
+      cur.name = name; const i = list.findIndex(x => x.name === name), entry = { name, data: bmClone(cur) };
+      if (i >= 0) list[i] = entry; else list.push(entry);
+      toast(bmStore(kind, list) ? `Saved "${name}". Save a preset to keep it with your sound.` : `Saved "${name}" for this session only`);
+      bmSyncSelects(); updateSummaries();
+    }
+  }
+  else return;
+  bmRender();
+});
+$("bmSheet").addEventListener("change", e => {
+  const t = e.target, b = drum.beat;
+  if (t.id === "bmPick") {
+    const kind = bm.tab === "drums" ? "beats" : "rhythms", v = t.value;
+    if (v === "__new") { if (kind === "beats") { const was = drum.beat; drum.beat = null; const nb = bmFromStyle(); drum.beat = was; setBeat(nb); } else { const was = pad.crh; pad.crh = null; const nr = bmRhythmFromCurrent(); pad.crh = was; bmUseRhythm(nr); } }
+    else if (v === "__off") { if (kind === "beats") setBeat(null); else bmUseRhythm(null); }
+    else if (v !== "__cur") { const x = bmList(kind)[+v]; if (x) { if (kind === "beats") setBeat(bmClone(x.data)); else bmUseRhythm(bmClone(x.data)); } }
+    bmRender(); return;
+  }
+  if (!b) return;
+  if (t.id === "bmFlen") { b.flen[bm.lv] = t.value; bmRender(); }
+  else if (t.id === "bmKit") { b.kit = t.value; setBeat(b); bmRender(); }
+});
+$("bmSheet").addEventListener("input", e => { if (e.target.id === "bmSwing" && drum.beat) { drum.swing = drum.beat.swing = +e.target.value; $("swing").value = drum.swing; $("swingOut").textContent = pct(drum.swing); } });
+addEventListener("resize", () => { if (bm.open) bmRender(); });
+// open buttons in the Drums and Chords sections (Pro)
+$("drumFills").closest(".group").insertAdjacentHTML("afterend", `<div class="group"><label aria-hidden="true"></label><button id="bmOpenD" class="bm-open">🥁 Beat maker</button></div>`);
+$("padStrum").insertAdjacentHTML("afterend", `<button id="bmOpenC" class="bm-open">Rhythm maker</button>`);
+$("bmOpenD").addEventListener("click", () => bmOpen("drums"));
+$("bmOpenC").addEventListener("click", () => bmOpen("chords"));
+// the Drums section's summary names the beat
+const updateSummaries536 = updateSummaries;
+updateSummaries = function () { updateSummaries536(); try { if (drum.beat && drum.on) $("sum-drums").textContent = "My beat" + (drum.beat.name ? ": " + drum.beat.name : "") + (drum.fills ? " · fills every " + drum.fills + " bars" : ""); } catch (_) {} };
 $("gameBtn").addEventListener("click", () => setGame(true));
 setGame(game.on);
 

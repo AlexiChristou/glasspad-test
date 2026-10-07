@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.45 TEST · game mode · 7 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.46 TEST · game mode · 7 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1525,7 +1525,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.45 TEST · game mode · 7 Oct 2026</p>
+      <p class="ver">GlassPad 5.46 TEST · game mode · 7 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10189,7 +10189,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.45 TEST</p>
+    <p class="hm-ver">GlassPad 5.46 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -10287,14 +10287,14 @@ new ResizeObserver(gMeasure).observe(cv); window.addEventListener("resize", gMea
 function gPicFit(im, wl, LH) {
   const iw = im.naturalWidth, ih = im.naturalHeight, full = game.on, R = game.cvR;
   const top = full ? R.top : 0, left = full ? R.left : 0, SW = full ? R.SW : W, SH = full ? R.SH : H, wy = top + LH;
-  const sc = Math.max(SW / iw, wy / (wl * ih), game.mirror ? (SH - wy) / (wl * ih) : (SH - wy) / ((1 - wl) * ih));
+  const sc = Math.max(SW / iw, wy / (wl * ih), gMirrorOn() ? (SH - wy) / (wl * ih) : (SH - wy) / ((1 - wl) * ih));
   return { sc, ox: (SW - iw * sc) / 2 - left, oy: wy - wl * ih * sc - top };
 }
 function gDrawPic(g, im, f, LH, w, h, offX, offY) {
   // g in css px; offX/offY: where the pad's top-left sits in g
   const iw = im.naturalWidth * f.sc, ih = im.naturalHeight * f.sc, x = f.ox + offX, y = f.oy + offY, wy = offY + LH;
   g.drawImage(im, x, y, iw, ih);
-  if (game.mirror) {
+  if (gMirrorOn()) {
     g.save(); g.beginPath(); g.rect(0, wy, w, h - wy); g.clip(); g.translate(0, 2 * wy); g.scale(1, -1); g.drawImage(im, x, y, iw, ih); g.restore();
     g.fillStyle = `rgba(${rgbOf(TH.ink)},.35)`; g.fillRect(0, wy, w, h - wy);
   }
@@ -10758,6 +10758,395 @@ hmPick = function (id) {
   if (!T.playing) setPlaying(true);
   if (!fromPad) setLayout("pad");
 };
+/* ---------- 5.46 redesign stage 2: Make your own ----------
+   One page: live preview (your photo, the strips in your colours, mirrored bass), name typed on the preview,
+   From: <theme> to start from, picks Photo · Colours · Band · Lead · Bass · My sounds, Save & play.
+   A theme you make is saved on the phone (glasspad.mythemes) and registered as a style like the built-in ones
+   (QSTYLES_SYNTH/ORIGINAL[id], GAME_IMGS[id]), so the pad, Home, Carry on and Keep my sounds all just work.
+   Its photo always uses the mirrored bass. Lead 2nd sound = the existing "2nd finger" sound (lead.snd2) + its level. */
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  #mk { position: fixed; inset: 0; z-index: 57; background: #05060b; color: #eef1f7; overflow-y: auto; overflow-x: hidden; -webkit-user-select: none; user-select: none; isolation: isolate; --mkc: #ff3fa4; }
+  #mk[hidden] { display: none; }
+  #mk::before { content: ""; position: fixed; left: -90px; top: -150px; width: 460px; height: 460px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--mkc) 30%, transparent), transparent 65%); z-index: -1; pointer-events: none; }
+  #mk::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background-image: repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 39px); }
+  .mk { box-sizing: border-box; max-width: 560px; min-height: 100%; margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; }
+  .mk-top { display: flex; align-items: center; gap: 12px; min-height: 44px; }
+  .mk-top h2 { margin: 0; font: 900 24px var(--display); letter-spacing: .02em; color: #fff; text-shadow: 0 0 10px var(--mkc), 0 0 26px color-mix(in srgb, var(--mkc) 55%, transparent); white-space: nowrap; }
+  .mk-chip { margin-left: auto; height: 36px; padding: 0 12px; border-radius: 18px; background: rgba(10,12,20,.6); border: 1px solid rgba(255,255,255,.25); color: #eef1f7; font: 500 11px var(--mono); letter-spacing: .06em; max-width: 46%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mk-prev { position: relative; flex: none; height: min(250px, 34vh); border-radius: 22px; overflow: hidden; border: 1.5px solid rgba(255,255,255,.16); box-shadow: 0 0 34px color-mix(in srgb, var(--mkc) 30%, transparent); background: #000; }
+  .mk-prev .top, .mk-prev .bot { position: absolute; left: 0; right: 0; overflow: hidden; }
+  .mk-prev .top { top: 0; height: 64%; } .mk-prev .bot { top: 64%; bottom: 0; }
+  .mk-prev img { position: absolute; left: 0; width: 100%; object-fit: cover; }
+  .mk-prev .top img { top: 0; height: 100%; }
+  .mk-prev .bot img { top: 0; height: calc(100% * 64 / 36); transform: scaleY(-1); }
+  .mk-prev .bot::after { content: ""; position: absolute; inset: 0; background: rgba(5,6,11,.5); }
+  .mk-prev .ls, .mk-prev .bs { position: absolute; left: 0; right: 0; z-index: 1; }
+  .mk-prev .ls { top: 0; height: 64%; } .mk-prev .bs { top: 64%; bottom: 0; }
+  .mk-prev .wl { position: absolute; left: 0; right: 0; top: 64%; height: 2px; margin-top: -1px; z-index: 2; background: var(--mkhi); box-shadow: 0 0 10px var(--mkhi); }
+  .mk-prev .fade { position: absolute; left: 0; right: 0; top: 0; height: 70px; z-index: 2; background: linear-gradient(180deg, rgba(5,6,11,.8), rgba(5,6,11,0)); }
+  .mk-prev label { position: absolute; left: 14px; top: 10px; z-index: 3; font: 500 10px var(--mono); letter-spacing: .12em; color: #c9cfdb; }
+  .mk-prev input { position: absolute; left: 10px; top: 24px; z-index: 3; width: calc(100% - 90px); height: 34px; box-sizing: border-box; padding: 0 4px; background: transparent; border: 0; border-bottom: 1px dashed rgba(255,255,255,.4); color: #fff; font: 700 20px var(--display); -webkit-user-select: text; user-select: text; }
+  .mk-prev input:focus { outline: none; border-bottom-color: var(--mkc); }
+  .mk-hear { position: absolute; right: 12px; bottom: 12px; z-index: 3; width: 52px; height: 52px; border-radius: 50%; border: 0; padding: 0; display: grid; place-items: center; background: var(--mkc); color: #05060b; box-shadow: 0 0 20px var(--mkc); }
+  .mk-hear svg { width: 20px; height: 20px; }
+  .mk-prev .tip { position: absolute; left: 14px; bottom: 14px; z-index: 3; font: 500 10px var(--mono); letter-spacing: .1em; color: rgba(238,241,247,.8); }
+  .mk-rows { display: flex; flex-direction: column; gap: 7px; }
+  .mk-row { height: 52px; border-radius: 14px; background: rgba(10,12,20,.65); border: 1.5px solid rgba(255,255,255,.18); color: #eef1f7; display: flex; align-items: center; gap: 12px; padding: 0 12px 0 8px; text-align: left; }
+  .mk-row .ic { width: 36px; height: 36px; flex: none; border-radius: 9px; background: rgba(255,255,255,.06); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .mk-row .ic img { width: 100%; height: 100%; object-fit: cover; }
+  .mk-row .ic svg { width: 20px; height: 20px; }
+  .mk-row .ic i { width: 8px; height: 20px; border-radius: 3px; margin: 0 1px; display: inline-block; }
+  .mk-row b { flex: 1; font: 700 13px var(--display); letter-spacing: .05em; text-transform: uppercase; }
+  .mk-row span { font: 400 13px "IBM Plex Sans", var(--body); color: #a3abbb; max-width: 50%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mk-row.mic .ic { background: rgba(255,77,94,.14); color: #ff6b78; }
+  .mk-save { margin-top: auto; height: 56px; border-radius: 18px; border: 0; background: var(--mkc); color: #05060b; font: 900 15px var(--display); letter-spacing: .06em; box-shadow: 0 0 26px var(--mkc); }
+  .mk-del { height: 44px; border-radius: 14px; background: transparent; border: 1.5px dashed rgba(255,90,106,.5); color: #ffb3bb; font: 400 14px "IBM Plex Sans", var(--body); }
+  .mk-del[hidden] { display: none; }
+  .mk-ask { border-radius: 14px; background: rgba(255,77,94,.1); border: 1.5px solid #ff5a6a; padding: 12px; display: flex; flex-direction: column; gap: 10px; font: 400 14px "IBM Plex Sans", var(--body); }
+  .mk-ask[hidden] { display: none; }
+  .mk-ask div { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .mk-ask button { height: 42px; border-radius: 12px; font: 700 12px var(--display); letter-spacing: .06em; border: 1.5px solid rgba(255,255,255,.25); background: rgba(16,18,28,.9); color: #eef1f7; }
+  .mk-ask button.yes { background: #ff4d5e; border-color: #ff4d5e; color: #fff; }
+  #mkSheet { position: fixed; inset: 0; z-index: 57; }
+  #mkSheet[hidden] { display: none; }
+  #mkSheet .bk { position: absolute; inset: 0; background: rgba(3,4,8,.4); }
+  .mks { position: absolute; left: 0; right: 0; bottom: 0; max-height: 78vh; overflow: auto; box-sizing: border-box; color: #eef1f7; border-radius: 26px 26px 0 0; background: rgba(8,9,16,.97);
+    border-top: 2px solid var(--mkc); box-shadow: 0 -2px 18px color-mix(in srgb, var(--mkc) 60%, transparent), 0 -20px 50px color-mix(in srgb, var(--mkc) 15%, transparent);
+    padding: 10px 16px max(20px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; }
+  @media (orientation: landscape) { .mks { left: 50%; right: auto; width: min(560px, 94vw); transform: translateX(-50%); } }
+  .mks-h { width: 40px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.25); align-self: center; }
+  .mks-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .mks-top b { font: 900 22px var(--display); letter-spacing: .02em; color: #fff; text-shadow: 0 0 10px var(--mkc), 0 0 24px color-mix(in srgb, var(--mkc) 50%, transparent); }
+  .mks-done { height: 40px; padding: 0 18px; border-radius: 20px; border: 0; background: var(--mkc); color: #05060b; font: 700 13px var(--display); }
+  .mks p { margin: 0; font: 400 13px "IBM Plex Sans", var(--body); color: #a3abbb; }
+  .mks .lbl { font: 500 11px var(--mono); letter-spacing: .12em; color: #a3abbb; }
+  .mks-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .mks-grid button, .mks-chips button { min-height: 44px; border-radius: 13px; background: rgba(16,18,28,.9); border: 1.5px solid rgba(255,255,255,.2); color: #eef1f7; font: 400 14px "IBM Plex Sans", var(--body); padding: 0 12px; }
+  .mks-grid button.on, .mks-chips button.on { background: color-mix(in srgb, var(--mkc) 15%, transparent); border-color: var(--mkc); box-shadow: 0 0 14px color-mix(in srgb, var(--mkc) 45%, transparent); font-weight: 600; }
+  .mks-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .mks-rec { height: 46px; border-radius: 13px; background: rgba(255,77,94,.12); border: 1.5px dashed rgba(255,107,120,.6); color: #eef1f7; font: 400 14px "IBM Plex Sans", var(--body); display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .mks-rec i { width: 10px; height: 10px; border-radius: 50%; background: #ff4d5e; }
+  .mks-sw { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+  .mks-sw button { height: 34px; border-radius: 9px; border: 0; padding: 0; opacity: .55; }
+  .mks-sw button.on { opacity: 1; border: 2px solid #fff; box-shadow: 0 0 12px var(--c); }
+  .mks-box { border-radius: 16px; background: rgba(255,255,255,.04); border: 1.5px solid rgba(255,255,255,.14); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .mks-line { display: flex; align-items: center; gap: 10px; font: 400 13px "IBM Plex Sans", var(--body); color: #c9cfdb; }
+  .mks-line input[type=range] { flex: 1; accent-color: var(--mkc); }
+  .mks-photo { display: flex; gap: 12px; align-items: center; }
+  .mks-photo img { width: 96px; height: 128px; object-fit: cover; border-radius: 14px; border: 1.5px solid rgba(255,255,255,.2); }
+  .mks-photo div { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .mks-photo button { height: 46px; border-radius: 13px; background: rgba(16,18,28,.9); border: 1.5px solid rgba(255,255,255,.2); color: #eef1f7; font: 400 14px "IBM Plex Sans", var(--body); }
+  .mks-photo button.main { background: var(--mkc); border-color: var(--mkc); color: #05060b; font-weight: 600; box-shadow: 0 0 16px color-mix(in srgb, var(--mkc) 60%, transparent); }
+  .hm-tile .ed { position: absolute; top: 6px; right: 6px; z-index: 2; width: 32px; height: 32px; border-radius: 50%; padding: 0; display: grid; place-items: center; background: rgba(7,9,14,.65); border: 1px solid rgba(255,255,255,.25); color: #fff; }
+  .hm-tile .ed svg { width: 14px; height: 14px; }`;
+  document.head.appendChild(st);
+}
+SV.pencil = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>';
+SV.photo = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>';
+SV.band = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5"/></svg>';
+SV.wave = c => `<svg viewBox="0 0 20 12" fill="none" stroke="${c}" stroke-width="1.8" stroke-linejoin="round"><path d="M1 11 L5 2 L9 11 L13 2 L17 11"/></svg>`;
+
+const LEAD_CHOICES = [["sawtooth", "Saw"], ["square", "Square"], ["supersaw", "Supersaw"], ["triangle", "Triangle"], ["sine", "Sine"], ["epiano", "Electric piano"], ["chip", "Chip"], ["flute", "Flute"]];
+const BASS_CHOICES = Object.entries(BASS).filter(([k]) => k !== "sampler").map(([k, b]) => [k, b.name]);
+const GLOW_HEX = Object.fromEntries(GLOW_COLOURS);
+const MY = { list: [] };
+try { MY.list = JSON.parse(localStorage.getItem("glasspad.mythemes") || "[]").filter(t => t && t.id); } catch (_) {}
+const isMine = id => !!id && /^my/.test(id);
+function mySave() {
+  try { localStorage.setItem("glasspad.mythemes", JSON.stringify(MY.list)); return true; }
+  catch (e) { toast("Not enough room on the phone to save that theme"); return false; }
+}
+// a theme you made becomes a style like the built-in ones
+function myRegister(t) {
+  const band = QSTYLES_SYNTH[t.band] ? t.band : "tokyo";
+  for (const set of [QSTYLES_SYNTH, QSTYLES_ORIGINAL]) {
+    const base = set[band] || QSTYLES_SYNTH[band], p = JSON.parse(JSON.stringify(base.p));
+    if (!t.myLead) p.wave = t.lead || p.wave;
+    p.lead = p.lead || {}; p.lead.snd2 = t.lead2 || "off"; p.lead.vol2 = t.vol2 ?? 1;
+    p.bass = p.bass || {}; if (!t.myBass && t.bass) { p.bass.sound = t.bass; p.bass.on = true; }
+    set[t.id] = { name: t.name || "My theme", p, cols: t.cols, isNew: false, mine: true };
+  }
+  GAME_IMGS[t.id] = t.pic ? { port: [t.pic, 1], land: [t.pic, 1] } : (GAME_IMGS[band] || GAME_IMGS.tokyo);
+}
+function myUnregister(id) { delete QSTYLES_SYNTH[id]; delete QSTYLES_ORIGINAL[id]; delete GAME_IMGS[id]; }
+MY.list.forEach(myRegister);
+// your own photo always reflects below the lead/bass line
+function gMirrorOn() { const t = MY.list.find(x => x.id === gameKey()); return game.mirror || !!(t && t.pic); }
+// loading a theme you made also puts its own recorded sounds back on the lead and bass
+const loadStyle545 = loadStyle;
+loadStyle = function (st) {
+  const r = loadStyle545.apply(this, arguments);
+  const t = st && isMine(st.id) && MY.list.find(x => x.id === st.id);
+  if (t) {
+    for (const k of ["lead", "bass"]) {
+      const nm = k === "lead" ? t.myLead : t.myBass; if (!nm) continue;
+      const c = samples.find(s => s.name === nm);
+      if (c) { if (!c.buf) try { c.buf = clipBuf(c); } catch (_) {} vsAssign(c, k); }
+    }
+  }
+  return r;
+};
+
+/* ----- the page ----- */
+{
+  const d = document.createElement("div"); d.id = "mk"; d.hidden = true; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", "Make your own theme");
+  d.innerHTML = `<div class="mk">
+    <div class="mk-top"><button class="hm-x" id="mkBack" aria-label="Back to home">${SV.back}</button><h2 id="mkTitle">NEW THEME</h2><button class="mk-chip" id="mkFrom">FROM: TOKYO</button></div>
+    <div class="mk-prev" id="mkPrev">
+      <div class="top"><img id="mkImgT" alt="Your theme's picture"></div><div class="bot"><img id="mkImgB" alt=""></div>
+      <div class="ls" id="mkLS"></div><div class="bs" id="mkBS"></div><div class="wl"></div><div class="fade"></div>
+      <label for="mkName">NAME</label><input id="mkName" maxlength="24" autocomplete="off" spellcheck="false">
+      <span class="tip">LIVE PREVIEW</span>
+      <button class="mk-hear" id="mkHear" aria-label="Hear it">${SV.play}</button>
+    </div>
+    <div class="mk-rows" id="mkRows"></div>
+    <div class="mk-ask" id="mkAsk" hidden><span><b>Delete this theme?</b><br><small style="color:#c9cfdb">Your photo and settings for it go. Your recorded sounds stay in My sounds.</small></span><div><button class="yes" id="mkAskYes">DELETE</button><button id="mkAskNo">KEEP</button></div></div>
+    <button class="mk-del" id="mkDel" hidden>Delete this theme</button>
+    <button class="mk-save" id="mkSave">SAVE &amp; PLAY</button>
+  </div>
+  <input type="file" id="mkFile" accept="image/*" hidden>`;
+  document.body.appendChild(d);
+  const s = document.createElement("div"); s.id = "mkSheet"; s.hidden = true;
+  s.innerHTML = `<div class="bk" id="mkSheetBk"></div><div class="mks" role="dialog" id="mksBox"></div>`;
+  document.body.appendChild(s);
+}
+const mk = { t: null, editing: false };
+const mkCol = k => GLOW_HEX[mk.t.cols[k]] || "#ff3fa4";
+function mkFresh(from) {
+  const s = QSTYLES_SYNTH[from], p = s.p;
+  return { id: null, name: "", band: from, pic: null, cols: [...(s.cols || ["Violet", "Cyan", "Neon pink"])], lead: p.wave === "sampler" ? "supersaw" : p.wave,
+    lead2: (p.lead && p.lead.snd2) || "off", vol2: (p.lead && p.lead.vol2) ?? 1, bass: (p.bass && p.bass.sound !== "sampler" && p.bass.sound) || "finger", myLead: null, myBass: null };
+}
+function mkOpen(t) {
+  ensureAudio();
+  mk.editing = !!t; mk.t = t ? JSON.parse(JSON.stringify(t)) : mkFresh(QSTYLES_SYNTH[gameKey()] && !isMine(gameKey()) ? gameKey() : "tokyo");
+  $("mkName").value = mk.t.name || ""; $("mkName").placeholder = `My theme ${MY.list.length + 1}`;
+  $("mkTitle").textContent = mk.editing ? "EDIT THEME" : "NEW THEME";
+  $("mkDel").hidden = !mk.editing; $("mkAsk").hidden = true;
+  homeClose(); $("mk").hidden = false; $("mk").scrollTop = 0;
+  mkRender();
+}
+function mkClose(toHome) { $("mk").hidden = true; $("mkSheet").hidden = true; if (toHome) homeOpen(false); }
+const nameOf = (list, v) => (list.find(([k]) => k === v) || [, v])[1];
+function mkRender() {
+  const t = mk.t, lead = mkCol(0), bassC = mkCol(1), hi = mkCol(2), pic = t.pic || hmPic(t.band);
+  const box = $("mk"); box.style.setProperty("--mkc", isReddish(hi) ? lead : hi); box.style.setProperty("--mkhi", hi);
+  $("mkSheet").style.setProperty("--mkc", isReddish(hi) ? lead : hi);
+  $("mkImgT").src = pic; $("mkImgB").src = pic;
+  $("mkLS").style.background = `repeating-linear-gradient(90deg, transparent 0 calc(100% / 12 - 1.5px), ${lead}99 calc(100% / 12 - 1.5px) calc(100% / 12))`;
+  $("mkBS").style.background = `repeating-linear-gradient(90deg, transparent 0 calc(100% / 6 - 1.5px), ${bassC}99 calc(100% / 6 - 1.5px) calc(100% / 6))`;
+  $("mkFrom").textContent = "FROM: " + QSTYLES_SYNTH[t.band].name.toUpperCase();
+  const leadTxt = t.myLead ? `My sound: ${t.myLead}` : nameOf(LEAD_CHOICES, t.lead) + (t.lead2 && t.lead2 !== "off" ? " + " + nameOf(LEAD_CHOICES, t.lead2) : "");
+  const bassTxt = t.myBass ? `My sound: ${t.myBass}` : nameOf(BASS_CHOICES, t.bass);
+  const rows = [
+    ["photo", `<span class="ic">${t.pic ? `<img src="${t.pic}" alt="">` : SV.photo}</span>`, "Photo", t.pic ? "Your photo" : "The theme's picture"],
+    ["cols", `<span class="ic"><i style="background:${lead};box-shadow:0 0 6px ${lead}"></i><i style="background:${bassC};box-shadow:0 0 6px ${bassC}"></i><i style="background:${hi};box-shadow:0 0 6px ${hi}"></i></span>`, "Colours", t.cols.join(" · ")],
+    ["band", `<span class="ic">${SV.band}</span>`, "Band", QSTYLES_SYNTH[t.band].name + " band"],
+    ["lead", `<span class="ic">${SV.wave(lead)}</span>`, "Lead", leadTxt],
+    ["bass", `<span class="ic">${SV.wave(bassC)}</span>`, "Bass", bassTxt],
+    ["mine", `<span class="ic">${SV.mic}</span>`, "My sounds", "Record a lead or bass"],
+  ];
+  $("mkRows").innerHTML = rows.map(([k, ic, b, s]) => `<button class="mk-row${k === "mine" ? " mic" : ""}" data-k="${k}">${ic}<b>${b}</b><span>${escH(s)}</span></button>`).join("");
+}
+$("mkRows").addEventListener("click", e => { const r = e.target.closest(".mk-row"); if (r) mkSheet(r.dataset.k); });
+$("mkBack").addEventListener("click", () => mkClose(true));
+$("mkName").addEventListener("input", () => { mk.t.name = $("mkName").value.trim(); });
+
+/* ----- the pick sheets ----- */
+function mkSheetOpen(title, html) {
+  $("mksBox").innerHTML = `<div class="mks-h"></div><div class="mks-top"><b>${title}</b><button class="mks-done" id="mksDone">Done</button></div>${html}`;
+  $("mkSheet").hidden = false;
+}
+function mkSheetClose() { $("mkSheet").hidden = true; mkRender(); }
+$("mkSheetBk").addEventListener("click", mkSheetClose);
+function mkSheet(k) {
+  const t = mk.t;
+  if (k === "mine") { vs.part = "lead"; vs.fromMk = true; vsOpen(); return; }
+  if (k === "photo") {
+    const pic = t.pic || hmPic(t.band);
+    return mkSheetOpen("PHOTO", `<div class="mks-photo"><img src="${pic}" alt="The picture now"><div>
+      <button class="main" data-a="pick">${t.pic ? "Choose another photo" : "Choose a photo"}</button>
+      ${t.pic ? `<button data-a="clear">Use the theme's picture</button>` : ""}
+      <button data-a="cols" ${t.pic ? "" : "hidden"}>Colours from the photo</button></div></div>
+      <p>Pick any photo from your phone. The bottom of the pad shows it reflected, like water.</p>`);
+  }
+  if (k === "cols") {
+    const row = (lbl, i) => `<div class="lbl">${lbl}</div><div class="mks-sw" data-i="${i}">${GLOW_COLOURS.map(([n, h]) => `<button data-n="${n}" aria-label="${n}" class="${t.cols[i] === n ? "on" : ""}" style="background:${h};--c:${h}"></button>`).join("")}</div>`;
+    return mkSheetOpen("COLOURS", row("LEAD", 0) + row("BASS", 1) + row("HIGHLIGHT", 2) + (t.pic ? `<button class="mks-rec" data-a="cols" style="border-style:solid;background:transparent;border-color:rgba(255,255,255,.25)">Take the colours from my photo</button>` : ""));
+  }
+  if (k === "band") {
+    return mkSheetOpen("BAND", `<p>Which theme's band plays your theme: its chords, drums and bass line.</p><div class="mks-grid">${HM_THEMES.map(id => `<button data-band="${id}" class="${t.band === id ? "on" : ""}">${QSTYLES_SYNTH[id].name}</button>`).join("")}</div>`);
+  }
+  if (k === "lead" || k === "bass") {
+    const list = k === "lead" ? LEAD_CHOICES : BASS_CHOICES, cur = k === "lead" ? t.lead : t.bass, my = k === "lead" ? t.myLead : t.myBass;
+    let h = `<p>Tap a sound to hear it.</p><div class="mks-grid">${list.map(([v, n]) => `<button data-snd="${v}" class="${!my && cur === v ? "on" : ""}">${n}</button>`).join("")}</div>`;
+    h += `<div class="lbl">MY SOUNDS</div><div class="mks-chips">${samples.map(c => `<button data-my="${escH(c.name)}" class="${my === c.name ? "on" : ""}">${escH(c.name)}</button>`).join("")}</div><button class="mks-rec" data-a="rec"><i></i>Record a new one</button>`;
+    if (k === "lead") h += `<div class="mks-box"><div class="lbl">SECOND SOUND · PLAYS ON YOUR SECOND FINGER</div><div class="mks-chips">${[["off", "Off"], ...LEAD_CHOICES].map(([v, n]) => `<button data-l2="${v}" class="${(t.lead2 || "off") === v ? "on" : ""}">${n}</button>`).join("")}</div>
+      <div class="mks-line" ${t.lead2 && t.lead2 !== "off" ? "" : "hidden"} id="mksL2v"><label for="mksVol2">Level</label><input type="range" id="mksVol2" min="0.4" max="1.6" step="0.05" value="${t.vol2 ?? 1}"></div></div>`;
+    return mkSheetOpen(k === "lead" ? "LEAD SOUND" : "BASS SOUND", h), mk.sheet = k;
+  }
+}
+// a short taste of a sound, without touching what the pad plays
+function mkTaste(kind, snd, notes) {
+  ensureAudio();
+  const t0 = audio.ctx.currentTime + .03, base = (kind === "lead" ? 60 : 36) + (+rootSel.value || 0) % 12;
+  (notes || [0, 7, 12]).forEach((n, i) => {
+    const at = t0 + i * .22;
+    setTimeout(() => {
+      try {
+        // kept out of the pad's own list of notes, so nothing on the pad draws or plays it
+        const v = buildVoice(kind, base + n, kind === "lead" ? 2600 : 900, audio.ctx.currentTime, .5, snd);
+        setTimeout(() => { try { const t = audio.ctx.currentTime, tc = relTcFor(v.kind), end = t + tc * 7 + .1; fadeOut(v.g.gain, t, tc);
+          if (v.stopSched) v.stopSched(t + Math.min(.5, tc * 4)); for (const [o] of v.parts) { try { o.stop(end); } catch (_) {} }
+          if (v.vibOsc) { try { v.vibOsc.stop(end); } catch (_) {} } setTimeout(() => unplugVoice(v), (end - t + .2) * 1000); } catch (_) {} }, 260);
+      } catch (_) {}
+    }, (at - t0) * 1000);
+  });
+}
+$("mksBox").addEventListener("click", e => {
+  const t = mk.t, b = e.target.closest("button"); if (!b) return;
+  if (b.id === "mksDone") return mkSheetClose();
+  const a = b.dataset.a;
+  if (a === "pick") return $("mkFile").click();
+  if (a === "clear") { t.pic = null; t.cols = [...QSTYLES_SYNTH[t.band].cols]; mkSheetClose(); return; }
+  if (a === "cols") { mkColsFromPhoto(); mkSheetClose(); return; }
+  if (a === "rec") { const part = mk.sheet === "bass" ? "bass" : "lead"; mkSheetClose(); vs.part = part; vs.fromMk = true; vsOpen(); return; }
+  if (b.dataset.n) { const i = +b.parentNode.dataset.i; t.cols[i] = b.dataset.n; b.parentNode.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); mkRender(); return; }
+  if (b.dataset.band) { t.band = b.dataset.band; $("mksBox").querySelectorAll("[data-band]").forEach(x => x.classList.toggle("on", x === b)); mkRender(); return; }
+  if (b.dataset.snd) {
+    if (mk.sheet === "lead") { t.lead = b.dataset.snd; t.myLead = null; } else { t.bass = b.dataset.snd; t.myBass = null; }
+    $("mksBox").querySelectorAll("[data-snd],[data-my]").forEach(x => x.classList.toggle("on", x === b));
+    mkTaste(mk.sheet, b.dataset.snd, mk.sheet === "bass" ? [0, 0, 7] : undefined); return;
+  }
+  if (b.dataset.my) {
+    if (mk.sheet === "lead") t.myLead = b.dataset.my; else t.myBass = b.dataset.my;
+    $("mksBox").querySelectorAll("[data-snd],[data-my]").forEach(x => x.classList.toggle("on", x === b));
+    const c = samples.find(s => s.name === b.dataset.my); if (c) { if (!c.buf) try { c.buf = clipBuf(c); } catch (_) {} playClipOnce(c); } return;
+  }
+  if (b.dataset.l2) {
+    t.lead2 = b.dataset.l2; $("mksBox").querySelectorAll("[data-l2]").forEach(x => x.classList.toggle("on", x === b));
+    $("mksL2v").hidden = t.lead2 === "off"; if (t.lead2 !== "off") mkTaste("lead", t.lead2); return;
+  }
+});
+$("mksBox").addEventListener("input", e => { if (e.target.id === "mksVol2") mk.t.vol2 = +e.target.value; });
+// coming back from Your voice: whatever is on the lead/bass now becomes the theme's sound
+const vsClose545 = vsClose;
+vsClose = function () {
+  vsClose545();
+  if (!vs.fromMk) return; vs.fromMk = false;
+  const m = mineNow(), L = m.lead && samplesFor("lead")[0], B = m.bass && samplesFor("bass")[0];
+  if (L) mk.t.myLead = L.name; if (B) mk.t.myBass = B.name;
+  if (mk.t.myLead && !samples.some(s => s.name === mk.t.myLead)) mk.t.myLead = null;
+  if (mk.t.myBass && !samples.some(s => s.name === mk.t.myBass)) mk.t.myBass = null;
+  mkRender();
+};
+// From: a theme to start from (band, sounds and colours; keeps your photo and name)
+$("mkFrom").addEventListener("click", () => {
+  mkSheetOpen("START FROM", `<p>Takes that theme's band, sounds and colours. Your photo and name stay.</p><div class="mks-grid">${HM_THEMES.map(id => `<button data-from="${id}" class="${mk.t.band === id ? "on" : ""}">${QSTYLES_SYNTH[id].name}</button>`).join("")}</div>`);
+});
+$("mksBox").addEventListener("click", e => {
+  const b = e.target.closest("[data-from]"); if (!b) return;
+  const keep = { id: mk.t.id, name: mk.t.name, pic: mk.t.pic }, f = mkFresh(b.dataset.from);
+  mk.t = Object.assign(f, keep); if (keep.pic) mkColsFromPhoto(); mkSheetClose();
+});
+// the photo: made smaller and kept on the phone
+$("mkFile").addEventListener("change", () => {
+  const f = $("mkFile").files && $("mkFile").files[0]; $("mkFile").value = ""; if (!f) return;
+  const url = URL.createObjectURL(f), im = new Image();
+  im.onload = () => {
+    const mx = 1280, s = Math.min(1, mx / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement("canvas");
+    c.width = Math.round(im.naturalWidth * s); c.height = Math.round(im.naturalHeight * s);
+    c.getContext("2d").drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+    mk.t.pic = c.toDataURL("image/jpeg", .8); mkColsFromPhoto(); mkSheetClose();
+  };
+  im.onerror = () => { URL.revokeObjectURL(url); toast("Couldn't open that picture"); };
+  im.src = url;
+});
+// colours from the photo: its three strongest colours, each snapped to the nearest glow colour
+function mkColsFromPhoto() {
+  const t = mk.t; if (!t.pic) return;
+  const im = new Image();
+  im.onload = () => {
+    const n = 48, c = document.createElement("canvas"); c.width = c.height = n; const g = c.getContext("2d"); g.drawImage(im, 0, 0, n, n);
+    const d = g.getImageData(0, 0, n, n).data, bins = new Array(12).fill(0);
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i] / 255, gg = d[i + 1] / 255, b = d[i + 2] / 255, mx = Math.max(r, gg, b), mn = Math.min(r, gg, b), dl = mx - mn;
+      if (mx < .3 || dl < .25) continue;
+      let h = mx === r ? ((gg - b) / dl) % 6 : mx === gg ? (b - r) / dl + 2 : (r - gg) / dl + 4; h = (h * 60 + 360) % 360;
+      bins[Math.floor(h / 30) % 12] += dl * mx;
+    }
+    const order = bins.map((v, i) => [v, i]).sort((a, b) => b[0] - a[0]), picks = [];
+    for (const [v, i] of order) { if (v <= 0) break; if (picks.every(p => Math.min(Math.abs(p - i), 12 - Math.abs(p - i)) >= 2)) picks.push(i); if (picks.length === 3) break; }
+    const hueOfHex = hx => { const [r, gg, b] = [1, 3, 5].map(j => parseInt(hx.slice(j, j + 2), 16) / 255), mx = Math.max(r, gg, b), mn = Math.min(r, gg, b), dl = mx - mn || 1;
+      let h = mx === r ? ((gg - b) / dl) % 6 : mx === gg ? (b - r) / dl + 2 : (r - gg) / dl + 4; return (h * 60 + 360) % 360; };
+    const glows = GLOW_COLOURS.filter(([nm]) => nm !== "Ice white");
+    const near = hue => glows.reduce((best, [nm, hx]) => { const dh = Math.min(Math.abs(hueOfHex(hx) - hue), 360 - Math.abs(hueOfHex(hx) - hue)); return dh < best[1] ? [nm, dh] : best; }, ["Cyan", 999])[0];
+    const got = []; for (const i of picks) { const nm = near(i * 30 + 15); if (!got.includes(nm)) got.push(nm); }
+    for (const nm of QSTYLES_SYNTH[t.band].cols) if (got.length < 3 && !got.includes(nm)) got.push(nm);
+    t.cols = got.slice(0, 3); mkRender();
+  };
+  im.src = t.pic;
+}
+// hear it: a few notes of the lead and a bass note, with the sounds you picked
+$("mkHear").addEventListener("click", () => {
+  const t = mk.t;
+  const lc = t.myLead && samples.find(s => s.name === t.myLead), bc = t.myBass && samples.find(s => s.name === t.myBass);
+  if (bc) { if (!bc.buf) try { bc.buf = clipBuf(bc); } catch (_) {} playClipOnce(bc); } else mkTaste("bass", t.bass, [0]);
+  if (lc) { if (!lc.buf) try { lc.buf = clipBuf(lc); } catch (_) {} setTimeout(() => playClipOnce(lc), 250); } else setTimeout(() => mkTaste("lead", t.lead, [0, 3, 7, 12]), 250);
+});
+// save & play
+$("mkSave").addEventListener("click", () => {
+  const t = mk.t; t.name = $("mkName").value.trim() || $("mkName").placeholder;
+  if (!t.id) t.id = "my" + Date.now().toString(36);
+  const i = MY.list.findIndex(x => x.id === t.id), prev = i >= 0 ? MY.list[i] : null;
+  if (i >= 0) MY.list[i] = t; else MY.list.push(t);
+  if (!mySave()) {   // too big: try a smaller photo once
+    if (t.pic) { const im = new Image(); im.onload = () => { const s = 900 / Math.max(im.naturalWidth, im.naturalHeight), c = document.createElement("canvas"); c.width = Math.round(im.naturalWidth * Math.min(1, s)); c.height = Math.round(im.naturalHeight * Math.min(1, s)); c.getContext("2d").drawImage(im, 0, 0, c.width, c.height); t.pic = c.toDataURL("image/jpeg", .6); if (mySave()) mkFinish(t); else { if (prev) MY.list[i] = prev; else MY.list.pop(); } }; im.src = t.pic; }
+    else { if (prev) MY.list[i] = prev; else MY.list.pop(); }
+    return;
+  }
+  mkFinish(t);
+});
+function mkFinish(t) {
+  myRegister(t); game.bgKey = ""; hm.row = "mine";
+  mkClose(false); hm.fromPad = false;
+  ensureAudio(); keepPend = null; qs.pend = null;
+  loadStyle(styleOf(t.id)); if (!T.playing) setPlaying(true); setLayout("pad");
+}
+$("mkDel").addEventListener("click", () => { $("mkAsk").hidden = false; $("mkDel").hidden = true; });
+$("mkAskNo").addEventListener("click", () => { $("mkAsk").hidden = true; $("mkDel").hidden = false; });
+$("mkAskYes").addEventListener("click", () => {
+  const id = mk.t.id; MY.list = MY.list.filter(x => x.id !== id); mySave(); myUnregister(id);
+  if (gameKey() === id) { keepPend = null; loadStyle(styleOf("tokyo")); }
+  mkClose(true);
+});
+
+/* ----- Home: Make your own opens the new page; Mine shows your themes (tap to play, pencil to edit) ----- */
+{ const old = $("hmMine"), b = old.cloneNode(true); old.replaceWith(b); b.addEventListener("click", () => mkOpen(null)); }
+const hmShowRow545 = hmShowRow;
+hmShowRow = function (v) {
+  const has = MY.list.length > 0;
+  if (!has && v === "mine") v = "themes";
+  hmShowRow545(v);
+  document.querySelector(".hm-seg").hidden = !has;
+  if (!has) $("hmThLbl").textContent = `${HM_FREE.length} free · ${HM_LOCKED.length} locked`;
+  if (v !== "mine") return;
+  const r = $("hmMineRow"); r.innerHTML = "";
+  const mkb = document.createElement("button"); mkb.className = "hm-tile mk"; mkb.innerHTML = `<b>+</b><span>Make your own</span>`; mkb.addEventListener("click", () => mkOpen(null)); r.appendChild(mkb);
+  for (const t of MY.list) {
+    const b = document.createElement("div"); b.className = "hm-tile"; b.setAttribute("role", "button"); b.tabIndex = 0; b.dataset.id = t.id;
+    b.innerHTML = `<img src="${t.pic || hmPic(t.band)}" alt=""><i class="yours">YOURS</i><span>${escH(t.name)}</span><button class="ed" aria-label="Edit ${escH(t.name)}">${SV.pencil}</button>`;
+    b.addEventListener("click", e => { if (e.target.closest(".ed")) { mkOpen(t); return; } hmPick(t.id); });
+    if (hm.fromPad && gameKey() === t.id) b.classList.add("cur");
+    r.appendChild(b);
+  }
+};
+{ const sg = document.querySelector(".hm-seg"); if (sg) sg.hidden = !MY.list.length; }
+// Home opens on the row of the theme you played last
+const homeOpen545 = homeOpen;
+homeOpen = function (fromPad) { const k = fromPad ? gameKey() : (() => { const l = readLast(); return l && l.qs && (l.qs.base || l.qs.id); })(); if (!hm.row) hm.row = isMine(k) && MY.list.some(t => t.id === k) ? "mine" : "themes"; homeOpen545(fromPad); };
 // launch: game mode opens on the home screen (a reload mid-session still asks for the light "Tap to continue")
 if (game.on && !$("start").classList.contains("resume")) { $("start").hidden = true; homeOpen(false); }
 

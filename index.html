@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.44 TEST · game mode · 7 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.45 TEST · game mode · 7 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1525,7 +1525,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.44 TEST · game mode · 7 Oct 2026</p>
+      <p class="ver">GlassPad 5.45 TEST · game mode · 7 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10189,7 +10189,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.44 TEST</p>
+    <p class="hm-ver">GlassPad 5.45 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -10634,6 +10634,130 @@ $("vsBoth").addEventListener("click", () => {
   vsRender();
 });
 $("vsTheme").addEventListener("click", () => { vsTheme("lead"); vsTheme("bass"); vsRender(); toast("Back to the theme's own sounds"); });
+/* ---------- 5.45 stage 1 fixes: mic size, a live sound wave while recording, delete sounds, repeat on, themes from Home start at once ---------- */
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  #gMic { width: 32px; height: 32px; align-self: center; }
+  #gMic svg { width: 16px; height: 16px; }
+  .vs canvas.vs-wave { position: static; inset: auto; width: 100%; height: 56px; display: block; border-radius: 0; touch-action: auto; }
+  .vs-wave[hidden] { display: none; }
+  .vs-mh { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .vs-ed { height: 32px; padding: 0 12px; border-radius: 16px; background: transparent; border: 1px solid rgba(255,255,255,.25); color: #eef1f7; font: 500 11px var(--mono); letter-spacing: .08em; }
+  .vs-ed.on { background: #ff5a6a; border-color: #ff5a6a; color: #05060b; box-shadow: 0 0 14px rgba(255,90,106,.6); }
+  .vs-mine.edit { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .vs-mine.edit .vs-chip { position: relative; display: flex; align-items: center; gap: 8px; height: 46px; padding: 0 12px; border-radius: 13px; background: rgba(16,18,28,.9); border: 1.5px solid rgba(255,255,255,.2); font: 400 14px "IBM Plex Sans", var(--body); }
+  .vs-mine.edit .vs-chip.cur { border-color: var(--vsc, #3a7bff); box-shadow: 0 0 12px var(--vsc, #3a7bff); }
+  .vs-chip span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vs-chip em { font: 500 10px var(--mono); font-style: normal; color: #c9cfdb; }
+  .vs-mine.edit button.vs-del { position: absolute; top: -8px; right: -8px; width: 26px; height: 26px; padding: 0; border-radius: 50%; display: grid; place-items: center; background: #ff4d5e; border: 2px solid #05060b; color: #fff; }
+  .vs-del svg { width: 12px; height: 12px; }
+  .vs-ask { grid-column: 1 / -1; border-radius: 14px; background: rgba(255,77,94,.1); border: 1.5px solid #ff5a6a; padding: 12px; display: flex; flex-direction: column; gap: 10px; font: 400 14px "IBM Plex Sans", var(--body); }
+  .vs-ask b { font: 700 14px var(--display); } .vs-ask small { display: block; color: #c9cfdb; font-size: 13px; margin-top: 2px; }
+  .vs-ask div { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .vs-mine.edit .vs-ask button { height: 42px; border-radius: 12px; font: 700 12px var(--display); letter-spacing: .06em; border: 1.5px solid rgba(255,255,255,.25); background: rgba(16,18,28,.9); color: #eef1f7; }
+  .vs-mine.edit .vs-ask button.yes { background: #ff4d5e; border-color: #ff4d5e; color: #fff; }
+  .vs.editing .vs-recwrap, .vs.editing .vs-seg, .vs.editing .vs-word { opacity: .4; pointer-events: none; }`;
+  document.head.appendChild(st);
+}
+{
+  const cv = document.createElement("canvas"); cv.className = "vs-wave"; cv.id = "vsWave"; cv.hidden = true;
+  $("vsRecTxt").after(cv);
+  const wrap = $("vsMineWrap"), lbl = wrap.querySelector(".vs-lbl");
+  const head = document.createElement("div"); head.className = "vs-mh";
+  head.innerHTML = `<span class="vs-lbl" id="vsMineLbl">MY SOUNDS</span><button class="vs-ed" id="vsEdit">EDIT</button>`;
+  lbl.replaceWith(head);
+}
+vs.edit = false; vs.ask = -1;
+function vsWaveCol() { return getComputedStyle($("vsSheet")).getPropertyValue("--vsc").trim() || "#ff5a6a"; }
+function vsDrawLevels(L) {
+  const cv = $("vsWave"), c = cv.getContext("2d"); cv.width = cv.clientWidth * 2; cv.height = cv.clientHeight * 2;
+  const n = 80, col = vsWaveCol(), pk = Math.max(.05, ...L.slice(-n)); c.clearRect(0, 0, cv.width, cv.height);
+  c.fillStyle = col; c.shadowColor = col; c.shadowBlur = 10;
+  const s = L.slice(-n);
+  for (let i = 0; i < s.length; i++) { const h = Math.max(4, (s[i] / pk) * cv.height * .9); c.fillRect(i * cv.width / n, cv.height / 2 - h / 2, cv.width / n - 3, h); }
+}
+function vsDrawClip(clip) {
+  const d = clip && clip.data; if (!d) return;
+  const n = 80, L = []; for (let i = 0; i < n; i++) { let m = 0; const a = Math.floor(i * d.length / n), b = Math.floor((i + 1) * d.length / n); for (let j = a; j < b; j += 8) m = Math.max(m, Math.abs(d[j])); L.push(m); }
+  $("vsWave").hidden = false; vsDrawLevels(L);
+}
+// recording: levels and a countdown, drawn live
+const vsStart544 = vsStart;
+vsStart = async function () {
+  await vsStart544();
+  const R = vs.rec; if (!R) return;
+  R.levels = []; $("vsWave").hidden = false;
+  const p0 = R.proc.onaudioprocess;
+  R.proc.onaudioprocess = e => { p0(e); const d = e.inputBuffer.getChannelData(0); let m = 0; for (let i = 0; i < d.length; i += 16) m = Math.max(m, Math.abs(d[i])); R.levels.push(m); };
+  R.draw = setInterval(() => {
+    if (vs.rec !== R) return clearInterval(R.draw);
+    const left = Math.max(0, 4 - (performance.now() - R.t0) / 1000);
+    $("vsRecTxt").textContent = `Recording… ${left.toFixed(1)} s · tap to stop`;
+    vsDrawLevels(R.levels.length ? R.levels : [0]);
+  }, 70);
+};
+const vsStop544 = vsStop;
+vsStop = function (cancel) {
+  const R = vs.rec; if (R) clearInterval(R.draw);
+  vsStop544(cancel);
+  if (!cancel && R) { const c = vsClipFor(R.k); if (c) vsDrawClip(c); }
+};
+const vsRender544 = vsRender;
+vsRender = function () {
+  vsRender544();
+  const box = $("vsMine"), sheet = $("vsSheet").querySelector(".vs");
+  sheet.classList.toggle("editing", vs.edit);
+  $("vsEdit").textContent = vs.edit ? "DONE" : "EDIT"; $("vsEdit").classList.toggle("on", vs.edit);
+  $("vsMineLbl").textContent = vs.edit ? `MY SOUNDS · ${samples.length} OF ${MAX_SAMPLES}` : "MY SOUNDS";
+  box.classList.toggle("edit", vs.edit);
+  if (!vs.edit) return;
+  const m = mineNow(), on = c => [m.lead && samplesFor("lead")[0] === c ? "LEAD" : "", m.bass && samplesFor("bass")[0] === c ? "BASS" : ""].filter(Boolean);
+  let h = "";
+  samples.forEach((c, i) => {
+    const o = on(c);
+    h += `<div class="vs-chip${o.length ? " cur" : ""}"><span>${escH(c.name)}</span>${o.length ? `<em>ON ${o.join(" + ")}</em>` : ""}<button class="vs-del" data-del="${i}" aria-label="Delete ${escH(c.name)}">${SV.x}</button></div>`;
+    if (i === vs.ask) h += `<div class="vs-ask"><span><b>Delete “${escH(c.name)}”?</b>${o.length ? `<small>It's playing on the ${o.join(" and ").toLowerCase()}. ${o.length > 1 ? "They go" : "It goes"} back to the theme's own sound.</small>` : ""}</span><div><button class="yes" data-yes="${i}">DELETE</button><button data-no="1">KEEP</button></div></div>`;
+  });
+  box.innerHTML = h || `<span class="vs-note">No sounds yet.</span>`;
+};
+$("vsEdit").addEventListener("click", () => { if (vs.rec) return; vs.edit = !vs.edit; vs.ask = -1; vsRender(); });
+$("vsMine").addEventListener("click", e => {
+  if (!vs.edit) return;
+  e.stopImmediatePropagation();
+  const d = e.target.closest("[data-del]"), y = e.target.closest("[data-yes]"), n = e.target.closest("[data-no]");
+  if (d) { vs.ask = +d.dataset.del; vsRender(); }
+  else if (n) { vs.ask = -1; vsRender(); }
+  else if (y) {
+    const i = +y.dataset.yes, c = samples[i]; if (!c) return;
+    const m = mineNow(), wasL = m.lead && samplesFor("lead")[0] === c, wasB = m.bass && samplesFor("bass")[0] === c;
+    samples.splice(i, 1); storeSamples(); try { renderSlots(); } catch (_) {}
+    if (wasL && !samplesFor("lead").length) vsTheme("lead");
+    if (wasB && !samplesFor("bass").length) vsTheme("bass");
+    try { syncSamplerParts(); } catch (_) {}
+    vs.ask = -1; if (!samples.length) vs.edit = false; vsMicSync(); vsRender();
+  }
+}, true);
+const vsClose544 = vsClose;
+vsClose = function () { vs.edit = false; vs.ask = -1; $("vsWave").hidden = true; vsClose544(); };
+const vsOpen544 = vsOpen;
+vsOpen = function () { vs.edit = false; vs.ask = -1; vsOpen544(); const c = vsClipFor(vs.part); if (c) vsDrawClip(c); else $("vsWave").hidden = true; };
+$("vsSheet").querySelector(".vs-seg").addEventListener("click", () => { const c = vsClipFor(vs.part); if (c) vsDrawClip(c); else $("vsWave").hidden = true; });
+// repeat while held: always on for your sounds in game mode (a tap still plays it once)
+function vsRepeatOn() { if (game.on && !samp.hold) { $("sampHold").click(); sampRepAuto = false; } }
+const msApply544 = msApply;
+msApply = function (got) { msApply544(got); vsRepeatOn(); };
+if (game.on) vsRepeatOn();
+// a theme picked on Home starts straight away, even while the band plays
+hmPick = function (id) {
+  ensureAudio();
+  const fromPad = hm.fromPad;
+  keepArm(); homeClose();
+  qs.pend = null;
+  loadStyle(styleOf(id));
+  if (!T.playing) setPlaying(true);
+  if (!fromPad) setLayout("pad");
+};
 // launch: game mode opens on the home screen (a reload mid-session still asks for the light "Tap to continue")
 if (game.on && !$("start").classList.contains("resume")) { $("start").hidden = true; homeOpen(false); }
 

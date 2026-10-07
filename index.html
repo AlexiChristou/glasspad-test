@@ -1418,7 +1418,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.39 TEST · game mode · 7 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.40 TEST · game mode · 7 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1448,6 +1448,7 @@
     <div class="gr" hidden><div><label>Shake</label></div><div class="gseg" id="gShake"><button data-v="0">Off</button><button data-v="1">Light</button><button data-v="2">Strong</button></div></div>
         <div class="gr" style="flex-wrap:wrap;gap:8px"><div><label>Toms</label><small>Merged should sound right on both</small></div><div class="gseg" id="gToms"><button data-v="merged">Merged</button><button data-v="speaker">Speaker</button><button data-v="headphones">Headphones</button></div></div>
     <div class="gr"><div><label>Low latency</label><small>Notes sound sooner after your touch. If it crackles, turn it off. Takes effect when you reopen the app</small></div><button class="gsw" id="gLowLat" aria-pressed="false"></button></div>
+    <div class="gr"><div><label>Neighbour light</label><small>How far a press lights the strips around it</small></div><input type="range" id="gNReach" min="0" max="1" step="0.05" value="1"></div>
     <div class="gr"><div><label>Speed</label><small id="gFx"></small></div><button id="gFxOn" hidden>Full effects on</button></div>
     <div class="gr"><div><label>Copy setup</label><small>Sound, chords, colours and more, to paste to Claude</small></div><button id="gCopy">Copy</button></div>
   </div>
@@ -1523,7 +1524,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.39 TEST · game mode · 7 Oct 2026</p>
+      <p class="ver">GlassPad 5.40 TEST · game mode · 7 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -3642,7 +3643,7 @@ function patTick() {
     const P = v.pn; if (!P) continue;
     // settings changed while holding: pick up the new pattern (or go back to the plain held note)
     const cfg = v.ownCfg !== undefined ? v.ownCfg : patFor(v.kind);   // a loop note keeps the arp it was recorded with
-    if (!cfg) { if (P.cfg) { v.gate.gain.setTargetAtTime(1, now, .01); pitchParts(v, P.base(now).midi, now, .005); P.cfg = null; } continue; }
+    if (!cfg) { if (P.cfg) { const gp = v.gate.gain; if (gp.cancelAndHoldAtTime) gp.cancelAndHoldAtTime(now); else gp.cancelScheduledValues(now); gp.setTargetAtTime(1, now, .01); pitchParts(v, P.base(now).midi, Math.max(now, Math.min(P.next, now + .13)), .005); P.cfg = null; } continue; }   // 5.40: drop the arp hits already scheduled
     if (!P.cfg || JSON.stringify(cfg) !== JSON.stringify(P.cfg)) {
       // arp switched off under a rhythm: put the note back where the finger is
       if (P.cfg && P.cfg.arp && !cfg.arp) pitchParts(v, P.base(now).midi, now, .005);
@@ -5903,7 +5904,7 @@ $("manualBox").addEventListener("click", e => {
   if (b.dataset.i !== undefined) {
     const i = +b.dataset.i; cb.sel = cb.sel === i ? -1 : i;
     // hear it (when the band isn't playing)
-    if (cb.sel >= 0 && audio && !T.playing) { const c = manualChordObj(ch[i].sym); if (c) { try { releasePad(); padChord(transposeCh(c, keyLift.now), audio.ctx.currentTime + .02, stepDur() * 8); } catch (_) {} } }
+    if (!T.playing) { try { ensureAudio(); } catch (_) {} } if (audio && !T.playing) { const c = manualChordObj(ch[i].sym); if (c) { try { releasePad(); padChord(transposeCh(c, keyLift.now), audio.ctx.currentTime + .02, stepDur() * 8); } catch (_) {} } }
     renderCb(); return;
   }
   if (b.id === "mcAdd") {
@@ -9093,29 +9094,32 @@ function gameLine(x, y0, h, hex, now, isBass) {
     if ((r.y >= LH) !== isBass) continue;
     const age = (now - r.t) / 900; if (age < 0 || age >= 1) continue;
     const front = age * W * .85, d = Math.abs(x - r.x);
-    wave = Math.max(wave, Math.exp(-Math.pow((d - front) / (lw * 1.3), 2)) * (1 - age) * .5 * Math.exp(-d / (lw * 2.5)));   // 5.39: and fainter the further it travels
+    wave = Math.max(wave, Math.exp(-Math.pow((d - front) / (lw * 1.3), 2)) * (1 - age) * .5 * Math.exp(-d / (lw * (2.5 + 60 * game.nReach * game.nReach))));   // 5.40: how far it reaches is a Test slider
   }
   // soft lines also brighten next to a finger
-  let near = 0;
-  if (game.lines === "soft") for (const v of voices.values()) if ((v.kind === "bass") === isBass) near = Math.max(near, 1 - Math.min(1, Math.abs(v.x - x) / (lw * 1.6)));
+  let near = 0, near2 = 0, fi = 0;
+  if (game.lines === "soft") for (const v of voices.values()) if ((v.kind === "bass") === isBass) { const nn = 1 - Math.min(1, Math.abs(v.x - x) / (lw * 1.6)); if (isBass || fi++ === 0) near = Math.max(near, nn); else near2 = Math.max(near2, nn); }
+  const sec = near2 > near, rgbL = sec ? rgbOf(TH.acc) : rgb;   // 5.40: a second lead finger glows in the highlight colour
+  if (sec) near = near2;
   // wobble: the two lines of the strip you're holding (and, if chosen, the next ones out)
   let wob = 0;
   if (game.wobble !== "off") for (const v of voices.values()) {
     if ((v.kind === "bass") !== isBass || v.released) continue;
     const l = v.lane * lw, r2 = (v.lane + 1) * lw;
-    if (Math.abs(x - l) < 1 || Math.abs(x - r2) < 1) wob = Math.max(wob, 1);
-    else if (game.wobble === "near" && (Math.abs(x - (l - lw)) < 1 || Math.abs(x - (r2 + lw)) < 1)) wob = Math.max(wob, .5);
+    const hf = .2 + .8 * Math.max(0, Math.min(1, (y0 + h - v.y) / Math.max(1, h)));   // 5.40: subtle low on the strip, full at the top
+    if (Math.abs(x - l) < 1 || Math.abs(x - r2) < 1) wob = Math.max(wob, hf);
+    else if (game.wobble === "near" && (Math.abs(x - (l - lw)) < 1 || Math.abs(x - (r2 + lw)) < 1)) wob = Math.max(wob, .5 * hf);
   }
   const bend = game.bend && ls.rip.bend && ripples.length && ripples.some(r => now - r.t < 600 && Math.abs(r.x - x) < (now - r.t) * .45 + 50);
   const lit = Math.max(near, wave);
   if (lit > .03) {   // the soft glow either side of a lit line
-    const g = cx.createLinearGradient(x - 7, 0, x + 7, 0); g.addColorStop(0, `rgba(${rgb},0)`); g.addColorStop(.5, `rgba(${rgb},${.4 * lit * rest})`); g.addColorStop(1, `rgba(${rgb},0)`);
+    const g = cx.createLinearGradient(x - 7, 0, x + 7, 0); g.addColorStop(0, `rgba(${rgbL},0)`); g.addColorStop(.5, `rgba(${rgbL},${.4 * lit * rest})`); g.addColorStop(1, `rgba(${rgbL},0)`);
     cx.fillStyle = g; cx.fillRect(x - 7, y0, 14, h);
   }
   const pro = game.lines === "pro", col = pro ? (isBass ? TH.bline : TH.leadLine || TH.line) : hex;
   const width = pro ? (TH.glow ? 1.5 : 1) / DPR * (1 + lit) : 1.2;
   const alpha = pro ? rest : (.3 + .15 * (T.playing ? Math.max(0, 1 - (now - flashAt) / 260) : 0) + .55 * lit) * rest;
-  const style = pro ? col : `rgba(${rgb},${Math.min(1, alpha)})`;
+  const style = pro ? col : `rgba(${rgbL},${Math.min(1, alpha)})`;
   if (!bend && !wob) {
     if (pro && TH.glow) { cx.fillStyle = col + "40"; cx.globalAlpha = rest; cx.fillRect(x - 1.5, y0, 4, h); }
     cx.globalAlpha = pro ? rest : 1; cx.fillStyle = style; cx.fillRect(x - (pro ? 0 : .6), y0, width, h); cx.globalAlpha = 1;
@@ -9549,7 +9553,7 @@ const bmCellCls = (i, v, extra = "") => `bm-c${Math.floor(i / 4) % 2 ? " b4" : "
 // the beat numbers above the grid
 const bmHead = n => `<div class="bm-n"></div>` + Array.from({ length: n }, (_, s) => `<div class="bm-h${s && s % 16 === 0 ? " bl" : ""}" data-hs="${s}">${s % 4 === 0 ? (s % 16) / 4 + 1 : "·"}</div>`).join("");
 function bmRender() {
-  const port = bmIsPort(), B = $("bmBody"), keepX = $("bmScroll") && !bm.resetX ? $("bmScroll").scrollLeft : 0; bm.resetX = false;
+  const port = bmIsPort(); bm.lastPort = port; const B = $("bmBody"), keepX = $("bmScroll") && !bm.resetX ? $("bmScroll").scrollLeft : 0; bm.resetX = false;
   $("bmTabs").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.tab === bm.tab));
   $("bmSolo").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.solo === bm.solo));
   $("bmPlay").textContent = T.playing ? "■ Stop" : "▶ Hear it";
@@ -9697,7 +9701,7 @@ $("bmSheet").addEventListener("change", e => {
   else if (t.id === "bmKit") { b.kit = t.value; setBeat(b); bmRender(); }
 });
 $("bmSheet").addEventListener("input", e => { if (e.target.id === "bmSwing" && drum.beat) { drum.swing = drum.beat.swing = +e.target.value; $("swing").value = drum.swing; $("swingOut").textContent = pct(drum.swing); } });
-addEventListener("resize", () => { if (bm.open) bmRender(); });
+addEventListener("resize", () => { if (!bm.open) return; const a = document.activeElement; if (a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA")) return; if (bm.lastPort !== bmIsPort()) bmRender(); });   // 5.40: only when the phone turns
 // open buttons in the Drums and Chords sections (Pro)
 $("drumFills").closest(".group").insertAdjacentHTML("afterend", `<div class="group"><label aria-hidden="true"></label><button id="bmOpenD" class="bm-open">🥁 Beat maker</button></div>`);
 $("padStrum").insertAdjacentHTML("afterend", `<button id="bmOpenC" class="bm-open">Rhythm maker</button>`);
@@ -9867,7 +9871,7 @@ clipBuf = function (c) {
       const d = buf.getChannelData(ch); let s = 0, n = 0, pk = 0;
       for (let i = 0; i < d.length; i++) { const v = Math.abs(d[i]); pk = Math.max(pk, v); if (v > .02) { s += d[i] * d[i]; n++; } }
       if (!n || pk < 1e-4) continue;
-      const rms = Math.sqrt(s / n), g = Math.min(3, Math.max(1, .3 / rms));
+      const rms = Math.sqrt(s / n), g = Math.min(4, Math.max(1, .34 / rms));   // 5.40: matched to the Saw / Square leads
       if (g > 1.05) for (let i = 0; i < d.length; i++) d[i] = Math.tanh(d[i] * g * 1.1) * .92;
     }
   } catch (_) {}
@@ -9897,13 +9901,12 @@ chordFromDegAt = function (deg, base) {
   const q = fifth === 6 ? (iv === 9 ? "°7" : "m7♭5") : third === 3 ? (iv === 11 ? "m(maj7)" : "m7") : third === 4 ? (iv === 11 ? "maj7" : "7") : c.name.slice(root.length) + "7";
   return { tones: [...c.tones, sev], base, name: root + q };
 };
-$("ownDegs").insertAdjacentHTML("afterend", `<button id="own7" class="own7" aria-pressed="false" title="Add the 7th to the chords you tap">+7th</button>`);
-$("own7").addEventListener("click", () => { own7 = !own7; $("own7").setAttribute("aria-pressed", own7); renderOwn(); });
+// (5.40: the +7th switch was taken out again; 7th chords already saved still play)
 renderOwn = function () {
   const box = $("ownBox"); box.hidden = pad.prog !== "own" || pad.mode !== "auto"; if (box.hidden) return;
   const l = PROGS.own.list; if (ownSel >= l.length) ownSel = -1;
   $("ownDegs").innerHTML = [0, 1, 2, 3, 4, 5, 6].map(d => `<button data-od="${d + (own7 ? 10 : 0)}">${d + 1}${own7 ? "<sup>7</sup>" : ""}<small>${chordFromDeg(d + (own7 ? 10 : 0)).name}</small></button>`).join("");
-  $("ownChips").innerHTML = l.map((d, i) => `<button data-oc="${i}" class="${i === ownSel ? "sel" : ""}">${chordFromDeg(d).name}</button>`).join("") || `<span class="cb-notes">Tap the numbers in the order you want them (up to 8). +7th makes them 7th chords.</span>`;
+  $("ownChips").innerHTML = l.map((d, i) => `<button data-oc="${i}" class="${i === ownSel ? "sel" : ""}">${chordFromDeg(d).name}</button>`).join("") || `<span class="cb-notes">Tap the numbers in the order you want them (up to 8).</span>`;
   $("ownDel").hidden = ownSel < 0;
 };
 try { renderOwn(); } catch (_) {}
@@ -9992,6 +9995,53 @@ setGame = function (on) {
       if (game.proKit && game.proKit !== drum.kit) setKit(game.proKit);
     }
   } catch (err) { console.warn(err); }
+};
+/* ---------- 5.40: his notes of 7 Oct ---------- */
+// neighbour light reach (Test slider): 0 = 5.39's short fade, 1 = the old full reach
+game.nReach = 1;
+try { const r = localStorage.getItem("glasspad.nReach"); if (r !== null && isFinite(+r)) game.nReach = Math.max(0, Math.min(1, +r)); } catch (_) {}
+$("gNReach").value = game.nReach;
+$("gNReach").addEventListener("input", e => { game.nReach = +e.target.value; try { localStorage.setItem("glasspad.nReach", game.nReach); } catch (_) {} });
+// SHIFT in the last bar: the band's chord plan for the next bar was already made at the start of this bar,
+// so the key change is added to it now (otherwise it landed a whole pass later and the charge never cleared)
+$("gShift").addEventListener("click", () => {
+  if (!game.on || !T.playing || !keyLift.pend || isManual() || isSong()) return;
+  const st = T.meter.steps, barEnd = T.abs - T.step + st;
+  if (keyLift.pend.land !== barEnd || T.step === 0) return;
+  const nextI = (T.bar + 1) / pad.every; if (!Number.isInteger(nextI)) return;
+  const cur = planAt(nextI - 1);
+  if ((cur.lift || 0) === keyLift.target || parts.plan.some(x => x.i0 === nextI)) return;
+  parts.plan.push({ i0: nextI, part: "verse", pos: 0, lift: keyLift.target });
+  if (keyLift.fill) parts.fillBar = T.bar;
+});
+// Your own: tap a number or a chord to hear it (when the band is stopped)
+$("ownBox").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b || T.playing) return;
+  const d = b.dataset.od !== undefined ? +b.dataset.od : b.dataset.oc !== undefined ? PROGS.own.list[+b.dataset.oc] : null; if (d == null) return;
+  try { ensureAudio(); releasePad(); padChord(transposeCh(chordFromDeg(d), keyLift.now), audio.ctx.currentTime + .02, stepDur() * 8); } catch (_) {}
+});
+// pictures: every theme's picture loads quietly in the background, so a new theme shows straight away;
+// until a picture has arrived the pad shows a soft wash of the theme's colours instead of plain strips
+game.pre = {};
+function gamePreload() {
+  const port = innerHeight > innerWidth * 1.1, list = [];
+  for (const set of Object.values(GAME_IMGS)) for (const o of port ? ["port", "land"] : ["land", "port"]) if (set[o]) list.push(set[o][0]);
+  let i = 0;
+  const next = () => { if (i >= list.length) return; const src = list[i++]; if (game.pre[src]) return next(); const im = new Image(); im.decoding = "async"; im.onload = im.onerror = () => setTimeout(next, 150); im.src = src; game.pre[src] = im; };
+  next(); next();
+}
+setTimeout(gamePreload, 1500);
+const gameBg539 = gameBg;
+gameBg = function () {
+  const ok = gameBg539(); if (ok || !game.bg || !game.on) return ok;
+  const set = GAME_IMGS[gameKey()]; if (!set || W < 2 || H < 2) return ok;
+  const LH = leadH(), a = rgbOf(TH.leadLine || TH.acc), b2 = rgbOf(TH.acc2 || TH.acc), ink = rgbOf(TH.ink);
+  const g = cx.createLinearGradient(0, 0, 0, LH); g.addColorStop(0, `rgba(${ink},1)`); g.addColorStop(1, `rgba(${a},.22)`);
+  cx.fillStyle = `rgb(${ink})`; cx.fillRect(0, 0, W, H); cx.fillStyle = g; cx.fillRect(0, 0, W, LH);
+  const g2 = cx.createLinearGradient(0, LH, 0, H); g2.addColorStop(0, `rgba(${b2},.2)`); g2.addColorStop(1, `rgba(${ink},1)`);
+  cx.fillStyle = g2; cx.fillRect(0, LH, W, H - LH);
+  game.imgOn = true;
+  return true;
 };
 $("gameBtn").addEventListener("click", () => setGame(true));
 setGame(game.on);

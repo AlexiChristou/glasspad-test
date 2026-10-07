@@ -1,5 +1,5 @@
 // Glasspad offline support: keeps the app and its fonts on the phone so it opens without a connection.
-const VERSION = "glasspad-test-5.39";
+const VERSION = "glasspad-test-5.40";
 const SHELL = ["./", "index.html", "lame.min.js", "manifest.webmanifest", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png", "start-portrait.webp", "start-landscape.webp"];
 
 self.addEventListener("install", e => {

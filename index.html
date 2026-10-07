@@ -95,7 +95,7 @@
   .own7[aria-pressed="true"] { color: var(--amber); border-color: var(--amber); }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&family=Tomorrow:wght@400;500;600&family=Orbitron:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Tomorrow:wght@400;500;600&family=Orbitron:wght@500;700&display=swap">
 <style>
   :root {
     color-scheme: dark;
@@ -1418,7 +1418,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.40 TEST · game mode · 7 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.41 TEST · game mode · 7 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1524,7 +1524,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.40 TEST · game mode · 7 Oct 2026</p>
+      <p class="ver">GlassPad 5.41 TEST · game mode · 7 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -8966,16 +8966,14 @@ function gameBg() {
   const [src, wl] = pic;
   if (game.imgKey !== src) { game.imgKey = src; game.img = new Image(); game.img.src = src; game.bgKey = ""; }
   const im = game.img; if (!im.complete || !im.naturalWidth || W < 2 || H < 2) return false;
-  const LH = leadH(), key = [W, H, LH, DPR, game.dim, TH.ink, src].join();
+  const LH = leadH(), key = [W, H, LH, DPR, game.dim, TH.ink, src, game.mirror, game.on && game.fitK].join();
   if (game.bgC && ctxLost(game.bgC)) game.bgKey = "";   // Android can wipe hidden canvases to save memory: draw it again
   if (key !== game.bgKey) {
     game.bgKey = key;
     const c = game.bgC || (game.bgC = document.createElement("canvas")); c.width = Math.round(W * DPR); c.height = Math.round(H * DPR);
     const g = c.getContext("2d"), iw = im.naturalWidth, ih = im.naturalHeight;
-    // scale so the picture covers the pad, with its waterline exactly on the lead/bass split (never stretched)
-    const sc = Math.max(W / iw, LH / (wl * ih), (H - LH) / ((1 - wl) * ih)) * DPR;
-    g.drawImage(im, (c.width - iw * sc) / 2, LH * DPR - wl * ih * sc, iw * sc, ih * sc);
-    g.fillStyle = `rgba(${rgbOf(TH.ink)},${gameRestDim() / 100})`; g.fillRect(0, 0, c.width, c.height);   // 5.39: brighter at rest, dimmed while the band plays
+    // 5.41: the same fit as the full-screen picture (gPicFit), waterline on the lead/bass split; Mirror reflects it below
+    g.setTransform(DPR, 0, 0, DPR, 0, 0); gDrawPic(g, im, gPicFit(im, wl, LH), LH, W, H, 0, 0);
   }
   const c = game.bgC, now = performance.now(), tn = now / 1000;
   cx.drawImage(c, 0, 0, c.width, LH * DPR, 0, 0, W, LH);
@@ -9226,7 +9224,7 @@ function gameAtmos(now, LH) {
   const cfg0 = GAME_ATMOS[gameKey()]; if (!cfg0 || !atm.on) return;
   const ori = H > W * 1.1 ? "port" : "land", cfg = cfg0[ori], set = GAME_IMGS[gameKey()], im = game.img; if (!cfg || !set || !im || !im.naturalWidth) return;
   const wl = set[ori][1], iw = im.naturalWidth, ih = im.naturalHeight;
-  const sc = Math.max(W / iw, LH / (wl * ih), (H - LH) / ((1 - wl) * ih)), ox = (W - iw * sc) / 2, oy = LH - wl * ih * sc;   // the same fit as the picture
+  const { sc, ox, oy } = gPicFit(im, wl, LH);   // the same fit as the picture
   const key = gameKey() + ori + im.src; if (atm.key !== key) { atm.key = key; atmSetup(cfg, im); }
   const S = atmSprites(), still = atmRM.matches || game.motion === "off", low = game.lowFx, t = now / 1000;
   cx.save(); cx.beginPath(); cx.rect(0, 0, W, H); cx.clip(); cx.globalCompositeOperation = "screen";
@@ -10046,6 +10044,302 @@ gameBg = function () {
 $("gameBtn").addEventListener("click", () => setGame(true));
 setGame(game.on);
 gameBooted = true;   // 5.39: from here on, switching modes keeps game mode and Pro apart
+
+/* ---------- 5.41 design pass: the new home screen, the picture full screen, glass buttons ----------
+   Home replaces Tap to start + the old picker in game mode: last played with Play, progress, a swipeable row of
+   themes (locked ones greyed but still playable for now), Unlock all (placeholder), Make your own, Studio.
+   The pad itself doesn't move (its side and bottom gaps keep it out of Android's swipe zones); the picture now carries
+   on behind the top bar, the gaps and the buttons on a full-screen layer, lined up exactly with the pad's own copy.
+   Bass picture: Mirror (the picture reflected below the lead/bass line) or the picture's own water (Test box). */
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  html { background: var(--ink); }
+  #gFull, #gFullDim { position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; z-index: -1; display: none; pointer-events: none; }
+  #gFullDim { background: #000; opacity: 0; }
+  body.game.gpic #gFull, body.game.gpic #gFullDim { display: block; }
+  body.game.gpic { background: transparent; }
+  body.game.gpic main, body.game.gpic header.bar, body.game.gpic #styleRow { background: transparent; border-color: transparent; }
+  body.game.gpic header.bar { background: linear-gradient(180deg, rgba(5,6,10,.55), rgba(5,6,10,0)); }
+  body.game.gpic canvas#pad { border-radius: 0; }
+  body.game header.bar button, body.game #styleChip, body.game #gDock button {
+    background-color: rgba(10,12,20,.5); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+  body.game header.bar button { border-radius: 999px; }
+  body.game .playgrp:has(.hush:not([hidden])) .playBtn { border-radius: 999px 0 0 999px; }
+  body.game .playgrp .hush { border-radius: 0 999px 999px 0; }
+  body.game #styleChip { font-family: var(--display); font-weight: 500; letter-spacing: .02em; border-color: rgba(255,255,255,.22); }
+  body.game #gDock button { border-radius: 16px; }
+  body.game #toast { background: rgba(10,12,20,.78); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-color: rgba(255,255,255,.2); color: #eef1f7; border-radius: 999px; padding: 8px 14px; }
+  #gSheet { background: rgba(3,4,10,.45); }
+  #gSheet .box { background: rgba(16,18,28,.82); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-color: rgba(255,255,255,.13); border-radius: 22px; }
+  #gSheet .gr { border-top-color: rgba(255,255,255,.08); }
+
+  #home { position: fixed; inset: 0; z-index: 57; background: #07090e; color: #eef1f7; overflow-y: auto; overflow-x: hidden; -webkit-user-select: none; user-select: none; }
+  #home[hidden] { display: none; }
+  .hm { box-sizing: border-box; max-width: 520px; min-height: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 14px;
+    padding: max(14px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom)); }
+  .hm button { -webkit-tap-highlight-color: transparent; }
+  .hm-top { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+  .hm-logo { width: 34px; height: 34px; border-radius: 9px; }
+  .hm-name { font: 700 18px var(--display); letter-spacing: .02em; }
+  .hm-sp { flex: 1; }
+  .hm-ic, .hm-x { width: 44px; height: 44px; border-radius: 50%; padding: 0; display: grid; place-items: center; color: #eef1f7;
+    background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.13); }
+  .hm-ic svg, .hm-x svg { width: 20px; height: 20px; }
+  .hm-hero { position: relative; flex: none; height: min(300px, 38vh); border-radius: 24px; overflow: hidden; border: 1px solid rgba(255,255,255,.14);
+    box-shadow: 0 0 40px -6px color-mix(in srgb, var(--hacc) 45%, transparent); background: #0c0f18; }
+  .hm-hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .hm-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(7,9,14,0) 35%, rgba(7,9,14,.92) 100%); }
+  .hm-heroin { position: absolute; left: 18px; right: 18px; bottom: 18px; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+  .hm-lbl { font: 500 11px var(--mono); letter-spacing: .12em; color: #a3abbb; text-transform: uppercase; }
+  .hm-hero .hm-lbl { color: #c9cfdb; }
+  .hm-title { font: 700 32px/1 var(--display); }
+  .hm-play { height: 48px; padding: 0 24px; border-radius: 24px; border: 0; background: var(--hacc); color: #07090e; display: flex; align-items: center; gap: 8px;
+    font: 700 14px var(--display); box-shadow: 0 0 22px color-mix(in srgb, var(--hacc) 55%, transparent); }
+  .hm-play svg { width: 16px; height: 16px; }
+  .hm-card { border-radius: 18px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .hm-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .hm-row > span:last-child:not(.hm-lbl) { font: 400 13px "IBM Plex Sans", var(--body); }
+  .hm-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,.1); overflow: hidden; }
+  .hm-bar i { display: block; height: 100%; border-radius: 3px; background: var(--hacc); box-shadow: 0 0 10px var(--hacc); transition: width .4s; }
+  .hm-h { font: 500 16px var(--display); }
+  .hm-rowwrap { position: relative; margin-right: -16px; }
+  .hm-tiles { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding-right: 16px; touch-action: pan-x pan-y;
+    -webkit-mask-image: linear-gradient(90deg, #000 78%, transparent); mask-image: linear-gradient(90deg, #000 78%, transparent); }
+  .hm-rowwrap.end .hm-tiles { -webkit-mask-image: none; mask-image: none; }
+  .hm-tiles::-webkit-scrollbar { display: none; }
+  .hm-tile { flex: 0 0 120px; height: 164px; position: relative; scroll-snap-align: start; border-radius: 16px; overflow: hidden; padding: 0; text-align: left;
+    border: 1px solid rgba(255,255,255,.14); background: #10131c; color: #eef1f7; }
+  .hm-tile img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .hm-tile::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(7,9,14,0) 45%, rgba(7,9,14,.88) 100%); }
+  .hm-tile span { position: absolute; left: 10px; right: 8px; bottom: 10px; z-index: 1; font: 500 13px/1.2 var(--display); }
+  .hm-tile.cur { border: 1.5px solid var(--hacc); box-shadow: 0 0 16px -2px color-mix(in srgb, var(--hacc) 50%, transparent); }
+  .hm-tile.locked img { filter: saturate(.3) brightness(.55); }
+  .hm-tile.locked span { color: #c9cfdb; }
+  .hm-tile .lk { position: absolute; top: 8px; right: 8px; z-index: 1; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+    background: rgba(7,9,14,.6); border: 1px solid rgba(255,255,255,.2); }
+  .hm-tile .lk svg { width: 14px; height: 14px; }
+  .hm-tile.sur { background: radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--hacc) 40%, #10131c), #10131c 70%); }
+  .hm-tile.sur b { position: absolute; inset: 0; display: grid; place-items: center; font: 700 44px var(--display); color: rgba(255,255,255,.75); }
+  .hm-more { position: absolute; right: 22px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border-radius: 50%; padding: 0; z-index: 2;
+    display: grid; place-items: center; color: #eef1f7; background: rgba(10,12,20,.65); border: 1px solid rgba(255,255,255,.25);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); animation: hmNudge 2.4s ease-in-out 3; }
+  .hm-more svg { width: 18px; height: 18px; }
+  .hm-rowwrap.end .hm-more { display: none; }
+  @keyframes hmNudge { 0%, 70%, 100% { transform: translate(0, -50%); } 80% { transform: translate(5px, -50%); } 90% { transform: translate(0, -50%); } }
+  .hm-unlock { height: 52px; flex: none; border-radius: 16px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px;
+    background: rgba(255,255,255,.07); border: 1px dashed rgba(255,255,255,.22); color: #eef1f7; font: 400 14px "IBM Plex Sans", var(--body); }
+  .hm-unlock > span:first-child { display: flex; align-items: center; gap: 10px; }
+  .hm-unlock svg { width: 16px; height: 16px; }
+  .hm-price { font: 500 13px var(--mono); color: var(--hacc); }
+  .hm-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: auto; }
+  .hm-two button { height: 56px; border-radius: 18px; display: flex; align-items: center; justify-content: center; gap: 8px; color: #eef1f7;
+    background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.13); font: 500 13px var(--display); }
+  .hm-two svg { width: 16px; height: 16px; }
+  .hm-keep { display: flex; align-items: center; gap: 12px; border-radius: 16px; padding: 10px 14px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.13); }
+  .hm-keep[hidden] { display: none; }
+  .hm-keep div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .hm-keep b { font: 500 13px var(--display); } .hm-keep span { font: 400 12px "IBM Plex Sans", var(--body); color: #a3abbb; }
+  .hm-sw { flex: none; width: 46px; height: 28px; border-radius: 14px; padding: 0; position: relative; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.1); }
+  .hm-sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #a3abbb; transition: left .15s; }
+  .hm-sw[aria-pressed="true"] { background: var(--hacc); border-color: var(--hacc); }
+  .hm-sw[aria-pressed="true"]::after { left: 21px; background: #07090e; }
+  .hm-ver { margin: 0; text-align: center; font: 400 10px var(--mono); color: rgba(220,230,255,.4); }
+  .hm-toast { position: fixed; left: 50%; bottom: max(24px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 2; max-width: calc(100vw - 48px); box-sizing: border-box;
+    padding: 10px 16px; border-radius: 999px; background: rgba(16,18,28,.9); border: 1px solid rgba(255,255,255,.2); font: 400 13px "IBM Plex Sans", var(--body); text-align: center; }
+  .hm-toast[hidden] { display: none; }
+  @media (orientation: landscape) {
+    .hm { max-width: 900px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto; align-content: start; column-gap: 20px; }
+    .hm-top, .hm-ver { grid-column: 1 / -1; }
+    .hm-hero { grid-column: 1; grid-row: 2 / span 6; height: calc(100vh - 100px); min-height: 200px; align-self: start; position: sticky; top: 0; }
+    .hm { row-gap: 10px; } .hm-ver { grid-column: 2 !important; }
+    .hm > :not(.hm-top):not(.hm-hero):not(.hm-ver):not(.hm-toast) { grid-column: 2; }
+    .hm-tile { height: 130px; flex-basis: 100px; } .hm-two { margin-top: 0; }
+  }`;
+  document.head.appendChild(st);
+}
+const SV = {
+  lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+  play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>',
+  next: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
+  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  help: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.3"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></svg>',
+  gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  studio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 20V10M10 20V4M15 20v-7M20 20V8"/></svg>'
+};
+const HM_FREE = ["tokyo", "blues", "arabic", "sunset"], HM_LOCKED = ["epic", "hunter", "spanish"], HM_THEMES = [...HM_FREE, ...HM_LOCKED];
+const hmPic = id => { const s = GAME_IMGS[id]; return s ? (s.port || s.land)[0] : "start-portrait.webp"; };
+const hmCol = id => { const st = QSTYLES_SYNTH[id]; return (st && st.cols && GC[st.cols[0]]) || "#ff3fa4"; };
+const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.played") || "[]"); } catch (_) { return []; } };
+{
+  const h = document.createElement("div"); h.id = "home"; h.hidden = true; h.setAttribute("role", "dialog"); h.setAttribute("aria-label", "GlassPad home");
+  h.innerHTML = `<div class="hm">
+    <div class="hm-top">
+      <button class="hm-x" id="hmBack" hidden aria-label="Back to the pad">${SV.back}</button>
+      <img class="hm-logo" src="icon-192.png" alt=""><span class="hm-name">GlassPad</span><span class="hm-sp"></span>
+      <button class="hm-ic" id="hmHelp" aria-label="Help">${SV.help}</button><button class="hm-ic" id="hmGear" aria-label="Settings">${SV.gear}</button>
+    </div>
+    <div class="hm-hero"><img id="hmHeroImg" alt=""><div class="hm-heroin"><span class="hm-lbl" id="hmHeroLbl">Last played</span><span class="hm-title" id="hmHeroName"></span>
+      <button class="hm-play" id="hmPlay">${SV.play}<span id="hmPlayTxt">Play</span></button></div></div>
+    <div class="hm-keep" id="hmKeep" hidden><div><b>Keep my sounds</b><span id="hmKeepTxt"></span></div><button class="hm-sw" id="hmKeepSw" aria-pressed="true" aria-label="Keep my sounds"></button></div>
+    <div class="hm-card"><div class="hm-row"><span class="hm-lbl">Your progress</span><span id="hmProgTxt"></span></div><div class="hm-bar"><i id="hmProgBar"></i></div></div>
+    <div class="hm-row"><span class="hm-h">Themes</span><span class="hm-lbl">${HM_FREE.length} free · ${HM_LOCKED.length} locked</span></div>
+    <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
+    <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
+    <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
+    <p class="hm-ver">GlassPad 5.41 TEST</p>
+    <div class="hm-toast" id="hmToast" hidden></div>
+  </div>`;
+  document.body.appendChild(h);
+  for (const id of [...HM_THEMES, "surprise"]) {
+    const b = document.createElement("button"), locked = HM_LOCKED.includes(id);
+    b.className = "hm-tile" + (locked ? " locked" : "") + (id === "surprise" ? " sur" : ""); b.dataset.id = id;
+    b.innerHTML = id === "surprise" ? `<b>?</b><span>Surprise me</span>`
+      : `<img src="${hmPic(id)}" alt="" loading="lazy" decoding="async">${locked ? `<i class="lk">${SV.lock}</i>` : ""}<span>${QSTYLES_SYNTH[id].name}</span>`;
+    b.addEventListener("click", () => hmPick(id));
+    $("hmTiles").appendChild(b);
+  }
+}
+const hm = { fromPad: false, tt: 0 };
+function hmToast(t) { const el = $("hmToast"); el.textContent = t; el.hidden = false; clearTimeout(hm.tt); hm.tt = setTimeout(() => el.hidden = true, 2600); }
+function hmEnds() { const r = $("hmTiles"); $("hmRowWrap").classList.toggle("end", r.scrollLeft + r.clientWidth >= r.scrollWidth - 6); }
+$("hmTiles").addEventListener("scroll", hmEnds, { passive: true });
+$("hmMore").addEventListener("click", () => { const r = $("hmTiles"); r.scrollBy({ left: Math.max(130, r.clientWidth * .7), behavior: "smooth" }); });
+function homeOpen(fromPad) {
+  hm.fromPad = !!fromPad;
+  const l = fromPad ? null : readLast();
+  let id = fromPad ? gameKey() : (l && l.qs && (l.qs.base || l.qs.id));
+  let name = fromPad ? qs.name : (l && l.qs && l.qs.name);
+  if (!id || !GAME_IMGS[id]) { id = fromPad && qs.id === "surprise" ? id : "tokyo"; }
+  if (!name || name === "Manual") name = (QSTYLES_SYNTH[id] && QSTYLES_SYNTH[id].name) || "Tokyo Drift";
+  hm.heroId = GAME_IMGS[id] ? id : "tokyo";
+  const acc = hmCol(hm.heroId);
+  $("home").style.setProperty("--hacc", acc);
+  $("hmHeroImg").src = hmPic(hm.heroId);
+  $("hmHeroName").textContent = name;
+  $("hmHeroLbl").textContent = fromPad ? "Now playing" : l ? "Last played" : "Start here";
+  $("hmPlayTxt").textContent = fromPad ? "Back to it" : "Play";
+  $("hmBack").hidden = !fromPad;
+  const played = hmPlayed().filter(x => HM_THEMES.includes(x));
+  $("hmProgTxt").textContent = `${played.length} of ${HM_THEMES.length} themes played`;
+  $("hmProgBar").style.width = Math.round(100 * played.length / HM_THEMES.length) + "%";
+  const cur = fromPad ? gameKey() : null;
+  $("hmTiles").querySelectorAll(".hm-tile").forEach(t => t.classList.toggle("cur", t.dataset.id === cur));
+  keepRender(fromPad, true); hmKeepSync();
+  $("hmToast").hidden = true;
+  $("home").hidden = false; $("home").scrollTop = 0;
+  requestAnimationFrame(() => { const t = $("hmTiles").querySelector(".hm-tile.cur"), r = $("hmTiles");
+    r.scrollLeft = t ? Math.max(0, t.offsetLeft - r.offsetLeft - 16) : 0; hmEnds(); });
+}
+function homeClose() { $("home").hidden = true; }
+function hmKeepSync() {
+  $("hmKeep").hidden = $("pkKeepMe").hidden;
+  $("hmKeepTxt").textContent = $("pkKeepTxt").textContent;
+  $("hmKeepSw").setAttribute("aria-pressed", keepOn);
+}
+$("hmKeepSw").addEventListener("click", () => { $("pkKeepSw").click(); hmKeepSync(); });
+function hmPick(id) {
+  ensureAudio();
+  const fromPad = hm.fromPad;
+  keepArm(); homeClose();
+  chooseStyle(styleOf(id));
+  if (!fromPad) setLayout("pad");
+}
+$("hmPlay").addEventListener("click", () => {
+  ensureAudio();
+  if (hm.fromPad) { homeClose(); return; }
+  const l = readLast(); keepPend = null; homeClose();
+  if (l) { restoreLast(l); setPlaying(true); } else { chooseStyle(styleOf(hm.heroId)); setLayout("pad"); }
+});
+$("hmBack").addEventListener("click", homeClose);
+$("hmHelp").addEventListener("click", () => hmToast("The how-to-play guide comes in a later build"));
+$("hmUnlock").addEventListener("click", () => hmToast("Unlocking comes later. For now every theme plays"));
+$("hmGear").addEventListener("click", () => { gameSheetSync(); $("gSheet").hidden = false; });
+$("hmStudio").addEventListener("click", () => { ensureAudio(); homeClose(); setGame(false); });
+$("hmMine").addEventListener("click", () => {
+  if (!(canMic || samples.length)) { hmToast("Your own sounds need the microphone"); return; }
+  ensureAudio(); homeClose(); openPicker(false); msOpen();
+});
+// the theme chip on the pad opens the home screen (with a way back) instead of the old picker
+$("styleChip").addEventListener("click", e => { if (!game.on) return; e.stopImmediatePropagation(); homeOpen(true); }, true);
+// progress: every theme you've played
+const loadStyle540 = loadStyle;
+loadStyle = function (st) {
+  const r = loadStyle540.apply(this, arguments);
+  try { const k = gameKey(), p = hmPlayed(); if (game.on && HM_THEMES.includes(k) && !p.includes(k)) { p.push(k); localStorage.setItem("glasspad.played", JSON.stringify(p)); } } catch (_) {}
+  return r;
+};
+
+/* ----- the picture, full screen ----- */
+{ const c = document.createElement("canvas"); c.id = "gFull"; c.setAttribute("aria-hidden", "true"); const d = document.createElement("div"); d.id = "gFullDim"; d.setAttribute("aria-hidden", "true");
+  document.body.insertBefore(d, document.body.firstChild); document.body.insertBefore(c, d); }
+game.mirror = true; try { const m = localStorage.getItem("glasspad.mirror"); if (m !== null) game.mirror = m === "1"; } catch (_) {}
+game.cvR = { top: 0, left: 0, SW: innerWidth, SH: innerHeight }; game.fitK = "";
+function gMeasure() {
+  const r = cv.getBoundingClientRect();
+  game.cvR = { top: r.top, left: r.left, SW: innerWidth, SH: innerHeight };
+  game.fitK = [r.top, r.left, innerWidth, innerHeight].map(Math.round).join();
+}
+new ResizeObserver(gMeasure).observe(cv); window.addEventListener("resize", gMeasure); setInterval(gMeasure, 1000); gMeasure();
+// one fit for the pad's picture, the full-screen copy and the picture life: covers the whole screen, waterline on the lead/bass split
+function gPicFit(im, wl, LH) {
+  const iw = im.naturalWidth, ih = im.naturalHeight, full = game.on, R = game.cvR;
+  const top = full ? R.top : 0, left = full ? R.left : 0, SW = full ? R.SW : W, SH = full ? R.SH : H, wy = top + LH;
+  const sc = Math.max(SW / iw, wy / (wl * ih), game.mirror ? (SH - wy) / (wl * ih) : (SH - wy) / ((1 - wl) * ih));
+  return { sc, ox: (SW - iw * sc) / 2 - left, oy: wy - wl * ih * sc - top };
+}
+function gDrawPic(g, im, f, LH, w, h, offX, offY) {
+  // g in css px; offX/offY: where the pad's top-left sits in g
+  const iw = im.naturalWidth * f.sc, ih = im.naturalHeight * f.sc, x = f.ox + offX, y = f.oy + offY, wy = offY + LH;
+  g.drawImage(im, x, y, iw, ih);
+  if (game.mirror) {
+    g.save(); g.beginPath(); g.rect(0, wy, w, h - wy); g.clip(); g.translate(0, 2 * wy); g.scale(1, -1); g.drawImage(im, x, y, iw, ih); g.restore();
+    g.fillStyle = `rgba(${rgbOf(TH.ink)},.35)`; g.fillRect(0, wy, w, h - wy);
+  }
+  g.fillStyle = `rgba(${rgbOf(TH.ink)},${gameRestDim() / 100})`; g.fillRect(0, 0, w, h);
+}
+const gFull = { key: "" };
+const gameBg540 = gameBg;
+gameBg = function () {
+  const ok = gameBg540();
+  const on = game.on && game.bg; document.body.classList.toggle("gpic", on);
+  if (!on) return ok;
+  const set = GAME_IMGS[gameKey()], pic = set && set[H > W * 1.1 ? "port" : "land"], im = game.img;
+  const c = $("gFull"), R = game.cvR;
+  if (pic && im && game.imgKey === pic[0] && im.complete && im.naturalWidth && game.bgKey) {
+    if (gFull.key !== game.bgKey || ctxLost(c)) {
+      gFull.key = game.bgKey;
+      c.width = Math.round(R.SW * DPR); c.height = Math.round(R.SH * DPR);
+      const g = c.getContext("2d"); g.setTransform(DPR, 0, 0, DPR, 0, 0);
+      g.fillStyle = TH.ink; g.fillRect(0, 0, R.SW, R.SH);
+      gDrawPic(g, im, gPicFit(im, pic[1], leadH()), leadH(), R.SW, R.SH, R.left, R.top);
+    }
+  } else if (gFull.key !== "ph") {
+    gFull.key = "ph"; c.width = 4; c.height = 4; const g = c.getContext("2d"); g.fillStyle = TH.ink; g.fillRect(0, 0, 4, 4);
+  }
+  // the band-playing dimming, on the full-screen copy too
+  const a = gameRestDim() / 100, d = game.dim / 100, extra = a < 1 ? Math.max(0, (d - a) / (1 - a)) : 0, op = Math.round(extra * game.playA * 100) / 100;
+  if (op !== gFull.op) { gFull.op = op; const dm = $("gFullDim"); dm.style.opacity = op; dm.style.background = TH.ink; }
+  return ok;
+};
+// Test box: bass picture
+{
+  const row = document.createElement("div"); row.className = "gr";
+  row.innerHTML = `<div><label>Bass picture</label><small>Mirror: the picture reflected below the line, so new pictures don't need water</small></div><div class="gseg" id="gMirror"><button data-v="1">Mirror</button><button data-v="0">Own water</button></div>`;
+  $("gLowLat").closest(".gr").before(row);
+  $("gMirror").addEventListener("click", e => {
+    const x = e.target.closest("button"); if (!x) return;
+    game.mirror = x.dataset.v === "1"; try { localStorage.setItem("glasspad.mirror", game.mirror ? "1" : "0"); } catch (_) {}
+    game.bgKey = ""; gameSheetSync();
+  });
+}
+const gameSheetSync541 = gameSheetSync;
+gameSheetSync = function () { gameSheetSync541(); $("gMirror").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", (x.dataset.v === "1") === game.mirror)); };
+const setGame541 = setGame;
+setGame = function (on) { setGame541(on); if (!on) homeClose(); requestAnimationFrame(gMeasure); };
+// launch: game mode opens on the home screen (a reload mid-session still asks for the light "Tap to continue")
+if (game.on && !$("start").classList.contains("resume")) { $("start").hidden = true; homeOpen(false); }
 
 requestAnimationFrame(draw);
 </script>

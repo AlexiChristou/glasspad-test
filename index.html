@@ -1418,7 +1418,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.41 TEST · game mode · 7 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.42 TEST · game mode · 7 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1524,7 +1524,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.41 TEST · game mode · 7 Oct 2026</p>
+      <p class="ver">GlassPad 5.42 TEST · game mode · 7 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10188,7 +10188,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.41 TEST</p>
+    <p class="hm-ver">GlassPad 5.42 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -10303,17 +10303,25 @@ const gFull = { key: "" };
 const gameBg540 = gameBg;
 gameBg = function () {
   const ok = gameBg540();
-  const on = game.on && game.bg; document.body.classList.toggle("gpic", on);
+  const on = game.on && game.bg && game.sur !== "off"; document.body.classList.toggle("gpic", on);
+  gEdgeApply();
   if (!on) return ok;
   const set = GAME_IMGS[gameKey()], pic = set && set[H > W * 1.1 ? "port" : "land"], im = game.img;
   const c = $("gFull"), R = game.cvR;
   if (pic && im && game.imgKey === pic[0] && im.complete && im.naturalWidth && game.bgKey) {
-    if (gFull.key !== game.bgKey || ctxLost(c)) {
-      gFull.key = game.bgKey;
+    if (gFull.key !== game.bgKey + game.sur || ctxLost(c)) {
+      gFull.key = game.bgKey + game.sur;
       c.width = Math.round(R.SW * DPR); c.height = Math.round(R.SH * DPR);
       const g = c.getContext("2d"); g.setTransform(DPR, 0, 0, DPR, 0, 0);
       g.fillStyle = TH.ink; g.fillRect(0, 0, R.SW, R.SH);
       gDrawPic(g, im, gPicFit(im, pic[1], leadH()), leadH(), R.SW, R.SH, R.left, R.top);
+      if (game.sur === "frost") {
+        // 5.42 Frosted: blurred and darker round the pad, so the sharp pad reads as a window (baked once, no cost per frame)
+        const t = document.createElement("canvas"); t.width = c.width; t.height = c.height; t.getContext("2d").drawImage(c, 0, 0);
+        g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = TH.ink; g.fillRect(0, 0, c.width, c.height);
+        g.filter = `blur(${Math.round(12 * DPR)}px) brightness(.55)`; const m = 30 * DPR;
+        g.drawImage(t, -m, -m, c.width + 2 * m, c.height + 2 * m); g.filter = "none";
+      }
     }
   } else if (gFull.key !== "ph") {
     gFull.key = "ph"; c.width = 4; c.height = 4; const g = c.getContext("2d"); g.fillStyle = TH.ink; g.fillRect(0, 0, 4, 4);
@@ -10338,6 +10346,45 @@ const gameSheetSync541 = gameSheetSync;
 gameSheetSync = function () { gameSheetSync541(); $("gMirror").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", (x.dataset.v === "1") === game.mirror)); };
 const setGame541 = setGame;
 setGame = function (on) { setGame541(on); if (!on) homeClose(); requestAnimationFrame(gMeasure); };
+/* ---------- 5.42 test: around the pad and the pad's edges ----------
+   Around the pad (Test): Off = picture only inside the pad (as 5.40) · Frosted = the picture carries on outside the pad,
+   blurred and darker · Full = carries on sharp (5.41). Pad edge (Test): Lines = the bright outer strip lines (as before) ·
+   Soft = no outer lines, the pad's edges fade into the picture, only the soft strips show · Glow = a thin glowing line
+   round the pad in the theme colour, instead of the outer strip lines. */
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  body.game.gedge-soft canvas#pad {
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%), linear-gradient(180deg, transparent 0, #000 10px, #000 calc(100% - 18px), transparent 100%);
+    -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%), linear-gradient(180deg, transparent 0, #000 10px, #000 calc(100% - 18px), transparent 100%);
+    mask-composite: intersect; }
+  body.game.gedge-glow canvas#pad { border-radius: 10px; box-shadow: 0 0 0 1px color-mix(in srgb, var(--gedge, #ff3fa4) 70%, transparent), 0 0 18px color-mix(in srgb, var(--gedge, #ff3fa4) 35%, transparent); }`;
+  document.head.appendChild(st);
+}
+game.sur = "frost"; game.edge = "lines";
+try { const a = localStorage.getItem("glasspad.sur"), b = localStorage.getItem("glasspad.edge"); if (["off", "frost", "full"].includes(a)) game.sur = a; if (["lines", "soft", "glow"].includes(b)) game.edge = b; } catch (_) {}
+let gEdgeK = "";
+function gEdgeApply() {
+  const col = TH.leadLine || TH.acc, k = game.on + game.edge + col; if (k === gEdgeK) return; gEdgeK = k;
+  document.body.classList.toggle("gedge-soft", game.on && game.edge === "soft");
+  document.body.classList.toggle("gedge-glow", game.on && game.edge === "glow");
+  document.body.style.setProperty("--gedge", col);
+}
+const edgeLines541 = edgeLines;
+edgeLines = function (col, y, h) { if (game.on && game.edge !== "lines") return; edgeLines541(col, y, h); };
+{
+  const mk = (id, label, help, opts) => { const row = document.createElement("div"); row.className = "gr"; row.style.cssText = "flex-wrap:wrap;gap:8px";
+    row.innerHTML = `<div><label>${label}</label><small>${help}</small></div><div class="gseg" id="${id}">${opts.map(([v, t]) => `<button data-v="${v}">${t}</button>`).join("")}</div>`; return row; };
+  const at = $("gMirror").closest(".gr");
+  at.before(mk("gSur", "Around the pad", "The picture outside the pad: none, blurred and darker, or sharp", [["off", "Off"], ["frost", "Frosted"], ["full", "Full"]]));
+  at.before(mk("gEdge", "Pad edge", "How the pad's edges show: the outer lines, soft (fades into the picture) or a glow line", [["lines", "Lines"], ["soft", "Soft"], ["glow", "Glow line"]]));
+  $("gSur").addEventListener("click", e => { const x = e.target.closest("button"); if (!x) return; game.sur = x.dataset.v; try { localStorage.setItem("glasspad.sur", game.sur); } catch (_) {} gameSheetSync(); });
+  $("gEdge").addEventListener("click", e => { const x = e.target.closest("button"); if (!x) return; game.edge = x.dataset.v; try { localStorage.setItem("glasspad.edge", game.edge); } catch (_) {} gEdgeK = ""; gEdgeApply(); gameSheetSync(); });
+}
+const gameSheetSync542 = gameSheetSync;
+gameSheetSync = function () { gameSheetSync542();
+  $("gSur").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x.dataset.v === game.sur));
+  $("gEdge").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x.dataset.v === game.edge)); };
 // launch: game mode opens on the home screen (a reload mid-session still asks for the light "Tap to continue")
 if (game.on && !$("start").classList.contains("resume")) { $("start").hidden = true; homeOpen(false); }
 

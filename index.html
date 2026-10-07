@@ -821,9 +821,10 @@
   #liftNum.long { font-size: 8px; }
   /* the beat pulse sits just inside the red recording rim on the very edge of the screen */
   #edgeFrame { position: fixed; inset: 4px; z-index: 50; pointer-events: none; opacity: 0; border-radius: 16px; will-change: opacity;
-    box-shadow: inset 0 0 0 1.5px rgba(var(--acc-rgb), .95), inset 0 0 12px rgba(var(--acc-rgb), .5), 0 0 8px rgba(var(--acc-rgb), .45); }
-  #recRim { position: fixed; inset: 0; z-index: 51; pointer-events: none; opacity: 0; border-radius: 20px; will-change: opacity;
-    box-shadow: inset 0 0 0 3px rgba(232, 64, 76, .95), inset 0 0 10px rgba(232, 64, 76, .55); }
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.7), inset 0 0 0 2.5px rgba(var(--pulse-rgb, var(--acc-rgb)), 1), inset 0 0 14px rgba(var(--pulse-rgb, var(--acc-rgb)), .6),
+      0 0 10px rgba(var(--pulse-rgb, var(--acc-rgb)), .6), 0 0 26px rgba(var(--pulse-rgb, var(--acc-rgb)), .3); }
+  #recRim { position: fixed; inset: 4px; z-index: 51; pointer-events: none; opacity: 0; border-radius: 16px; will-change: opacity;
+    box-shadow: inset 0 0 0 1.5px rgba(232, 64, 76, .95); }
   .custom-theme { display: flex; flex-direction: column; gap: 8px; flex: 1 1 100%; }
   .sw-row { display: flex; align-items: center; gap: 8px; }
   .sw-lbl { min-width: 92px; font: 500 11px "IBM Plex Mono", monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
@@ -1418,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.42 TEST · game mode · 7 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.43 TEST · game mode · 7 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1524,7 +1525,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.42 TEST · game mode · 7 Oct 2026</p>
+      <p class="ver">GlassPad 5.43 TEST · game mode · 7 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10188,7 +10189,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.42 TEST</p>
+    <p class="hm-ver">GlassPad 5.43 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -10355,9 +10356,7 @@ setGame = function (on) { setGame541(on); if (!on) homeClose(); requestAnimation
   const st = document.createElement("style");
   st.textContent = `
   body.game.gedge-soft canvas#pad {
-    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%), linear-gradient(180deg, transparent 0, #000 10px, #000 calc(100% - 18px), transparent 100%);
-    -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%), linear-gradient(180deg, transparent 0, #000 10px, #000 calc(100% - 18px), transparent 100%);
-    mask-composite: intersect; }
+    -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 18px), transparent 100%); mask-image: linear-gradient(180deg, #000 calc(100% - 18px), transparent 100%); }
   body.game.gedge-glow canvas#pad { border-radius: 10px; box-shadow: 0 0 0 1px color-mix(in srgb, var(--gedge, #ff3fa4) 70%, transparent), 0 0 18px color-mix(in srgb, var(--gedge, #ff3fa4) 35%, transparent); }`;
   document.head.appendChild(st);
 }
@@ -10371,7 +10370,15 @@ function gEdgeApply() {
   document.body.style.setProperty("--gedge", col);
 }
 const edgeLines541 = edgeLines;
-edgeLines = function (col, y, h) { if (game.on && game.edge !== "lines") return; edgeLines541(col, y, h); };
+edgeLines = function (col, y, h) {
+  if (game.on && game.edge === "soft" && game.imgOn) {
+    // 5.43: the outer lines drawn like the soft inner strip lines (they pulse on the beat, light near a finger and bend)
+    const bassPart = y > 0, hex = bassPart ? TH.bline : TH.leadLine || TH.acc, now = performance.now();
+    if (gameLine(.75, y, h, hex, now, bassPart) && gameLine(W - .75, y, h, hex, now, bassPart)) return;
+  }
+  if (game.on && game.edge !== "lines") return;
+  edgeLines541(col, y, h);
+};
 {
   const mk = (id, label, help, opts) => { const row = document.createElement("div"); row.className = "gr"; row.style.cssText = "flex-wrap:wrap;gap:8px";
     row.innerHTML = `<div><label>${label}</label><small>${help}</small></div><div class="gseg" id="${id}">${opts.map(([v, t]) => `<button data-v="${v}">${t}</button>`).join("")}</div>`; return row; };
@@ -10385,6 +10392,21 @@ const gameSheetSync542 = gameSheetSync;
 gameSheetSync = function () { gameSheetSync542();
   $("gSur").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x.dataset.v === game.sur));
   $("gEdge").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x.dataset.v === game.edge)); };
+/* ---------- 5.43 the screen pulse is never red: a reddish theme colour hands over to the theme's other colour ---------- */
+function isReddish(hex) {
+  if (!hex || hex[0] !== "#" || hex.length < 7) return false;
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  if (d < .2 || mx < .25) return false;   // greys and darks aren't red
+  let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = (h * 60 + 360) % 360;
+  return h < 25 || h > 335;
+}
+let pulseK = "";
+const drawEdge542 = drawEdge;
+drawEdge = function (now) {
+  const cands = [TH.acc, TH.acc2, TH.leadLine, TH.bline, TH.leadText], k = cands.join();
+  if (k !== pulseK) { pulseK = k; const c = cands.find(x => x && x[0] === "#" && x.length >= 7 && !isReddish(x)) || "#2fd6ff"; document.documentElement.style.setProperty("--pulse-rgb", rgbOf(c)); }
+  drawEdge542(now);
+};
 // launch: game mode opens on the home screen (a reload mid-session still asks for the light "Tap to continue")
 if (game.on && !$("start").classList.contains("resume")) { $("start").hidden = true; homeOpen(false); }
 

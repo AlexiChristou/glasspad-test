@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.43 TEST · game mode · 7 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.44 TEST · game mode · 7 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1525,7 +1525,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.43 TEST · game mode · 7 Oct 2026</p>
+      <p class="ver">GlassPad 5.44 TEST · game mode · 7 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10189,7 +10189,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.43 TEST</p>
+    <p class="hm-ver">GlassPad 5.44 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -10407,6 +10407,233 @@ drawEdge = function (now) {
   if (k !== pulseK) { pulseK = k; const c = cands.find(x => x && x[0] === "#" && x.length >= 7 && !isReddish(x)) || "#2fd6ff"; document.documentElement.style.setProperty("--pulse-rgb", rgbOf(c)); }
   drawEdge542(now);
 };
+/* ---------- 5.44 redesign stage 1: Themes | Mine on Home, a Recordings button, and your voice on the pad ----------
+   Mic (right of the theme chip, or next to settings on its side): tap to open Your voice; while your voice is on,
+   tap = back to the theme's own sounds (hold = open the sheet anyway). Your voice: Lead or Bass, record one word
+   (up to 4 s, tuned to the key, plays straight away), or pick one of My sounds; "Use my lead word for bass too".
+   Recordings go into the same My sounds list as everywhere else (8 slots; when full, an unused one is replaced). */
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  #gMic { flex: none; width: 40px; height: 40px; border-radius: 50%; padding: 0; display: grid; place-items: center; margin-left: auto; color: #eef1f7;
+    background: rgba(10,12,20,.5); border: 1px solid rgba(255,255,255,.22); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+  #gMic svg { width: 18px; height: 18px; }
+  #gMic.on { color: #ffd7db; background: rgba(255,77,94,.2); border: 1.5px solid #ff5a6a; box-shadow: 0 0 14px rgba(255,90,106,.5); }
+  header.bar #gMic { margin-left: 8px; }
+  #vsSheet { position: fixed; inset: 0; z-index: 58; --hacc: #ff5a6a; }
+  #vsSheet[hidden] { display: none; }
+  .vs-back { position: absolute; inset: 0; background: rgba(3,4,8,.35); }
+  .vs { position: absolute; left: 0; right: 0; bottom: 0; max-height: 86vh; overflow: auto; box-sizing: border-box; color: #eef1f7;
+    border-radius: 26px 26px 0 0; background: rgba(8,9,16,.97); border-top: 2px solid #ff5a6a; box-shadow: 0 -2px 18px rgba(255,90,106,.55), 0 -20px 50px rgba(255,90,106,.15);
+    padding: 10px 18px max(20px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 14px; }
+  @media (orientation: landscape) { .vs { left: 50%; right: auto; width: min(520px, 92vw); transform: translateX(-50%); } }
+  .vs-h { width: 40px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.25); align-self: center; }
+  .vs-top { display: flex; align-items: center; justify-content: space-between; }
+  .vs-top b { font: 900 22px var(--display); letter-spacing: .02em; color: #fff; text-shadow: 0 0 10px #ff5a6a, 0 0 24px rgba(255,90,106,.5); }
+  .vs-x { width: 40px; height: 40px; border-radius: 50%; padding: 0; display: grid; place-items: center; color: #eef1f7; background: rgba(16,18,28,.9); border: 1.5px solid rgba(255,255,255,.2); }
+  .vs-x svg { width: 16px; height: 16px; }
+  .vs-seg { display: grid; grid-template-columns: 1fr 1fr; border-radius: 14px; overflow: hidden; border: 1.5px solid rgba(255,255,255,.2); }
+  .vs-seg button { height: 44px; border: 0; border-radius: 0; background: transparent; color: #a3abbb; font: 700 13px var(--display); letter-spacing: .06em; }
+  .vs-seg button[aria-pressed="true"] { background: var(--vsc, #3a7bff); color: #05060b; box-shadow: 0 0 18px var(--vsc, #3a7bff); }
+  .vs-recwrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .vs-rec { width: 96px; height: 96px; border-radius: 50%; padding: 0; display: grid; place-items: center; background: #ff4d5e; border: 4px solid rgba(255,255,255,.18); box-shadow: 0 0 28px rgba(255,77,94,.45); }
+  .vs-rec i { width: 34px; height: 34px; border-radius: 50%; background: #fff; transition: border-radius .15s, width .15s, height .15s; }
+  .vs-rec.going { animation: vsPulse .9s ease-in-out infinite; }
+  .vs-rec.going i { width: 28px; height: 28px; border-radius: 5px; }
+  .vs-rec:disabled { opacity: .4; }
+  @keyframes vsPulse { 50% { box-shadow: 0 0 44px rgba(255,77,94,.85); } }
+  .vs-rectxt { font: 400 14px "IBM Plex Sans", var(--body); color: #c9cfdb; text-align: center; }
+  .vs-word { display: flex; align-items: center; gap: 10px; border-radius: 14px; background: rgba(16,18,28,.9); border: 1.5px solid rgba(255,255,255,.2); padding: 8px 8px 8px 14px; }
+  .vs-word[hidden] { display: none; }
+  .vs-word .p { font: 500 11px var(--mono); letter-spacing: .1em; color: #a3abbb; }
+  .vs-word b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 14px var(--display); }
+  .vs-word button, .vs-mine button { height: 36px; padding: 0 12px; border-radius: 12px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18); color: #eef1f7; font: 400 13px "IBM Plex Sans", var(--body); }
+  .vs-lbl { font: 500 11px var(--mono); letter-spacing: .12em; color: #a3abbb; }
+  .vs-mine { display: flex; flex-wrap: wrap; gap: 8px; }
+  .vs-mine button.cur { border: 1.5px solid var(--vsc, #3a7bff); box-shadow: 0 0 12px var(--vsc, #3a7bff); }
+  .vs-row { display: flex; align-items: center; gap: 12px; font: 400 14px "IBM Plex Sans", var(--body); }
+  .vs-row[hidden] { display: none; }
+  .vs-row span { flex: 1; }
+  .vs-note { margin: 0; font: 400 13px/19px "IBM Plex Sans", var(--body); color: #a3abbb; }
+  .vs-msg { margin: 0; min-height: 18px; font: 400 13px "IBM Plex Sans", var(--body); color: #ffb3bb; }
+  .vs-back2 { height: 44px; border-radius: 14px; background: transparent; border: 1.5px dashed rgba(255,255,255,.25); color: #eef1f7; font: 400 14px "IBM Plex Sans", var(--body); }
+  .vs-back2[hidden] { display: none; }
+  .hm-seg { display: inline-grid; grid-template-columns: 1fr 1fr; border-radius: 999px; overflow: hidden; border: 1px solid rgba(255,255,255,.18); }
+  .hm-seg button { height: 34px; padding: 0 14px; border: 0; border-radius: 0; background: transparent; color: #a3abbb; font: 500 13px var(--display); }
+  .hm-seg button[aria-pressed="true"] { background: var(--hacc); color: #07090e; }
+  .hm-tile.mk { border: 1.5px dashed rgba(255,255,255,.3); background: rgba(255,255,255,.04); }
+  .hm-tile.mk b { position: absolute; inset: 0 0 30px; display: grid; place-items: center; font: 300 48px var(--display); color: var(--hacc); }
+  .hm-tile .yours { position: absolute; top: 8px; left: 8px; z-index: 1; font: 500 9px var(--mono); letter-spacing: .1em; padding: 2px 6px; border-radius: 6px; background: var(--hacc); color: #07090e; }`;
+  document.head.appendChild(st);
+}
+SV.mic = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+SV.rec = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>';
+SV.x = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+/* ----- Home: Recordings button, Themes | Mine ----- */
+{
+  const b = document.createElement("button"); b.className = "hm-ic"; b.id = "hmRecs"; b.setAttribute("aria-label", "Your recordings"); b.innerHTML = SV.rec;
+  $("hmHelp").before(b);
+  b.addEventListener("click", () => hmToast("Your recordings comes in the next stage"));
+  const head = $("hmRowWrap").previousElementSibling;   // the "Themes · 4 free · 3 locked" row
+  head.querySelector(".hm-h").outerHTML = `<div class="hm-seg" role="group" aria-label="Which themes"><button data-v="themes" aria-pressed="true">Themes</button><button data-v="mine" aria-pressed="false">Mine</button></div>`;
+  head.querySelector(".hm-lbl").id = "hmThLbl";
+  const mine = document.createElement("div"); mine.className = "hm-tiles"; mine.id = "hmMineRow"; mine.hidden = true;
+  $("hmTiles").after(mine);
+  head.querySelector(".hm-seg").addEventListener("click", e => { const x = e.target.closest("button"); if (x) hmShowRow(x.dataset.v); });
+}
+const hmMyThemes = () => { try { return JSON.parse(localStorage.getItem("glasspad.mythemes") || "[]"); } catch (_) { return []; } };
+function hmShowRow(v) {
+  hm.row = v;
+  document.querySelectorAll(".hm-seg button").forEach(x => x.setAttribute("aria-pressed", x.dataset.v === v));
+  $("hmTiles").hidden = v !== "themes"; $("hmMineRow").hidden = v !== "mine";
+  const mine = hmMyThemes();
+  $("hmThLbl").textContent = v === "themes" ? `${HM_FREE.length} free · ${HM_LOCKED.length} locked` : mine.length ? `${mine.length} made by you` : "Make your first one";
+  if (v === "mine") {
+    const r = $("hmMineRow"); r.innerHTML = "";
+    const mk = document.createElement("button"); mk.className = "hm-tile mk"; mk.innerHTML = `<b>+</b><span>Make your own</span>`;
+    mk.addEventListener("click", () => $("hmMine").click());
+    r.appendChild(mk);
+    for (const t of mine) { const b = document.createElement("button"); b.className = "hm-tile"; b.innerHTML = `${t.pic ? `<img src="${t.pic}" alt="">` : ""}<i class="yours">YOURS</i><span>${escH(t.name || "My theme")}</span>`; r.appendChild(b); }
+    $("hmRowWrap").classList.add("end");
+  } else hmEnds();
+}
+const homeOpen543 = homeOpen;
+homeOpen = function (fromPad) { homeOpen543(fromPad); hmShowRow(hm.row || "themes"); };
+
+/* ----- Your voice on the pad ----- */
+{
+  const m = document.createElement("button"); m.id = "gMic"; m.className = "g-only"; m.setAttribute("aria-label", "Your voice"); m.innerHTML = SV.mic;
+  $("styleRow").appendChild(m);
+  const s = document.createElement("div"); s.id = "vsSheet"; s.hidden = true;
+  s.innerHTML = `<div class="vs-back" id="vsBack"></div><div class="vs" role="dialog" aria-label="Your voice">
+    <div class="vs-h"></div>
+    <div class="vs-top"><b>YOUR VOICE</b><button class="vs-x" id="vsX" aria-label="Close">${SV.x}</button></div>
+    <div class="vs-seg" role="group" aria-label="Record for"><button data-p="lead" aria-pressed="true">LEAD</button><button data-p="bass" aria-pressed="false">BASS</button></div>
+    <div class="vs-recwrap"><button class="vs-rec" id="vsRec" aria-label="Record a word"><i></i></button><span class="vs-rectxt" id="vsRecTxt">Tap and say one word</span></div>
+    <div class="vs-word" id="vsWord" hidden><span class="p" id="vsWordPart">LEAD</span><b id="vsWordName"></b><button id="vsPlay">Play</button><button id="vsRedo">Redo</button></div>
+    <div id="vsMineWrap" hidden><div class="vs-lbl" style="margin-bottom:8px">MY SOUNDS</div><div class="vs-mine" id="vsMine"></div></div>
+    <div class="vs-row" id="vsBothRow"><span>Use my lead word for bass too</span><button class="hm-sw" id="vsBoth" aria-pressed="false" aria-label="Use my lead word for bass too"></button></div>
+    <button class="vs-back2" id="vsTheme" hidden>Back to the theme's own sounds</button>
+    <p class="vs-note">It plays straight away, tuned to the key. Tap the mic again to go back to the theme's own sounds.</p>
+    <p class="vs-msg" id="vsMsg"></p>
+  </div>`;
+  document.body.appendChild(s);
+}
+const vs = { part: "lead", rec: null, redo: false };
+function placeMic() {
+  const land = window.innerWidth > window.innerHeight, m = $("gMic");
+  if (land) { if (m.nextElementSibling !== $("gGear")) $("gGear").before(m); }
+  else if (m.parentNode !== $("styleRow")) $("styleRow").appendChild(m);
+}
+window.addEventListener("resize", placeMic); placeMic();
+const vsOn = () => { const m = mineNow(); return m.lead || m.bass; };
+function vsMicSync() { $("gMic").classList.toggle("on", !!(game.on && vsOn())); }
+setInterval(vsMicSync, 500);
+const vsClipFor = k => mineNow()[k] ? samplesFor(k)[0] : null;
+function vsRender() {
+  const k = vs.part, col = k === "lead" ? (TH.leadLine || TH.acc) : (TH.bline || TH.acc2);
+  $("vsSheet").style.setProperty("--vsc", isReddish(col) ? "#3a7bff" : col);
+  $("vsSheet").querySelectorAll(".vs-seg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.p === k));
+  const c = vsClipFor(k);
+  $("vsWord").hidden = !c; if (c) { $("vsWordPart").textContent = k.toUpperCase(); $("vsWordName").textContent = c.name; }
+  $("vsRec").hidden = !canMic; $("vsRec").disabled = false;
+  if (!vs.rec) $("vsRecTxt").textContent = !canMic ? "The mic isn't available here. Pick one of My sounds." : c ? "Tap to record a new word" : "Tap and say one word";
+  $("vsMineWrap").hidden = !samples.length;
+  $("vsMine").innerHTML = samples.map((s, i) => `<button data-i="${i}" class="${c === s ? "cur" : ""}">${escH(s.name)}</button>`).join("");
+  const lead = vsClipFor("lead");
+  $("vsBothRow").hidden = !lead;
+  $("vsBoth").setAttribute("aria-pressed", !!(lead && mineNow().bass && samplesFor("bass")[0] === lead));
+  $("vsTheme").hidden = !vsOn();
+}
+function vsOpen() { ensureAudio(); $("vsMsg").textContent = ""; vsRender(); $("vsSheet").hidden = false; }
+function vsClose() { vsStop(true); $("vsSheet").hidden = true; }
+// put a clip on a part: it plays there; any other sound on that part comes off it
+function vsAssign(clip, k) {
+  for (const c of samples) if (c !== clip) {
+    const p = c.part || "both";
+    if (p === "both") c.part = k === "lead" ? "bass" : "lead"; else if (p === k) c.part = "off";
+  }
+  const p = clip.part || "off"; clip.part = p === "both" || (p !== "off" && p !== k) ? "both" : k;
+  storeSamples(); try { renderSlots(); } catch (_) {}
+  msApply({ [k]: clip }); vsMicSync();
+}
+function vsTheme(k) {
+  const s = QSTYLES()[gameKey()], p = s && s.p;
+  if (k === "lead" && $("wave").value === "sampler") $("wave").value = p && p.wave && p.wave !== "sampler" ? p.wave : lastWave;
+  if (k === "bass" && bass.sound === "sampler") {
+    const b = p && p.bass && p.bass.sound !== "sampler" ? p.bass.sound : lastBass;
+    bass.sound = b; $("bassSound").value = b; if (p && p.bass && p.bass.on === false) setModule("bassOn", false); syncSampRepeat();
+  }
+  updateSummaries(); saveLast(); vsMicSync();
+}
+async function vsStart() {
+  ensureAudio();
+  const k = vs.part, cur = vsClipFor(k);
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
+  catch (e) { $("vsMsg").textContent = e && e.name === "NotAllowedError" ? "GlassPad needs the mic. Allow it in your browser's site settings, then try again." : "Couldn't open the mic."; return; }
+  const ctx = audio.ctx, node = ctx.createMediaStreamSource(stream), proc = ctx.createScriptProcessor(4096, 1, 1), mute = ctx.createGain(); mute.gain.value = 0;
+  node.connect(proc); proc.connect(mute).connect(ctx.destination);
+  const R = vs.rec = { stream, node, proc, chunks: [], t0: performance.now(), k, replace: cur ? samples.indexOf(cur) : -1 };
+  proc.onaudioprocess = e => R.chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+  $("vsRec").classList.add("going"); $("vsRecTxt").textContent = "Listening… tap to stop (up to 4 seconds)"; $("vsMsg").textContent = "";
+  R.timer = setTimeout(() => vsStop(), 4000);
+}
+function vsStop(cancel) {
+  const R = vs.rec; if (!R) return; vs.rec = null;
+  clearTimeout(R.timer);
+  try { R.proc.disconnect(); R.node.disconnect(); } catch (_) {}
+  R.stream.getTracks().forEach(t => t.stop());
+  $("vsRec").classList.remove("going");
+  if (cancel) { vsRender(); return; }
+  const len = R.chunks.reduce((n, c) => n + c.length, 0);
+  if (!len) { $("vsMsg").textContent = "Nothing was recorded. Try again."; vsRender(); return; }
+  const ab = new AudioBuffer({ length: len, sampleRate: audio.ctx.sampleRate, numberOfChannels: 1 }), all = new Float32Array(len);
+  let o = 0; for (const c of R.chunks) { all.set(c, o); o += c.length; }
+  ab.copyToChannel(all, 0);
+  try {
+    const pre = R.k === "lead" ? "Lead" : "Bass", nm = pre + " " + (samples.filter(c => c.name.startsWith(pre)).length + 1);
+    const clip = processClip(ab, nm); clip.tune = clip.root != null; clip.buf = clipBuf(clip); clip.part = "off";
+    // where it goes: over the word it replaces (Redo / a new word on the same part), a free slot, or an unused one
+    let at = R.replace >= 0 ? R.replace : samples.length < MAX_SAMPLES ? -1 : samples.findIndex(c => (c.part || "both") === "off");
+    if (at < 0 && samples.length >= MAX_SAMPLES) at = 0;
+    if (at >= 0) { const old = samples[at]; if (old && old.part === "both" && R.replace >= 0) clip.part = "both"; samples[at] = clip; } else samples.push(clip);
+    vsAssign(clip, R.k);
+    if (clip.part === "both") msApply({ lead: clip, bass: clip });
+    playClipOnce(clip);
+  } catch (e) { $("vsMsg").textContent = "That came through silent. Check nothing is covering the mic and try again, a little louder."; }
+  vsRender();
+}
+$("gMic").addEventListener("pointerdown", e => {
+  const m = $("gMic"); m._held = false; clearTimeout(m._t);
+  m._t = setTimeout(() => { m._held = true; vsOpen(); }, 550);
+});
+$("gMic").addEventListener("pointerup", () => clearTimeout($("gMic")._t));
+$("gMic").addEventListener("pointercancel", () => clearTimeout($("gMic")._t));
+$("gMic").addEventListener("click", () => {
+  const m = $("gMic"); if (m._held) { m._held = false; return; }
+  if (vsOn()) { vsTheme("lead"); vsTheme("bass"); toast("Back to the theme's own sounds"); }
+  else vsOpen();
+});
+$("vsX").addEventListener("click", vsClose);
+$("vsBack").addEventListener("click", vsClose);
+$("vsSheet").querySelector(".vs-seg").addEventListener("click", e => { const b = e.target.closest("button"); if (!b || vs.rec) return; vs.part = b.dataset.p; $("vsMsg").textContent = ""; vsRender(); });
+$("vsRec").addEventListener("click", () => { if (vs.rec) vsStop(); else vsStart(); });
+$("vsPlay").addEventListener("click", () => { const c = vsClipFor(vs.part); if (c && c.buf) playClipOnce(c); });
+$("vsRedo").addEventListener("click", () => { if (!vs.rec) vsStart(); });
+$("vsMine").addEventListener("click", e => {
+  const b = e.target.closest("button[data-i]"); if (!b) return; const c = samples[+b.dataset.i]; if (!c) return;
+  if (!c.buf) try { c.buf = clipBuf(c); } catch (_) {}
+  vsAssign(c, vs.part); if (c.buf) playClipOnce(c); vsRender();
+});
+$("vsBoth").addEventListener("click", () => {
+  const lead = vsClipFor("lead"); if (!lead) return;
+  if ($("vsBoth").getAttribute("aria-pressed") === "true") { lead.part = "lead"; storeSamples(); vsTheme("bass"); }
+  else { vsAssign(lead, "bass"); }
+  vsRender();
+});
+$("vsTheme").addEventListener("click", () => { vsTheme("lead"); vsTheme("bass"); vsRender(); toast("Back to the theme's own sounds"); });
 // launch: game mode opens on the home screen (a reload mid-session still asks for the light "Tap to continue")
 if (game.on && !$("start").classList.contains("resume")) { $("start").hidden = true; homeOpen(false); }
 

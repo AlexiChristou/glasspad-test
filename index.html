@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.48 TEST · game mode · 7 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.48.1 TEST · game mode · 7 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1525,7 +1525,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.48 TEST · game mode · 7 Oct 2026</p>
+      <p class="ver">GlassPad 5.48.1 TEST · game mode · 7 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10189,7 +10189,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.48 TEST</p>
+    <p class="hm-ver">GlassPad 5.48.1 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -11573,7 +11573,8 @@ $("stGame").addEventListener("click", () => { stClose(); setGame(true); homeOpen
 const setGame547 = setGame;
 setGame = function (on) { if (on) { spClose(true); stClose(); } setGame547(on); };
 // launch: game mode opens on the home screen (a reload mid-session still asks for the light "Tap to continue")
-if (game.on && !$("start").classList.contains("resume")) { $("start").hidden = true; homeOpen(false); }
+// 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
+if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = true; homeOpen(false); }
 
 requestAnimationFrame(draw);
 </script>

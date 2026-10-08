@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.54.1 TEST · game mode · 8 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.55 TEST · game mode · 8 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1525,7 +1525,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.54.1 TEST · game mode · 8 Oct 2026</p>
+      <p class="ver">GlassPad 5.55 TEST · game mode · 8 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -6840,7 +6840,7 @@ function draw() {
       }
     });
     edgeLines(TH.bline, LH, bh);
-    if (game.on) gameBassRoots(now, LH, bw);
+    if (game.on || document.body.classList.contains("studio")) gameBassRoots(now, LH, bw);
     if (!scopeShown()) { cx.fillStyle = `rgba(${TH.acc2Rgb},.55)`; cx.fillRect(0, LH, W, 1); }   // the oscilloscope takes its place
   }
   placeChips(LH);
@@ -8905,7 +8905,7 @@ function gameNeon(x, y0, h, hex, now) {
 // root rings on the bass strips, sitting where the note names used to be
 function gameBassRoots(now, LH, bw) {
   if (!liveChord) return;
-  const rp = mod12(cbase(liveChord) + liveChord.tones[0]), y = H - 20, A = TH.acc2Rgb, pulse = 1 + .06 * Math.sin(now / 300);
+  const rp = mod12(cbase(liveChord) + liveChord.tones[0]), y = H - (!game.on && stpNames() ? 40 : 20), A = TH.acc2Rgb, pulse = 1 + .06 * Math.sin(now / 300);
   bassLanes.forEach((l, i) => {
     if (Math.abs(mod12(l.midi) - rp) > .01) return;
     const x = i * bw + bw / 2;
@@ -10189,7 +10189,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.54.1 TEST</p>
+    <p class="hm-ver">GlassPad 5.55 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -11633,16 +11633,26 @@ function stpNames() { try { return STP.names; } catch (_) { return true; } }
 }
 // the bottom: two panels, LEAD and BASS
 {
-  const gb = $("gapBar"), mk = (cls, col, oct, hold, arpId) => {
+  // 5.55: BASS on the left, KEY in the middle, LEAD on the right; the bar counter above them
+  const gb = $("gapBar"), mk = (cls, col, oct, hold, arpId, label) => {
     const d = document.createElement("div"); d.className = "stp-side " + cls; d.style.setProperty("--pc", col);
-    const r1 = document.createElement("div"); r1.append($(oct + "Dn"), $(oct + "Out"), $(oct + "Up"));
+    const lab = document.createElement("span"); lab.className = "stp-lab"; lab.textContent = label;
+    const r1 = document.createElement("div"); r1.className = "stp-oct";
+    const num = document.createElement("span"); num.className = "stp-num"; num.id = oct + "Num"; num.textContent = "0";
+    $(oct + "Out").hidden = true; r1.append($(oct + "Dn"), num, $(oct + "Up"), $(oct + "Out"));
     const r2 = document.createElement("div"); r2.className = "stp-row2";
     const arp = document.createElement("button"); arp.id = arpId; arp.textContent = "ARP"; arp.setAttribute("aria-pressed", "false");
-    const h = $(hold); h.textContent = "HOLD"; r2.append(arp, h); d.append(r1, r2); return d;
+    const h = $(hold); h.textContent = "HOLD"; r2.append(arp, h); d.append(lab, r1, r2); return d;
   };
-  const L = mk("stp-lead", "#f2b04a", "lOct", "gHold", "stpArpL"), B = mk("stp-bass", "#4fc7b4", "bOct", "gLatch", "stpArpB");
+  const L = mk("stp-lead", "#f2b04a", "lOct", "gHold", "stpArpL", "LEAD"), B = mk("stp-bass", "#4fc7b4", "bOct", "gLatch", "stpArpB", "BASS");
+  const K = document.createElement("div"); K.className = "stp-key"; K.id = "stpKey";
+  K.innerHTML = `<i class="stp-kfill"></i><button id="stpKeyDn" aria-label="Lower the key">▼</button><span class="stp-kv"><span class="stp-lab">KEY</span><b id="stpKeyName">A</b><small id="stpKeyScale">minor</small></span><button id="stpKeyUp" aria-label="Lift the key">▲</button>`;
+  const bars = document.createElement("div"); bars.id = "stpBars"; bars.setAttribute("aria-hidden", "true");
+  const dock = document.createElement("div"); dock.className = "stp-dock"; dock.append(B, K, L);
   gb.querySelectorAll(".side").forEach(s => s.remove());
-  gb.append(L, B);
+  gb.append(bars, dock);
+  $("stpKeyDn").addEventListener("click", () => $("keyDown").click());
+  $("stpKeyUp").addEventListener("click", () => $("keyUp").click());
 }
 function stpArp(sel, k) {
   const s = $(sel), on = s.value !== "off";
@@ -11655,14 +11665,15 @@ function stpSync() {
   const on = !game.on; document.body.classList.toggle("studio", on);
   $("stpArpL").setAttribute("aria-pressed", $("leadArp").value !== "off");
   $("stpArpB").setAttribute("aria-pressed", $("bassArp").value !== "off");
-  // portrait: the second row; on its side: up in the top bar, so the pad keeps its height
-  const kc = $("keyChip"), land = innerWidth > innerHeight, row = land ? document.querySelector("header.bar") : $("styleRow");
+  // 5.55: portrait: ‹ STUDIO and the mic on the second row; on its side: ‹ STUDIO first in the top bar, the mic by ⚙
+  const kc = $("keyChip"), land = innerWidth > innerHeight, bar = document.querySelector("header.bar"), row = $("styleRow");
+  if (kc.parentNode !== STP.kcHome.parentNode) { STP.kcHome.parentNode.insertBefore(kc, STP.kcHome); chipPos = ""; }
   if (on) {
-    const sb = $("stProBtn"), cb = $("chordBox"), mic = $("gMic");
-    if (land) { const after = $("recAudioTop"); if (sb.parentNode !== row || sb.previousElementSibling !== after) { after.after(sb); sb.after(cb); cb.after(kc); kc.after(mic); } }
-    else if (sb.parentNode !== row) { row.insertBefore(sb, row.firstChild); sb.after(cb); row.appendChild(kc); row.appendChild(mic); }
-    else { if (kc.parentNode !== row) row.appendChild(kc); if (mic.parentNode !== row) row.appendChild(mic); }
-  } else if (kc.parentNode !== STP.kcHome.parentNode) { STP.kcHome.parentNode.insertBefore(kc, STP.kcHome); chipPos = ""; }
+    const sb = $("stProBtn"), mic = $("gMic"), gear = $("gGear");
+    if (land) { if (bar.firstElementChild !== sb) bar.insertBefore(sb, bar.firstElementChild); if (mic.parentNode !== bar || mic.nextElementSibling !== gear) gear.before(mic); }
+    else { if (sb.parentNode !== row) row.insertBefore(sb, row.firstChild); if (mic.parentNode !== row) row.appendChild(mic); }
+    try { stpDockSync(); } catch (_) {}
+  }
   document.body.style.setProperty("--g-lead", TH.leadLine || TH.acc);
 }
 setInterval(stpSync, 600); window.addEventListener("resize", () => setTimeout(stpSync, 50));
@@ -12082,6 +12093,90 @@ function mkHearSync() { const b = $("mkHear"); if (b) { const on = T.playing && 
     return mkClose554.apply(this, arguments);
   };
 }
+// 5.55: the Studio pad tidied (his notes and the "Studio pad, tidy" mockups). ⚙ settings, no chord box, the dock is
+// BASS | KEY | LEAD with the bar counter above, KEY fills while a key change waits (like SHIFT), root rings on the bass
+// pad, glowing strips. On its side the game pad's mic sits by ⚙ too.
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  body.studio #chordBox, body.studio #keyChip, body.studio #liftNum { display: none !important; }
+  body.studio #gGear { display: grid !important; place-items: center; margin-left: auto; width: 38px; height: 38px; padding: 0 !important; border-radius: 50% !important; }
+  body.studio #stProBtn { border-color: var(--g-lead, #f2b04a) !important; box-shadow: 0 0 12px color-mix(in srgb, var(--g-lead, #f2b04a) 45%, transparent) !important; height: 36px !important; }
+  body.studio #gMic { display: grid !important; width: 38px; height: 38px; margin-left: auto !important; color: #fff; border: 1.5px solid var(--g-lead, #f2b04a);
+    background: color-mix(in srgb, var(--g-lead, #f2b04a) 22%, rgba(10,12,20,.55)); box-shadow: 0 0 12px color-mix(in srgb, var(--g-lead, #f2b04a) 55%, transparent); }
+  body.studio #gMic svg { width: 19px; height: 19px; }
+  body.studio #styleRow { padding: 0 22px; }
+  body.studio #gapBar { left: 10px; right: 10px; bottom: 6px; height: auto; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-end; gap: 8px; grid-template-columns: none; }
+  body.studio #gapBar[hidden] { display: flex !important; }
+  #stpBars { display: flex; gap: 5px; padding: 0 12px; height: 5px; }
+  #stpBars i { flex: 1; height: 5px; border-radius: 3px; background: rgba(255,255,255,.14); }
+  #stpBars i.done { background: color-mix(in srgb, var(--g-lead, #f2b04a) 45%, transparent); }
+  #stpBars i.now { background: var(--g-lead, #f2b04a); box-shadow: 0 0 8px var(--g-lead, #f2b04a); }
+  #stpBars i.chg { background: linear-gradient(90deg, var(--g-bass, #4fc7b4), var(--g-lead, #f2b04a)); }
+  .stp-dock { display: flex; gap: 6px; align-items: stretch; }
+  body.studio #gapBar .stp-side { flex: 1 1 0; min-width: 0; height: auto; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 6px 6px 8px;
+    background: rgba(10,8,22,.7); border: 1.5px solid color-mix(in srgb, var(--pc) 65%, transparent); box-shadow: 0 0 12px color-mix(in srgb, var(--pc) 20%, transparent), inset 0 0 12px color-mix(in srgb, var(--pc) 13%, transparent); }
+  body.studio #gapBar .stp-side > div { justify-content: center; gap: 6px; }
+  .stp-lab { font: 700 10px var(--display); letter-spacing: .12em; color: var(--pc, #c9b3ff); text-shadow: 0 0 8px var(--pc, transparent); }
+  .stp-num { min-width: 24px; text-align: center; font: 500 13px var(--mono); color: #fff; }
+  body.studio #gapBar .stp-row2 { justify-content: center; }
+  .stp-key { position: relative; overflow: hidden; flex: none; width: 84px; box-sizing: border-box; border-radius: 16px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr auto; gap: 4px; padding: 6px 6px 8px; justify-items: center; align-items: center;
+    background: rgba(10,8,22,.7); border: 1.5px solid color-mix(in srgb, var(--g-hi, #9b5cff) 65%, transparent); box-shadow: 0 0 12px color-mix(in srgb, var(--g-hi, #9b5cff) 20%, transparent); --pc: #c9b3ff; }
+  .stp-key .stp-kv { grid-column: 1 / -1; grid-row: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; position: relative; z-index: 1; }
+  .stp-key b { font: 700 22px/1 var(--display); color: #fff; text-shadow: 0 0 10px var(--g-hi, #9b5cff); }
+  .stp-key small { font: 400 9px var(--mono); color: #a99fd0; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .stp-key button { grid-row: 2; position: relative; z-index: 1; }
+  .stp-kfill { position: absolute; left: 0; right: 0; bottom: 0; height: var(--kf, 0%); background: linear-gradient(0deg, var(--g-bass, #4fc7b4), var(--g-lead, #f2b04a)); opacity: .55; pointer-events: none; }
+  .stp-key.land .stp-kfill { box-shadow: 0 0 18px var(--g-lead, #f2b04a); }
+  @media (orientation: landscape) {
+    body.studio #gapBar { left: 22px; right: 22px; bottom: 4px; gap: 6px; }
+    #stpBars { height: 3px; } #stpBars i { height: 3px; }
+    .stp-dock { justify-content: center; gap: 10px; }
+    body.studio #gapBar .stp-side { flex: none; flex-direction: row; height: 46px; padding: 0 8px; gap: 8px; }
+    body.studio #gapBar .stp-side > .stp-oct { order: 1; } body.studio #gapBar .stp-side > .stp-row2 { order: 2; }
+    .stp-key { width: auto; height: 46px; display: flex; flex-direction: row; gap: 10px; padding: 0 8px; }
+    .stp-key .stp-kv { min-width: 48px; } .stp-key .stp-lab { font-size: 8px; } .stp-key b { font-size: 17px; } .stp-key small { display: none; }
+    .stp-key #stpKeyDn { order: -1; }
+    .stp-key b::after { content: attr(data-s); font: 400 9px var(--mono); color: #a99fd0; margin-left: 3px; text-shadow: none; }
+  }
+  @media (orientation: landscape) { body.game header.bar #gMic { margin-left: auto !important; } body.game header.bar #gGear, body.studio header.bar #gGear { margin-left: 8px !important; } }`;
+  document.head.appendChild(st);
+}
+// what the dock shows: octave numbers, the key (where it's going while a change waits), its fill, the bar counter
+function stpDockSync() {
+  for (const k of ["lOct", "bOct"]) { const n = ($(k + "Out").textContent.match(/-?\d+/) || ["0"])[0]; if ($(k + "Num").textContent !== n) $(k + "Num").textContent = n; }
+  const lead = TH.leadLine || TH.acc, bassC = TH.acc2;
+  document.querySelector("#gapBar .stp-lead").style.setProperty("--pc", lead);
+  document.querySelector("#gapBar .stp-bass").style.setProperty("--pc", bassC);
+  document.body.style.setProperty("--g-bass", bassC); document.body.style.setProperty("--g-hi", TH.acc || "#9b5cff");
+  const k = mod12(+rootSel.value + (keyLift.pend && T.playing ? keyLift.target : keyLift.now)), nm = NAMES[k], sc = (curScale() && curScale().name || "").replace(/ \(.*\)/, "").toLowerCase().replace("pentatonic", "pent.").replace("harmonic", "harm.");
+  const b = $("stpKeyName"); if (b.textContent !== nm) b.textContent = nm;
+  const scs = sc.length > 12 ? sc.slice(0, 11) + "…" : sc; if ($("stpKeyScale").textContent !== scs) $("stpKeyScale").textContent = scs;
+  b.dataset.s = sc.startsWith("minor") ? "min" : sc.startsWith("major") ? "maj" : "";
+  if (TH) TH.glow = true;   // the strips glow on the Studio pad
+}
+// the KEY fill and the bar counter run with the frames (cheap: only when the Studio pad shows)
+(function stpFrame() {
+  requestAnimationFrame(stpFrame);
+  if (game.on) return;
+  const K = $("stpKey"); if (!K) return;
+  let p = 0;
+  if (keyLift.pend && T.playing && audio) p = Math.max(0, Math.min(1, (audAbs() - keyLift.pend.from) / Math.max(1, keyLift.pend.land - keyLift.pend.from)));
+  K.style.setProperty("--kf", (p * 100).toFixed(1) + "%"); K.classList.toggle("land", p > .97);
+  let L = 4; try { L = Math.max(1, Math.min(16, passBars())); } catch (_) {}
+  const stp = T.meter.steps, cur = T.playing && audio ? Math.floor(Math.max(0, audAbs()) / stp) % L : -1, pend = !!(keyLift.pend && T.playing);
+  const s = [...Array(L).keys()].map(i => (cur >= 0 && i < cur ? "done" : i === cur ? "now" : "") + (pend && i === L - 1 && i !== cur ? " chg" : "")).join("|");
+  const bars = $("stpBars"); if (bars.dataset.s !== s) { bars.dataset.s = s; bars.innerHTML = s.split("|").map(c => `<i class="${c.trim()}"></i>`).join(""); }
+})();
+// room under the pad for the bigger dock (portrait) and the single row (on its side)
+const setLift555 = setLift;
+setLift = function (px, save) {
+  setLift555(px, save);
+  if (!game.on) { const land = innerWidth > innerHeight, eff = land ? 78 : Math.max(+px || 80, 80) + 52; document.documentElement.style.setProperty("--lift", eff + "px"); $("gapBar").hidden = false; }
+};
+{ const sg555 = setGame; setGame = function (on) { sg555(on); try { setLift(+$("liftPad").value); } catch (_) {} }; }
+window.addEventListener("resize", () => setTimeout(() => { if (!game.on) try { setLift(+$("liftPad").value); } catch (_) {} }, 80));
+try { if (!game.on) setLift(+$("liftPad").value); } catch (_) {}
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }
 

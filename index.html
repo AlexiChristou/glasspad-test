@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.51 TEST · game mode · 8 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.52 TEST · game mode · 8 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1525,7 +1525,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.51 TEST · game mode · 8 Oct 2026</p>
+      <p class="ver">GlassPad 5.52 TEST · game mode · 8 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10189,7 +10189,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.51 TEST</p>
+    <p class="hm-ver">GlassPad 5.52 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -11823,6 +11823,155 @@ function neonSet(el, c) { el.style.setProperty("--nl", c.lead); el.style.setProp
     try { ensureAudio(); } catch (_) {}
     $("start").hidden = true; homeOpen(false);
   }, true);
+}
+// 5.52: Home tweaks. Tapping a theme shows it in the top box (picture, colours) and plays a short preview that fades
+// in and out; ■/▶ in the box; Jump in goes to the pad (Back to it only for the theme you came out of). Frosted or solid
+// buttons (Test box), a ‹ arrow once you've scrolled the themes, round top icons, and Home fits the screen.
+const hpv = { id: null, len: 8, t1: 0, t2: 0, on: false, btn: "frost" };
+try { const v = +localStorage.getItem("glasspad.pvLen"); if (v >= 5 && v <= 15) hpv.len = v; const b = localStorage.getItem("glasspad.hmBtn"); if (b === "solid" || b === "frost") hpv.btn = b; } catch (_) {}
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  #home .hm-ic, #home .hm-x { flex: none; width: 44px; height: 44px; aspect-ratio: 1; }
+  body.hmfrost #home .hm-ic, body.hmfrost #home .hm-x, body.hmfrost #home .hm-card, body.hmfrost #home .hm-keep, body.hmfrost #home .hm-unlock, body.hmfrost #home .hm-two button, body.hmfrost #home .hm-seg, body.hmfrost #home .hm-pv {
+    background: rgba(14,8,28,.5) !important; -webkit-backdrop-filter: blur(9px) saturate(1.2); backdrop-filter: blur(9px) saturate(1.2); }
+  body.hmsolid #home .hm-ic, body.hmsolid #home .hm-x, body.hmsolid #home .hm-card, body.hmsolid #home .hm-keep, body.hmsolid #home .hm-unlock, body.hmsolid #home .hm-two button, body.hmsolid #home .hm-seg, body.hmsolid #home .hm-pv {
+    background: #0c0718 !important; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  @media (orientation: portrait) {
+    #home .hm { height: 100dvh; min-height: 0; gap: 12px; }
+    #home .hm-hero { flex: 1 1 0; height: auto; min-height: 170px; max-height: 440px; }
+    #home .hm-card { padding: 10px 14px; gap: 8px; }
+    #home .hm-unlock { height: 46px; }
+    #home .hm-two button { height: 52px; }
+    #home .hm-ver { margin-top: -6px; }
+  }
+  @media (orientation: landscape) {
+    #home .hm { padding-top: max(8px, env(safe-area-inset-top)); padding-bottom: max(8px, env(safe-area-inset-bottom)); row-gap: 8px; }
+    #home .hm-top { min-height: 0; }
+    #home .nlogo { height: 40px; }
+    #home .hm-hero { height: calc(100dvh - 80px); }
+    #home .hm-card { padding: 8px 14px; gap: 6px; }
+    #home .hm-tile { height: 124px; flex-basis: 100px; }
+    #home .hm-unlock { height: 40px; }
+    #home .hm-two button { height: 44px; }
+    #home .hm-ver { display: none; }
+  }
+  #home .hm-hero img { transition: filter .3s, opacity .3s; }
+  #home .hm-hero.lockd img { filter: saturate(.3) brightness(.5); }
+  #home .hm-pv { position: absolute; right: 16px; bottom: 18px; z-index: 2; width: 48px; height: 48px; border-radius: 50%; padding: 0; display: grid; place-items: center; color: #fff;
+    border: 2px solid var(--nl); box-shadow: 0 0 12px color-mix(in srgb, var(--nl) 60%, transparent), inset 0 0 10px color-mix(in srgb, var(--nl) 30%, transparent); }
+  #home .hm-pv svg { width: 18px; height: 18px; }
+  #home .hm-pv[hidden] { display: none; }
+  #home .hm-heroin { right: 76px; }
+  #home .hm-less { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border-radius: 50%; padding: 0; z-index: 2;
+    display: grid; place-items: center; color: #eef1f7; background: rgba(10,12,20,.65); border: 1px solid rgba(255,255,255,.25); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+  #home .hm-less svg { width: 18px; height: 18px; transform: scaleX(-1); }
+  #home .hm-less[hidden] { display: none; }`;
+  document.head.appendChild(st);
+  const setBtn = () => { document.body.classList.toggle("hmfrost", hpv.btn === "frost"); document.body.classList.toggle("hmsolid", hpv.btn === "solid"); };
+  setBtn();
+  // the stop / play button in the top box, and the left arrow
+  document.querySelector("#home .hm-hero").insertAdjacentHTML("beforeend", `<button class="hm-pv" id="hmPv" aria-label="Stop"></button>`);
+  $("hmRowWrap").insertAdjacentHTML("afterbegin", `<button class="hm-less" id="hmLess" aria-label="Back through the themes" hidden>${SV.next}</button>`);
+  $("hmLess").addEventListener("click", () => { const r = $("hmTiles"); r.scrollBy({ left: -Math.max(130, r.clientWidth * .7), behavior: "smooth" }); });
+  const hmEnds552 = hmEnds;
+  hmEnds = function () { hmEnds552(); const r = $("hmTiles"); $("hmLess").hidden = r.hidden || r.scrollLeft < 8; };
+  $("hmTiles").addEventListener("scroll", () => hmEnds(), { passive: true });
+  // Test box rows: button look and preview length
+  const at = $("gMirror") && $("gMirror").closest(".gr");
+  if (at) {
+    const r1 = document.createElement("div"); r1.className = "gr"; r1.style.cssText = "flex-wrap:wrap;gap:8px";
+    r1.innerHTML = `<div><label>Home buttons</label><small>Frosted: the strips blur behind them. Solid: plain dark</small></div><div class="gseg" id="gHmBtn"><button data-v="frost">Frosted</button><button data-v="solid">Solid</button></div>`;
+    const r2 = document.createElement("div"); r2.className = "gr"; r2.style.cssText = "flex-wrap:wrap;gap:8px";
+    r2.innerHTML = `<div><label>Theme preview</label><small>How long a theme plays on Home before it fades out</small></div><div style="display:flex;align-items:center;gap:10px"><input type="range" id="gPvLen" min="5" max="15" step="1" style="width:140px"><output id="gPvLenOut"></output></div>`;
+    at.before(r1); at.before(r2);
+    $("gHmBtn").addEventListener("click", e => { const x = e.target.closest("button"); if (!x) return; hpv.btn = x.dataset.v; try { localStorage.setItem("glasspad.hmBtn", hpv.btn); } catch (_) {} setBtn(); gameSheetSync(); });
+    $("gPvLen").addEventListener("input", e => { hpv.len = +e.target.value; $("gPvLenOut").textContent = hpv.len + " s"; try { localStorage.setItem("glasspad.pvLen", hpv.len); } catch (_) {} });
+    const gss552 = gameSheetSync;
+    gameSheetSync = function () { gss552.apply(this, arguments); try { $("gHmBtn").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x.dataset.v === hpv.btn)); $("gPvLen").value = hpv.len; $("gPvLenOut").textContent = hpv.len + " s"; } catch (_) {} };
+  }
+}
+const pvTarget = () => MASTER_G * mix.master;
+function pvGain(to, secs) {
+  if (!audio) return; const g = audio.master.gain, t = audio.ctx.currentTime;
+  g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(to, t + secs);
+}
+function pvClear() { clearTimeout(hpv.t1); clearTimeout(hpv.t2); hpv.t1 = hpv.t2 = 0; }
+function pvSync() {
+  const b = $("hmPv"), locked = $("home").querySelector(".hm-hero").classList.contains("lockd");
+  b.hidden = locked; b.innerHTML = T.playing ? SV.stop : SV.play; b.setAttribute("aria-label", T.playing ? "Stop" : "Listen");
+  const lbl = $("hmHeroLbl");
+  if (hpv.id) lbl.textContent = locked ? "Locked" : T.playing ? "Now playing" : "Your pick";
+  else if (hm.fromPad) lbl.textContent = T.playing ? "Now playing" : "Your theme";
+  $("hmPlayTxt").textContent = locked ? "Unlock" : (hm.fromPad && !hpv.id) ? "Back to it" : "Jump in";
+  const ic = $("hmPlay").querySelector("svg"); if (ic) ic.outerHTML = locked ? SV.lock : SV.play;
+}
+// play the band from Home: fade in, then fade out and stop after the preview length
+function pvStart(load) {
+  ensureAudio(); pvClear();
+  const go = () => {
+    if (load) { try { keepArm(); } catch (_) {} qs.pend = null; load(); }
+    const wasOn = T.playing;
+    if (!wasOn) { if (audio) { audio.master.gain.cancelScheduledValues(audio.ctx.currentTime); audio.master.gain.setValueAtTime(0, audio.ctx.currentTime); } setPlaying(true); }
+    pvGain(pvTarget(), wasOn ? .6 : 2);
+    hpv.on = true; pvSync();
+    hpv.t1 = setTimeout(() => {
+      pvGain(0, 3);
+      hpv.t2 = setTimeout(() => { hpv.on = false; if (T.playing) setPlaying(false); setTimeout(() => pvGain(pvTarget(), .05), 250); pvSync(); }, 3100);
+    }, hpv.len * 1000);
+  };
+  if (T.playing && load) { pvGain(0, .35); hpv.t1 = setTimeout(go, 380); } else go();
+}
+function pvStop() {
+  pvClear(); hpv.on = false;
+  if (!T.playing) return pvSync();
+  pvGain(0, .35); hpv.t2 = setTimeout(() => { setPlaying(false); setTimeout(() => pvGain(pvTarget(), .05), 200); pvSync(); }, 400);
+}
+function hmShow(id, locked) {
+  const h = $("home"), hero = h.querySelector(".hm-hero"), key = GAME_IMGS[id] ? id : gameKey();
+  hm.heroId = GAME_IMGS[key] ? key : hm.heroId;
+  $("hmHeroImg").src = hmPic(hm.heroId);
+  $("hmHeroName").textContent = (QSTYLES_SYNTH[id] && QSTYLES_SYNTH[id].name) || (QSTYLES_SYNTH[key] && QSTYLES_SYNTH[key].name) || qs.name || "";
+  hero.classList.toggle("lockd", !!locked);
+  try { neonSet(h, neonCols(hm.heroId)); h.style.setProperty("--hacc", neonCols(hm.heroId).lead); neonStrips(h); } catch (_) {}
+  $("hmTiles").querySelectorAll(".hm-tile").forEach(t => t.classList.toggle("cur", t.dataset.id === id));
+}
+// a tile: show it in the box and play a taste of it (locked themes: just the picture)
+hmPick = function (id) {
+  const locked = HM_LOCKED.includes(id);
+  hpv.id = id;
+  if (locked) { pvStop(); hmShow(id, true); pvSync(); return; }
+  pvStart(() => loadStyle(styleOf(id)));
+  hmShow(id, false); pvSync();
+};
+function hmJump() {
+  ensureAudio();
+  const fromPad = hm.fromPad, locked = $("home").querySelector(".hm-hero").classList.contains("lockd");
+  if (locked) { hmToast("Unlocking comes later. For now it plays"); try { keepArm(); } catch (_) {} qs.pend = null; loadStyle(styleOf(hpv.id)); }
+  else if (!hpv.id && !fromPad) {   // Start here / Last played, not previewed: as before
+    const l = readLast(); keepPend = null;
+    if (l) restoreLast(l); else loadStyle(styleOf(hm.heroId));
+  }
+  pvClear(); hpv.on = false; pvGain(pvTarget(), .3);
+  homeClose();
+  if (!T.playing && (hpv.id || !fromPad)) setPlaying(true);
+  if (!fromPad) setLayout("pad");
+  hpv.id = null;
+}
+{
+  const old = $("hmPlay"), b = old.cloneNode(true); old.replaceWith(b); b.addEventListener("click", hmJump);
+  $("hmPv").addEventListener("click", () => {
+    if (T.playing) return pvStop();
+    if (hpv.id) return pvStart(() => loadStyle(styleOf(hpv.id)));
+    if (hm.fromPad) return pvStart(null);
+    const l = readLast();
+    pvStart(() => { if (l) { keepPend = null; restoreLast(l); } else loadStyle(styleOf(hm.heroId)); });
+    hpv.id = hm.heroId; pvSync();
+  });
+  const hmOpen552 = homeOpen;
+  homeOpen = function (fromPad) { hpv.id = null; pvClear(); hpv.on = false; const r = hmOpen552.apply(this, arguments); $("home").querySelector(".hm-hero").classList.remove("lockd"); pvSync(); requestAnimationFrame(() => hmEnds()); return r; };
+  const hmClose552 = homeClose;
+  homeClose = function () { if (hpv.t1 || hpv.t2) { pvClear(); if (hpv.on) pvGain(pvTarget(), .3); hpv.on = false; } return hmClose552.apply(this, arguments); };
 }
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }

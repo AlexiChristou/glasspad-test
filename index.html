@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.55 TEST · game mode · 8 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.55.1 TEST · game mode · 8 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1525,7 +1525,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.55 TEST · game mode · 8 Oct 2026</p>
+      <p class="ver">GlassPad 5.55.1 TEST · game mode · 8 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -9833,7 +9833,7 @@ gameBg = function () {
 /* ----- SHIFT pressed in the last bar of the chords still lands on the very next bar; the charge starts at once ----- */
 const liftLandAbs538 = liftLandAbs;
 liftLandAbs = function () {
-  if (!game.on || isManual() || !T.playing) return liftLandAbs538();
+  if (isManual() || !T.playing) return liftLandAbs538();
   const st = T.meter.steps, L = passBars(), a = audAbs(), barStart = T.abs - T.step;
   let b = T.bar + Math.floor((a - barStart) / st);   // the bar you can hear now (the scheduler runs a little ahead)
   for (let k = 0; k < 400; k++, b++) if ((b + 1) % pad.every === 0 && (keyLift.when === "bar" || b % L === L - 1)) break;
@@ -10189,7 +10189,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.55 TEST</p>
+    <p class="hm-ver">GlassPad 5.55.1 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -11672,6 +11672,8 @@ function stpSync() {
     const sb = $("stProBtn"), mic = $("gMic"), gear = $("gGear");
     if (land) { if (bar.firstElementChild !== sb) bar.insertBefore(sb, bar.firstElementChild); if (mic.parentNode !== bar || mic.nextElementSibling !== gear) gear.before(mic); }
     else { if (sb.parentNode !== row) row.insertBefore(sb, row.firstChild); if (mic.parentNode !== row) row.appendChild(mic); }
+    const K = $("stpKey"), dk = document.querySelector("#gapBar .stp-dock");
+    if (K) { if (land) { if (K.parentNode !== dk) dk.querySelector(".stp-bass").after(K); } else if (K.parentNode !== row) mic.before(K); }
     try { stpDockSync(); } catch (_) {}
   }
   document.body.style.setProperty("--g-lead", TH.leadLine || TH.acc);
@@ -12142,6 +12144,36 @@ function mkHearSync() { const b = $("mkHear"); if (b) { const on = T.playing && 
   @media (orientation: landscape) { body.game header.bar #gMic { margin-left: auto !important; } body.game header.bar #gGear, body.studio header.bar #gGear { margin-left: 8px !important; } }`;
   document.head.appendChild(st);
 }
+// 5.55.1: standing up the dock is two compact panels (the pad keeps the game pad's height), KEY moves up to the second row,
+// ‹ STUDIO is a round ‹ like the mic
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  body.studio #stProBtn { width: 38px !important; height: 38px !important; padding: 0 !important; border-radius: 50% !important; justify-content: center; font-size: 0 !important; letter-spacing: 0 !important; }
+  body.studio #stProBtn::before { content: ""; width: 18px; height: 18px; background: #fff;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 5l-7 7 7 7'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 5l-7 7 7 7'/%3E%3C/svg%3E") center / contain no-repeat; }
+  #styleRow .stp-key { margin: 0 auto; width: auto; height: 40px; display: flex; flex-direction: row; align-items: center; gap: 10px; padding: 0 6px; border-radius: 20px; }
+  #styleRow .stp-key .stp-kv { min-width: 56px; } #styleRow .stp-key .stp-lab { font-size: 8px; } #styleRow .stp-key b { font-size: 17px; }
+  #styleRow .stp-key small { display: none; } #styleRow .stp-key #stpKeyDn { order: -1; }
+  #styleRow .stp-key b::after { content: attr(data-s); font: 400 9px var(--mono); color: #a99fd0; margin-left: 3px; text-shadow: none; }
+  #styleRow .stp-key button { width: 30px; height: 30px; border-radius: 50%; padding: 0; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.18); color: #eef1f7; font: 500 11px var(--mono); }
+  #styleRow .stp-key .stp-kfill { border-radius: 20px; }
+  @media (orientation: portrait) {
+    body.studio #gapBar { gap: 6px; }
+    body.studio #gapBar .stp-side { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 6px; padding: 5px 6px; }
+    body.studio #gapBar .stp-side .stp-row2 { flex-basis: 100%; }
+    body.studio #gapBar .stp-side .stp-lab { margin-right: 2px; }
+    body.studio #gapBar .stp-side button { height: 30px; }
+  }`;
+  document.head.appendChild(st);
+}
+// the KEY and ARP buttons react the moment a finger lands, even while another finger plays
+for (const id of ["stpKeyUp", "stpKeyDn", "stpArpL", "stpArpB"]) {
+  const btn = $(id); let fired = 0;
+  btn.addEventListener("pointerdown", () => { if (voices.size) { fired = performance.now(); btn.click(); } });
+  btn.addEventListener("click", e => { if (e.isTrusted && performance.now() - fired < 800) e.stopImmediatePropagation(); }, true);
+}
 // what the dock shows: octave numbers, the key (where it's going while a change waits), its fill, the bar counter
 function stpDockSync() {
   for (const k of ["lOct", "bOct"]) { const n = ($(k + "Out").textContent.match(/-?\d+/) || ["0"])[0]; if ($(k + "Num").textContent !== n) $(k + "Num").textContent = n; }
@@ -12172,7 +12204,7 @@ function stpDockSync() {
 const setLift555 = setLift;
 setLift = function (px, save) {
   setLift555(px, save);
-  if (!game.on) { const land = innerWidth > innerHeight, eff = land ? 78 : Math.max(+px || 80, 80) + 52; document.documentElement.style.setProperty("--lift", eff + "px"); $("gapBar").hidden = false; }
+  if (!game.on) { const land = innerWidth > innerHeight, eff = land ? 78 : Math.max(48, +px || 80) + 18; document.documentElement.style.setProperty("--lift", eff + "px"); $("gapBar").hidden = false; }
 };
 { const sg555 = setGame; setGame = function (on) { sg555(on); try { setLift(+$("liftPad").value); } catch (_) {} }; }
 window.addEventListener("resize", () => setTimeout(() => { if (!game.on) try { setLift(+$("liftPad").value); } catch (_) {} }, 80));

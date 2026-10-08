@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.53 TEST · game mode · 8 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.53.1 TEST · game mode · 8 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1525,7 +1525,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.53 TEST · game mode · 8 Oct 2026</p>
+      <p class="ver">GlassPad 5.53.1 TEST · game mode · 8 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10189,7 +10189,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.53 TEST</p>
+    <p class="hm-ver">GlassPad 5.53.1 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -11869,7 +11869,6 @@ try { const v = +localStorage.getItem("glasspad.pvLen"); if (v >= 5 && v <= 15) 
     background: rgba(10,10,14,.6); border: 2px solid rgba(220,220,230,.5); color: #e6e6ee; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
   #home .hm-hero.lockd .hm-lockbig svg { width: 38px; height: 38px; }
   #home.hmlock .hm-play { background: #f2c94c; color: #1a1204; box-shadow: 0 0 18px rgba(242,201,76,.65); }
-  #home.hmlock .hm-tile:not(.cur) img { filter: grayscale(.85) brightness(.6); }
   #home.hmlock .hm-tile.cur img { filter: grayscale(1) brightness(.6); }
   #home.hmlock .nstrips { opacity: .28; }
   #home .hm-pv { position: absolute; right: 16px; bottom: 18px; z-index: 2; width: 48px; height: 48px; border-radius: 50%; padding: 0; display: grid; place-items: center; color: #fff;

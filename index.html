@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.56.1 TEST · game mode · 8 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.57 TEST · game mode · 8 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1525,7 +1525,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.56.1 TEST · game mode · 8 Oct 2026</p>
+      <p class="ver">GlassPad 5.57 TEST · game mode · 8 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10189,7 +10189,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.56.1 TEST</p>
+    <p class="hm-ver">GlassPad 5.57 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -12245,6 +12245,199 @@ liftKey = function (dir) {
   parts.plan.push({ i0: nextI, part: "verse", pos: 0, lift: keyLift.target });
   if (keyLift.fill) parts.fillBar = T.bar;
 };
+// 5.57: Your setups. Studio home gets a row of your saved setups (+ Save this one, tap to load, ✎ to rename or delete) and
+// the SAVE button gives way to a "● Changed · Save" pill when a loaded setup has been changed. Setups also show on Home
+// under Mine (STUDIO tag): they preview like a theme and Jump in opens them on the Studio pad.
+// Also: a pinned ▶ Try button on the Studio part pages, and a clearer recording pulse in Your voice.
+const su = { name: null, base: "", ed: null };
+const suCols = u => (u && u.cols && u.cols.length === 3) ? u.cols : ["#1fd6ff", "#9b5cff", "#ff3fb4"];
+const suSnap = () => { try { return JSON.stringify(capture()); } catch (_) { return ""; } };
+function suEntry(name) { return { name, data: capture(), theme: TH.id, cc: { ...customCols }, cols: [TH.leadLine || TH.acc, TH.acc2, TH.acc] }; }
+function suApply(u) {
+  applyPreset(makePreset(u.data));
+  if (u.theme) {
+    if (u.theme === "custom" && u.cc) { Object.assign(customCols, u.cc); try { localStorage.setItem("glasspad.customTheme", JSON.stringify(customCols)); } catch (_) {} }
+    try { setTheme(u.theme); $("themeSel").value = TH.id; renderCustom(); } catch (_) {}
+  }
+  currentPreset = u.name; renderPresets(); try { goManual(); } catch (_) {}
+  su.name = u.name; su.base = suSnap();
+}
+// the setup you loaded stays "yours" after you change something (the app clears currentPreset on any edit)
+function suLoaded() {
+  if (currentPreset && currentPreset !== su.name) { su.name = userPresets.some(x => x.name === currentPreset) ? currentPreset : null; su.base = su.name ? suSnap() : ""; }
+  return su.name && userPresets.find(x => x.name === su.name) || null;
+}
+function suChanged() { const u = suLoaded(); return !!(u && su.base && suSnap() !== su.base); }
+function suArt(cols) {
+  const [a, b, c] = cols, xs = [...Array(9).keys()].map(i => 8 + i * 47), col = i => i < 3 ? b : i < 6 ? c : a;
+  const lines = xs.map((x, i) => `<line x1='${x}' y1='0' x2='${x}' y2='300' stroke='${col(i)}' stroke-width='10' opacity='.25'/><line x1='${x}' y1='0' x2='${x}' y2='300' stroke='${col(i)}' stroke-width='2'/>`).join("");
+  return "data:image/svg+xml," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='390' height='300' viewBox='0 0 390 300' preserveAspectRatio='none'><rect width='390' height='300' fill='#05040c'/>${lines}</svg>`);
+}
+function suStrips(cols) { const [a, b, c] = cols; return [b, c, a, b, c, a].map(x => `<span style="flex:1;border-right:1.5px solid ${x};box-shadow:1px 0 6px ${x}aa;display:block"></span>`).join(""); }
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  #stSu { display: flex; flex-direction: column; gap: 8px; }
+  #stSu .st-sl { display: flex; justify-content: space-between; align-items: center; font: 500 11px var(--mono); letter-spacing: .14em; color: #a3abbb; }
+  #stSuRow { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin-right: -16px; padding-right: 16px; }
+  #stSuRow::-webkit-scrollbar { display: none; }
+  .su-new { flex: 0 0 76px; height: 104px; border-radius: 16px; background: rgba(255,255,255,.03); border: 1.5px dashed rgba(242,176,74,.55); color: #eef1f7; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 0; font: 500 10px/13px var(--mono); text-align: center; }
+  .su-new b { font: 500 28px/1 var(--display); color: #f2b04a; }
+  .su-t { position: relative; flex: 0 0 116px; height: 104px; border-radius: 16px; overflow: hidden; background: #07060f; border: 1.5px solid rgba(255,255,255,.18); color: #eef1f7; padding: 0; text-align: left; }
+  .su-t.cur { border: 2px solid #f2b04a; box-shadow: 0 0 14px rgba(242,176,74,.4); }
+  .su-t .str { position: absolute; left: 0; right: 0; top: 0; height: 56px; display: flex; }
+  .su-t .nm { position: absolute; left: 10px; right: 8px; bottom: 26px; font: 700 12px var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .su-t .mt { position: absolute; left: 10px; right: 8px; bottom: 10px; font: 400 10px var(--mono); color: #a3abbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .su-t .lo { position: absolute; left: 8px; top: 8px; font: 500 9px var(--mono); letter-spacing: .1em; color: #05060b; background: #f2b04a; border-radius: 6px; padding: 1px 5px; }
+  .su-t .ed, .hm-tile.setup .ed { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 50%; padding: 0; display: grid; place-items: center; background: rgba(5,6,11,.75); border: 1px solid rgba(255,255,255,.25); color: #eef1f7; z-index: 2; }
+  .su-t .ed svg, .hm-tile.setup .ed svg { width: 12px; height: 12px; }
+  #st .st-save { display: none !important; }
+  #stChg { height: 34px; padding: 0 12px; border-radius: 17px; border: 0; background: #f2b04a; color: #05060b; font: 600 11px var(--mono); box-shadow: 0 0 14px rgba(242,176,74,.55); white-space: nowrap; }
+  #stChg[hidden] { display: none; }
+  #suEd { position: fixed; inset: 0; z-index: 80; background: rgba(3,3,10,.6); display: flex; align-items: flex-end; justify-content: center; }
+  #suEd[hidden] { display: none; }
+  #suEd .box { width: 100%; max-width: 520px; box-sizing: border-box; border-radius: 22px 22px 0 0; background: rgba(10,8,22,.98); border-top: 2px solid #f2b04a; padding: 16px 18px max(20px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; color: #eef1f7; }
+  #suEd h3 { margin: 0; font: 900 18px var(--display); letter-spacing: .03em; }
+  #suEd input { height: 44px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,.25); background: #05040c; color: #fff; font: 500 16px "IBM Plex Sans", var(--body); padding: 0 12px; }
+  #suEd .r { display: flex; gap: 8px; }
+  #suEd .r button { flex: 1; height: 44px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,.25); background: rgba(255,255,255,.06); color: #eef1f7; font: 700 12px var(--display); letter-spacing: .05em; }
+  #suEd .r .ok { background: #f2b04a; color: #05060b; border-color: #f2b04a; }
+  #suEd .r .del.sure { background: #ff4d5e; border-color: #ff4d5e; color: #fff; }
+  .hm-tile.setup { background: #07060f; }
+  .hm-tile.setup .str { position: absolute !important; left: 0 !important; right: 0 !important; top: 0 !important; bottom: 44px !important; display: flex; }
+  .hm-tile.setup .str span { position: static !important; }
+  .hm-tile.setup .stag, .hm-tile .yours { z-index: 1; }
+  .hm-tile.setup .stag { position: absolute; top: 8px; left: 8px; font: 500 9px var(--mono); letter-spacing: .1em; padding: 2px 6px; border-radius: 6px; background: rgba(3,3,10,.7); border: 1px solid #f2b04a; color: #f2b04a; }
+  .hm-tile.setup .mt { position: absolute; left: 10px; bottom: 8px; z-index: 1; font: 400 10px var(--mono); color: #a99fd0; }
+  .hm-tile.setup > span:not(.str):not(.stag):not(.mt) { bottom: 24px; }
+  /* the pinned Try on Studio part pages */
+  #spDock { position: sticky; bottom: 0; z-index: 3; display: flex; gap: 10px; padding: 14px 0 max(10px, env(safe-area-inset-bottom)); margin-top: 6px; background: linear-gradient(180deg, rgba(5,6,11,0), rgba(5,6,11,.94) 40%); }
+  #spDock > button { flex: 1; margin: 0 !important; }
+  #sp .sp-trybig { display: flex; align-items: center; justify-content: center; gap: 8px; height: 52px; border-radius: 26px; background: rgba(12,6,24,.8); border: 2px solid var(--sc, #f2b04a); color: #fff;
+    font: 700 13px var(--display); letter-spacing: .03em; box-shadow: 0 0 12px color-mix(in srgb, var(--sc, #f2b04a) 55%, transparent), inset 0 0 12px color-mix(in srgb, var(--sc, #f2b04a) 30%, transparent); }
+  #sp .sp-trybig[hidden] { display: none; }
+  #sp .sp-trybig svg { width: 14px; height: 14px; }
+  #sp .sp-trybig.go { background: var(--sc, #f2b04a); color: #05060b; }
+  /* Your voice: a stronger pulse while it records */
+  .vs-rec.going { animation: vsBig .8s ease-out infinite !important; }
+  @keyframes vsBig { 0% { box-shadow: 0 0 0 0 rgba(255,77,94,.75), 0 0 28px rgba(255,77,94,.6); transform: scale(1); } 50% { transform: scale(1.06); } 100% { box-shadow: 0 0 0 26px rgba(255,77,94,0), 0 0 40px rgba(255,77,94,.8); transform: scale(1); } }
+  #vsSheet:has(.vs-rec.going) .vs { animation: vsEdge .8s ease-in-out infinite; }
+  @keyframes vsEdge { 0%, 100% { box-shadow: 0 -2px 18px rgba(255,90,106,.55), 0 -20px 50px rgba(255,90,106,.15); } 50% { box-shadow: 0 -4px 30px rgba(255,90,106,1), 0 -30px 80px rgba(255,90,106,.45); } }
+  #vsSheet:has(.vs-rec.going) .vs-rectxt { color: #ff8a96; font-weight: 600; }`;
+  document.head.appendChild(st);
+  // Studio home: the row, and the Changed · Save pill
+  const setup = document.querySelector("#st .st-setup");
+  setup.insertAdjacentHTML("afterend", `<div id="stSu"><div class="st-sl"><span>YOUR SETUPS</span><span id="stSuN"></span></div><div id="stSuRow"></div></div>`);
+  document.querySelector("#st .st-save").insertAdjacentHTML("beforebegin", `<button id="stChg" hidden>● Changed · Save</button>`);
+  document.body.insertAdjacentHTML("beforeend", `<div id="suEd" hidden role="dialog" aria-label="Edit setup"><div class="box"><h3>YOUR SETUP</h3><input id="suEdName" maxlength="28" autocomplete="off"><div class="r"><button class="del" id="suEdDel">DELETE</button><button id="suEdNo">CANCEL</button><button class="ok" id="suEdOk">SAVE</button></div></div></div>`);
+}
+function suRow() {
+  const r = $("stSuRow"); r.innerHTML = "";
+  const nb = document.createElement("button"); nb.className = "su-new"; nb.innerHTML = `<b>+</b>Save<br>this one`;
+  nb.addEventListener("click", () => {
+    let n = userPresets.length + 1, name = "Setup " + n; while (userPresets.some(u => u.name === name)) name = "Setup " + (++n);
+    userPresets.push(suEntry(name)); storePresets(); currentPreset = name; su.name = name; su.base = suSnap(); renderPresets(); stRender();
+    hmToast && $("hmToast") && 0;
+  });
+  r.appendChild(nb);
+  userPresets.forEach(u => {
+    const b = document.createElement("div"); b.className = "su-t" + (u.name === su.name ? " cur" : ""); b.setAttribute("role", "button"); b.tabIndex = 0;
+    const meta = (() => { try { const d = u.data, k = NAMES[mod12((d.root ?? 0))], sc = (SC[d.scale] && SC[d.scale].name || "").replace(/ \(.*\)/, "").toLowerCase().replace("pentatonic", "pent."); return `${k} ${sc} · ${d.bpm || ""}`; } catch (_) { return ""; } })();
+    b.innerHTML = `<span class="str">${suStrips(suCols(u))}</span>${u.name === su.name ? `<i class="lo">LOADED</i>` : ""}<button class="ed" aria-label="Edit ${escH(u.name)}">${SV.pencil}</button><span class="nm">${escH(u.name)}</span><span class="mt">${escH(meta)}</span>`;
+    b.addEventListener("click", e => { if (e.target.closest(".ed")) { suEdOpen(u.name); return; } suApply(u); stRender(); });
+    r.appendChild(b);
+  });
+  $("stSuN").textContent = userPresets.length ? `${userPresets.length} SAVED` : "";
+}
+function suEdOpen(name) { su.ed = name; $("suEdName").value = name; $("suEdDel").classList.remove("sure"); $("suEdDel").textContent = "DELETE"; $("suEd").hidden = false; }
+$("suEdNo").addEventListener("click", () => { $("suEd").hidden = true; });
+$("suEd").addEventListener("click", e => { if (e.target === $("suEd")) $("suEd").hidden = true; });
+$("suEdOk").addEventListener("click", () => {
+  const u = userPresets.find(x => x.name === su.ed), nn = $("suEdName").value.trim();
+  if (u && nn && nn !== u.name && !userPresets.some(x => x.name === nn)) { if (currentPreset === u.name) currentPreset = nn; if (su.name === u.name) su.name = nn; u.name = nn; storePresets(); renderPresets(); }
+  $("suEd").hidden = true; stRender();
+});
+$("suEdDel").addEventListener("click", () => {
+  const d = $("suEdDel"); if (!d.classList.contains("sure")) { d.classList.add("sure"); d.textContent = "SURE?"; return; }
+  const i = userPresets.findIndex(x => x.name === su.ed); if (i >= 0) { userPresets.splice(i, 1); storePresets(); if (currentPreset === su.ed) currentPreset = ""; if (su.name === su.ed) su.name = null; renderPresets(); }
+  $("suEd").hidden = true; stRender();
+});
+$("stChg").addEventListener("click", () => {
+  const u = suLoaded(); if (!u) return; const i = userPresets.indexOf(u);
+  userPresets[i] = suEntry(u.name); storePresets(); currentPreset = u.name; renderPresets(); su.base = suSnap(); stRender();
+});
+{
+  const stRender557 = stRender;
+  stRender = function () { stRender557.apply(this, arguments); try { const u = suLoaded(); if (u && !currentPreset) $("stName").textContent = u.name; suRow(); $("stChg").hidden = !suChanged(); } catch (_) {} };
+  setInterval(() => { if (!$("st").hidden) try { $("stChg").hidden = !suChanged(); } catch (_) {} }, 1200);
+}
+// Home → Mine: your themes, then your Studio setups
+hmShowRow = function (v) {
+  const has = MY.list.length > 0 || userPresets.length > 0;
+  if (!has && v === "mine") v = "themes";
+  hm.row = v;
+  document.querySelectorAll(".hm-seg button").forEach(x => x.setAttribute("aria-pressed", x.dataset.v === v));
+  $("hmTiles").hidden = v !== "themes"; $("hmMineRow").hidden = v !== "mine";
+  const seg = document.querySelector(".hm-seg"); if (seg) seg.hidden = !has;
+  const nT = MY.list.length, nS = userPresets.length;
+  $("hmThLbl").textContent = v === "themes" ? `${HM_FREE.length} free · ${HM_LOCKED.length} locked` : [nT ? `${nT} theme${nT > 1 ? "s" : ""}` : "", nS ? `${nS} setup${nS > 1 ? "s" : ""}` : ""].filter(Boolean).join(" · ");
+  if (v === "mine") {
+    const r = $("hmMineRow"); r.innerHTML = "";
+    const mkb = document.createElement("button"); mkb.className = "hm-tile mk"; mkb.innerHTML = `<b>+</b><span>Make your own</span>`; mkb.addEventListener("click", () => mkOpen(null)); r.appendChild(mkb);
+    for (const t of MY.list) {
+      const b = document.createElement("div"); b.className = "hm-tile"; b.setAttribute("role", "button"); b.tabIndex = 0; b.dataset.id = t.id;
+      b.innerHTML = `<img src="${t.pic || hmPic(t.band)}" alt=""><i class="yours">YOURS</i><span>${escH(t.name)}</span><button class="ed" aria-label="Edit ${escH(t.name)}">${SV.pencil}</button>`;
+      b.addEventListener("click", e => { if (e.target.closest(".ed")) { mkOpen(t); return; } hmPick(t.id); });
+      r.appendChild(b);
+    }
+    userPresets.forEach(u => {
+      const b = document.createElement("div"); b.className = "hm-tile setup"; b.setAttribute("role", "button"); b.tabIndex = 0; b.dataset.su = u.name;
+      b.innerHTML = `<span class="str">${suStrips(suCols(u))}</span><i class="stag">STUDIO</i><span>${escH(u.name)}</span><span class="mt">${escH(((u.data && u.data.bpm) || "") + " bpm")}</span>`;
+      b.addEventListener("click", () => hmPickSetup(u));
+      r.appendChild(b);
+    });
+  }
+  requestAnimationFrame(() => hmEnds());
+};
+function hmPickSetup(u) {
+  hpv.id = "setup:" + u.name; hpv.setup = u;
+  pvStart(() => { try { keepArm(); } catch (_) {} suApply(u); });
+  const h = $("home"), hero = h.querySelector(".hm-hero"), c = suCols(u);
+  $("hmHeroImg").src = suArt(c); $("hmHeroName").textContent = u.name;
+  hero.classList.remove("lockd"); h.classList.remove("hmlock");
+  try { neonSet(h, { lead: c[0], bass: c[1], mid: c[2] }); h.style.setProperty("--hacc", c[0]); neonStrips(h); } catch (_) {}
+  h.querySelectorAll(".hm-tile").forEach(t => t.classList.toggle("cur", t.dataset.su === u.name));
+  pvSync(); $("hmHeroLbl").textContent = "Studio setup · Now playing";
+}
+{
+  const hmPick557 = hmPick; hmPick = function () { hpv.setup = null; su.name = null; return hmPick557.apply(this, arguments); };
+  const hmOpen557 = homeOpen; homeOpen = function () { hpv.setup = null; return hmOpen557.apply(this, arguments); };
+  // Jump in on a setup opens it on the Studio pad
+  window.addEventListener("click", e => {
+    if (!e.target.closest || !e.target.closest("#hmPlay") || !hpv.setup) return;
+    e.stopPropagation(); e.preventDefault();
+    const u = hpv.setup; hpv.setup = null; hpv.id = null;
+    pvClear(); hpv.on = false; pvGain(pvTarget(), .3);
+    homeClose(); setGame(false); suApply(u);
+    try { setLayout("pad"); } catch (_) {}
+    if (!T.playing) setPlaying(true, audio.ctx.currentTime + .05);
+  }, true);
+}
+{ const sg = document.querySelector(".hm-seg"); if (sg) sg.hidden = !(MY.list.length || userPresets.length); }
+// the pinned Try on the part pages
+{
+  const sp = document.querySelector("#sp .st"), pad = $("spPad");
+  const dock = document.createElement("div"); dock.id = "spDock";
+  const t = document.createElement("button"); t.className = "sp-try sp-trybig"; t.type = "button";
+  dock.append(t, pad); sp.appendChild(dock);
+  const NAME = { lead: "lead", bass: "bass", chords: "chords", drums: "drums" };
+  const spOpen557 = spOpen;
+  spOpen = function (p) {
+    const r = spOpen557.apply(this, arguments);
+    t.hidden = !NAME[p]; t.dataset.try = p; t.innerHTML = `${SV.play}Try the ${NAME[p] || ""}`;
+    return r;
+  };
+}
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }
 

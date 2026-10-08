@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.48.1 TEST · game mode · 7 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.49 TEST · game mode · 7 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1525,7 +1525,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.48.1 TEST · game mode · 7 Oct 2026</p>
+      <p class="ver">GlassPad 5.49 TEST · game mode · 7 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -6780,7 +6780,7 @@ function draw() {
   // Android can drop a canvas's settings to free memory; set the scale every frame so the pad never shrinks into a corner
   cx.setTransform(DPR, 0, 0, DPR, 0, 0);
   cx.fillStyle = TH.ink; cx.fillRect(0, 0, W, H);
-  const gImg = game.on && gameBg();   // game mode: the theme's picture behind the strips
+  const gImg = (game.on || !!studioBgKey()) && gameBg();   // game mode: the theme's picture behind the strips
 
   // lead lanes
   const lw = W / lanes.length;
@@ -6806,7 +6806,7 @@ function draw() {
     }
     cx.fillStyle = isRoot ? TH.acc : TH.leadText || TH.muted;
     cx.font = `500 ${Math.max(9, Math.min(12, lw * .3))}px "IBM Plex Mono", monospace`;
-    cx.textAlign = "center"; if (!game.on) cx.fillText(l.name, i * lw + lw / 2, LH - 12);
+    cx.textAlign = "center"; if (!game.on && stpNames()) cx.fillText(l.name, i * lw + lw / 2, LH - 12);
     if (inChord) { cx.fillStyle = TH.acc; cx.beginPath(); cx.arc(i * lw + lw / 2, LH - (game.on ? 20 : 28), 2.5, 0, Math.PI * 2); cx.fill(); }
   });
   if (!kb.on) edgeLines(TH.leadLine || TH.line, 0, LH);
@@ -6833,7 +6833,7 @@ function draw() {
       }
       cx.fillStyle = i % (bassLanes.length > 5 ? 3 : 2) === 0 ? TH.acc2 : TH.bass2;
       cx.font = '500 12px "IBM Plex Mono", monospace'; cx.textAlign = "center";
-      if (!game.on) cx.fillText(l.name, i * bw + bw / 2, H - 12);
+      if (!game.on && stpNames()) cx.fillText(l.name, i * bw + bw / 2, H - 12);
       // Fixed / Full scale: a dot on the strips that are in the chord playing now
       if ((bass.layout === "fixed" || bass.layout === "scale") && chordPcs.some(p => Math.abs(p - mod12(l.midi)) < .01)) {
         cx.fillStyle = TH.acc2; cx.beginPath(); cx.arc(i * bw + bw / 2, H - 28, 2.5, 0, Math.PI * 2); cx.fill();
@@ -8654,7 +8654,7 @@ const GAME_BASS = [
   { st: [0, 3, 8, 11], iv: [0, 7, 0, 12], len: [2.6, 2.6, 2.6, 2.6] },
   { st: [0, 2, 4, 6, 8, 10, 12, 14], iv: [0, 12, 0, 12, 0, 12, 7, 12], len: [1.6, 1.6, 1.6, 1.6, 1.6, 1.6, 1.6, 1.6] },
 ];
-const gameKey = () => qs.base || qs.id;
+const gameKey = () => (typeof studioBgKey === "function" && studioBgKey()) || qs.base || qs.id;   // 5.49: the Studio pad's picture
 const gameLiftAmt = () => GAME_LIFT[gameKey()] ?? 2;
 function gSetBusGains() { if (!audio) return; const t = audio.ctx.currentTime; audio.drums.gain.setTargetAtTime(mixV("drums", drum.vol), t, .05); audio.padBus.gain.setTargetAtTime(mixV("pad", pad.vol), t, .05); }
 // the light show in game mode: Full is everything with the EQ strip bands, but no hi-hat sparkles; SHIFT has its own charge
@@ -10189,7 +10189,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.48.1 TEST</p>
+    <p class="hm-ver">GlassPad 5.49 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -11573,6 +11573,123 @@ $("stGame").addEventListener("click", () => { stClose(); setGame(true); homeOpen
 const setGame547 = setGame;
 setGame = function (on) { if (on) { spClose(true); stClose(); } setGame547(on); };
 // launch: game mode opens on the home screen (a reload mid-session still asks for the light "Tap to continue")
+/* ---------- 5.49 the Studio pad: the game pad's look for Studio (Pro) ----------
+   No tabs panel (Studio home and its pages replace it). Top bar: Stop/Hush, Loop, Rec as glass pills.
+   Second row: ‹ STUDIO, the chord now playing, KEY ▼ ▲ (the key lift), the mic. Bottom: LEAD (octave, ARP, HOLD)
+   and BASS (octave, ARP, HOLD). Root rings and chord dots as before; note names switchable; a background picture
+   chosen in Look (none, a theme's picture or one of your themes' photos). Parts stay hidden (switched off since 5.1). */
+const STP = { names: true, bg: "none", lastLA: "up", lastBA: "up" };
+try { const a = JSON.parse(localStorage.getItem("glasspad.studioPad") || "{}"); Object.assign(STP, a); } catch (_) {}
+const stpSave = () => { try { localStorage.setItem("glasspad.studioPad", JSON.stringify(STP)); } catch (_) {} };
+function studioBgKey() { try { return !game.on && STP.bg && STP.bg !== "none" && GAME_IMGS[STP.bg] ? STP.bg : ""; } catch (_) { return ""; } }   // safe before STP exists
+function stpNames() { try { return STP.names; } catch (_) { return true; } }
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  body.studio #panel, body.studio header.bar h1, body.studio .modePill, body.studio .readout, body.studio .bar-end, body.studio #styleChip, body.studio #ctlHandle,
+  body.studio .pad-chip, body.studio #tip { display: none !important; }
+  body.studio header.bar { flex-wrap: nowrap; gap: 8px; background: linear-gradient(180deg, rgba(5,6,10,.6), rgba(5,6,10,0)); border-bottom-color: transparent; }
+  body.studio header.bar button { font: 600 13px var(--mono); padding: 8px 12px; border-radius: 999px; background-color: rgba(10,12,20,.5); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+  body.studio .playgrp:has(.hush:not([hidden])) .playBtn { border-radius: 999px 0 0 999px; }
+  body.studio .playgrp .hush { border-radius: 0 999px 999px 0; }
+  body.studio .playBtn[aria-pressed="true"] { background: #f2b04a; border-color: #f2b04a; color: #0b0b12; box-shadow: 0 0 14px -2px #f2b04a; }
+  body.studio .arecTop { color: #ff4a5c; border-color: #ff4a5c; }
+  body.studio .recBtn { color: #ffd21f; border-color: rgba(255,210,31,.55); }
+  body.studio #styleRow { justify-content: flex-start; gap: 8px; height: 44px; padding: 0 12px; background: none; border: 0; }
+  body.studio #stProBtn { display: inline-flex !important; height: 34px; padding: 0 12px; border-radius: 17px; font: 700 11px var(--display); letter-spacing: .06em; color: #fff; background: rgba(10,12,20,.6); border: 1.5px solid #f2b04a; box-shadow: 0 0 12px rgba(242,176,74,.45); align-items: center; }
+  body.studio #styleRow #chordBox { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border-radius: 17px; background: rgba(10,12,20,.6); border: 1px solid rgba(255,255,255,.22); box-sizing: border-box; }
+  body.studio #chordBox .ctext { font: 500 10px var(--mono); letter-spacing: .1em; color: #a3abbb; text-transform: uppercase; }
+  body.studio #chordBox b { font: 700 14px var(--display); color: #fff; text-shadow: 0 0 8px var(--g-lead, #f2b04a); }
+  body.studio #styleRow #keyChip { position: static !important; left: auto !important; top: auto !important; margin-left: auto; width: auto; height: 34px; flex-direction: row; gap: 0; padding: 0; border-radius: 17px; background: rgba(10,12,20,.6); border: 1px solid rgba(255,255,255,.22); overflow: hidden; }
+  body.studio #keyChip button { width: 34px; height: 34px; font-size: 11px; color: #eef1f7; }
+  body.studio #keyChip #keyDown { order: 0; } body.studio #keyChip .kc-l { order: 1; writing-mode: horizontal-tb; transform: none; font-size: 10px; color: #a3abbb; margin-right: 4px; } body.studio #keyChip b { order: 2; font: 600 12px var(--mono); color: #eef1f7; } body.studio #keyChip #keyUp { order: 3; }
+  body.studio:not(.game) #gMic { display: grid !important; margin-left: 0; }
+  body.studio #gapBar { left: 16px; right: 16px; height: 64px; bottom: max(4px, calc(var(--lift, 80px) - 70px)); display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  body.studio #gapBar .stp-side { height: 64px; box-sizing: border-box; border-radius: 16px; background: rgba(10,12,20,.6); border: 1.5px solid color-mix(in srgb, var(--pc) 60%, transparent); padding: 6px 8px; display: flex; flex-direction: column; justify-content: center; gap: 4px; -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+  body.studio #gapBar .stp-side > div { display: flex; align-items: center; gap: 4px; }
+  body.studio #gapBar output { flex: 1; min-width: 0; text-align: center; font: 500 11px var(--mono); color: var(--pc); white-space: nowrap; }
+  body.studio #gapBar button { height: 30px; min-width: 28px; padding: 0 7px; border-radius: 9px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.16); color: #eef1f7; font: 500 11px var(--mono); }
+  body.studio #gapBar button[aria-pressed="true"] { background: var(--pc); border-color: var(--pc); color: #05060b; box-shadow: 0 0 10px var(--pc); }
+  body.studio #gapBar .stp-row2 { justify-content: flex-end; }
+  body.studio #tabs { display: none !important; }
+  body.studio header.bar #stProBtn, body.studio header.bar #chordBox, body.studio header.bar #keyChip, body.studio header.bar #gMic { flex: none; }
+  body.studio header.bar #chordBox { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border-radius: 17px; background: rgba(10,12,20,.6); border: 1px solid rgba(255,255,255,.22); box-sizing: border-box; }
+  body.studio header.bar #keyChip { position: static !important; margin-left: auto; width: auto; height: 34px; flex-direction: row; gap: 0; padding: 0; border-radius: 17px; background: rgba(10,12,20,.6); border: 1px solid rgba(255,255,255,.22); overflow: hidden; }
+  @media (orientation: landscape) {
+    body.studio #gapBar { height: 46px; bottom: max(2px, calc(var(--lift, 80px) - 50px)); }
+    body.studio #gapBar .stp-side { height: 46px; flex-direction: row; align-items: center; justify-content: space-between; padding: 0 8px; }
+    body.studio #gapBar .stp-side > div:first-child { flex: 1; }
+  }
+  #stpBox { display: flex; flex-wrap: wrap; gap: 10px 16px; padding: 4px 0 8px; }
+  #stpBox .group { display: flex; align-items: center; gap: 10px; }`;
+  document.head.appendChild(st);
+}
+// the second row: ‹ STUDIO, chord, key, mic
+{
+  const row = $("styleRow"), sb = $("stProBtn"); sb.textContent = "‹ STUDIO";
+  row.insertBefore(sb, row.firstChild); sb.after($("chordBox"));
+  // the key lift moves up here only on the Studio pad (it goes back to the pad's edge otherwise)
+  const kcHome = document.createComment("keyChip home"); $("keyChip").before(kcHome); STP.kcHome = kcHome;
+}
+// the bottom: two panels, LEAD and BASS
+{
+  const gb = $("gapBar"), mk = (cls, col, oct, hold, arpId) => {
+    const d = document.createElement("div"); d.className = "stp-side " + cls; d.style.setProperty("--pc", col);
+    const r1 = document.createElement("div"); r1.append($(oct + "Dn"), $(oct + "Out"), $(oct + "Up"));
+    const r2 = document.createElement("div"); r2.className = "stp-row2";
+    const arp = document.createElement("button"); arp.id = arpId; arp.textContent = "ARP"; arp.setAttribute("aria-pressed", "false");
+    const h = $(hold); h.textContent = "HOLD"; r2.append(arp, h); d.append(r1, r2); return d;
+  };
+  const L = mk("stp-lead", "#f2b04a", "lOct", "gHold", "stpArpL"), B = mk("stp-bass", "#4fc7b4", "bOct", "gLatch", "stpArpB");
+  gb.querySelectorAll(".side").forEach(s => s.remove());
+  gb.append(L, B);
+}
+function stpArp(sel, k) {
+  const s = $(sel), on = s.value !== "off";
+  if (on) { STP[k] = s.value; s.value = "off"; } else s.value = STP[k] || "up";
+  s.dispatchEvent(new Event("change", { bubbles: true })); stpSave(); stpSync();
+}
+$("stpArpL").addEventListener("click", () => stpArp("leadArp", "lastLA"));
+$("stpArpB").addEventListener("click", () => stpArp("bassArp", "lastBA"));
+function stpSync() {
+  const on = !game.on; document.body.classList.toggle("studio", on);
+  $("stpArpL").setAttribute("aria-pressed", $("leadArp").value !== "off");
+  $("stpArpB").setAttribute("aria-pressed", $("bassArp").value !== "off");
+  // portrait: the second row; on its side: up in the top bar, so the pad keeps its height
+  const kc = $("keyChip"), land = innerWidth > innerHeight, row = land ? document.querySelector("header.bar") : $("styleRow");
+  if (on) {
+    const sb = $("stProBtn"), cb = $("chordBox"), mic = $("gMic");
+    if (land) { const after = $("recAudioTop"); if (sb.parentNode !== row || sb.previousElementSibling !== after) { after.after(sb); sb.after(cb); cb.after(kc); kc.after(mic); } }
+    else if (sb.parentNode !== row) { row.insertBefore(sb, row.firstChild); sb.after(cb); row.appendChild(kc); row.appendChild(mic); }
+    else { if (kc.parentNode !== row) row.appendChild(kc); if (mic.parentNode !== row) row.appendChild(mic); }
+  } else if (kc.parentNode !== STP.kcHome.parentNode) { STP.kcHome.parentNode.insertBefore(kc, STP.kcHome); chipPos = ""; }
+  document.body.style.setProperty("--g-lead", TH.leadLine || TH.acc);
+}
+setInterval(stpSync, 600); window.addEventListener("resize", () => setTimeout(stpSync, 50));
+const setGame548 = setGame;
+setGame = function (on) {
+  setGame548(on); stpSync(); game.bgKey = "";
+  // game mode always lands on a real theme (a first visit to Studio could leave it on a bare "Manual" setup)
+  if (on && !GAME_IMGS[gameKey()]) { try { keepPend = null; loadStyle(styleOf("tokyo")); } catch (_) {} }
+};
+stpSync();
+// Look: the Studio pad's background and note names
+{
+  const box = document.createElement("div"); box.id = "stpBox"; box.className = "row";
+  box.innerHTML = `<div class="group"><label for="stpBg">Pad picture</label><select id="stpBg"></select></div>
+    <div class="group"><label for="stpNames">Note names</label><button id="stpNames" aria-pressed="true">On</button></div>`;
+  $("d-look").querySelector("summary").after(box);
+  const fill = () => {
+    const s = $("stpBg"); s.innerHTML = `<option value="none">None (just your colours)</option>` + HM_THEMES.map(id => `<option value="${id}">${QSTYLES_SYNTH[id].name}</option>`).join("")
+      + MY.list.map(t => `<option value="${t.id}">${escH(t.name)} (yours)</option>`).join("");
+    s.value = GAME_IMGS[STP.bg] ? STP.bg : "none";
+    $("stpNames").setAttribute("aria-pressed", STP.names); $("stpNames").textContent = STP.names ? "On" : "Off";
+  };
+  fill(); $("d-look").addEventListener("toggle", fill);
+  const spOpen548 = spOpen; spOpen = function (p) { spOpen548(p); if (p === "look") fill(); };
+  $("stpBg").addEventListener("change", e => { STP.bg = e.target.value; stpSave(); game.bgKey = ""; });
+  $("stpNames").addEventListener("click", () => { STP.names = !STP.names; stpSave(); fill(); });
+}
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = true; homeOpen(false); }
 

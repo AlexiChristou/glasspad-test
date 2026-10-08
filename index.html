@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.55.1 TEST · game mode · 8 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.56 TEST · game mode · 8 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1525,7 +1525,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.55.1 TEST · game mode · 8 Oct 2026</p>
+      <p class="ver">GlassPad 5.56 TEST · game mode · 8 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10189,7 +10189,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.55.1 TEST</p>
+    <p class="hm-ver">GlassPad 5.56 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -12153,7 +12153,8 @@ function mkHearSync() { const b = $("mkHear"); if (b) { const on = T.playing && 
   body.studio #stProBtn::before { content: ""; width: 18px; height: 18px; background: #fff;
     -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 5l-7 7 7 7'/%3E%3C/svg%3E") center / contain no-repeat;
     mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 5l-7 7 7 7'/%3E%3C/svg%3E") center / contain no-repeat; }
-  #styleRow .stp-key { margin: 0 auto; width: auto; height: 40px; display: flex; flex-direction: row; align-items: center; gap: 10px; padding: 0 6px; border-radius: 20px; }
+  body.studio #styleRow { position: relative; }
+  #styleRow .stp-key { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; width: auto; height: 40px; display: flex; flex-direction: row; align-items: center; gap: 10px; padding: 0 6px; border-radius: 20px; }
   #styleRow .stp-key .stp-kv { min-width: 56px; } #styleRow .stp-key .stp-lab { font-size: 8px; } #styleRow .stp-key b { font-size: 17px; }
   #styleRow .stp-key small { display: none; } #styleRow .stp-key #stpKeyDn { order: -1; }
   #styleRow .stp-key b::after { content: attr(data-s); font: 400 9px var(--mono); color: #a99fd0; margin-left: 3px; text-shadow: none; }
@@ -12163,7 +12164,9 @@ function mkHearSync() { const b = $("mkHear"); if (b) { const on = T.playing && 
     body.studio #gapBar { gap: 6px; }
     body.studio #gapBar .stp-side { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 6px; padding: 5px 6px; }
     body.studio #gapBar .stp-side .stp-row2 { flex-basis: 100%; }
-    body.studio #gapBar .stp-side .stp-lab { margin-right: 2px; }
+    body.studio #gapBar .stp-side { position: relative; overflow: visible; padding: 8px 6px 6px; }
+    body.studio #gapBar .stp-side .stp-lab { position: absolute; left: 50%; top: -7px; transform: translateX(-50%); padding: 0 6px; font-size: 9px; line-height: 12px; background: #0a0816; border-radius: 6px; }
+    body.studio #gapBar .stp-side .stp-oct, body.studio #gapBar .stp-side .stp-row2 { flex-basis: 100%; justify-content: center; }
     body.studio #gapBar .stp-side button { height: 30px; }
   }`;
   document.head.appendChild(st);
@@ -12204,11 +12207,42 @@ function stpDockSync() {
 const setLift555 = setLift;
 setLift = function (px, save) {
   setLift555(px, save);
-  if (!game.on) { const land = innerWidth > innerHeight, eff = land ? 78 : Math.max(48, +px || 80) + 18; document.documentElement.style.setProperty("--lift", eff + "px"); $("gapBar").hidden = false; }
+  if (!game.on) { const land = innerWidth > innerHeight, eff = land ? 64 : Math.max(48, +px || 80) + 18; document.documentElement.style.setProperty("--lift", eff + "px"); $("gapBar").hidden = false; }
 };
 { const sg555 = setGame; setGame = function (on) { sg555(on); try { setLift(+$("liftPad").value); } catch (_) {} }; }
 window.addEventListener("resize", () => setTimeout(() => { if (!game.on) try { setLift(+$("liftPad").value); } catch (_) {} }, 80));
 try { if (!game.on) setLift(+$("liftPad").value); } catch (_) {}
+// 5.56: Studio pad standing up, as the "v2" mockup: KEY centred on the second row, each dock panel = name on top and one
+// centred row ◀ n ▶ ARP HOLD with room to the edges. A key change pressed in the last bar lands on the next bar in Studio too.
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  @media (orientation: portrait) {
+    body.studio #styleRow { position: relative; }
+    #styleRow .stp-key { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; }
+    body.studio #gapBar .stp-side { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; align-content: center; gap: 4px 3px; padding: 5px 10px 7px; height: auto !important; min-height: 58px; }
+    body.studio #gapBar .stp-dock { flex: none; }
+    body.studio #gapBar .stp-side .stp-lab { position: static; transform: none; top: auto; left: auto; background: none; padding: 0; line-height: 12px; flex-basis: 100%; text-align: center; margin: 0; font-size: 9px; letter-spacing: .14em; }
+    body.studio #gapBar .stp-side .stp-oct, body.studio #gapBar .stp-side .stp-row2 { flex-basis: auto; display: flex; gap: 3px; }
+    body.studio #gapBar .stp-oct button { width: 26px; min-width: 26px; padding: 0; }
+    body.studio #gapBar .stp-row2 button { padding: 0 6px; font-size: 10.5px; }
+    body.studio #gapBar .stp-num { min-width: 16px; }
+  }`;
+  document.head.appendChild(st);
+}
+const liftKey556 = liftKey;
+liftKey = function (dir) {
+  liftKey556(dir);
+  // the band's chord plan for the next bar was made at the start of this bar, so a change pressed in the last bar is added to it now
+  if (game.on || !T.playing || !keyLift.pend || isManual() || isSong()) return;
+  const st = T.meter.steps, barEnd = T.abs - T.step + st;
+  if (keyLift.pend.land !== barEnd || T.step === 0) return;
+  const nextI = (T.bar + 1) / pad.every; if (!Number.isInteger(nextI)) return;
+  const cur = planAt(nextI - 1);
+  if ((cur.lift || 0) === keyLift.target || parts.plan.some(x => x.i0 === nextI)) return;
+  parts.plan.push({ i0: nextI, part: "verse", pos: 0, lift: keyLift.target });
+  if (keyLift.fill) parts.fillBar = T.bar;
+};
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }
 

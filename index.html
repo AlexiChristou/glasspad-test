@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.53.1 TEST · game mode · 8 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.54 TEST · game mode · 8 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1525,7 +1525,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.53.1 TEST · game mode · 8 Oct 2026</p>
+      <p class="ver">GlassPad 5.54 TEST · game mode · 8 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -8126,8 +8126,8 @@ $("styleSet").addEventListener("change", e => {
 const QS_ORDER = ["epic", "arabic", "blues", "sunset", "spanish", "tokyo", "hunter", "surprise"];
 // Surprise me: random, with guard rails so it always works
 const SURPRISE = {
-  progs: { epic: ["minpent", "minor", "dorian", "harmmin"], rock: ["minpent", "minor", "dorian"], andalusian: ["minor", "harmmin"], dark: ["minor", "harmmin"],
-    pop: ["majpent", "major", "mixolydian"], ballad: ["major", "majpent"], folk: ["majpent", "major", "mixolydian"], jazz: ["major"],
+  progs: { epic: ["minpent", "minor"], rock: ["minpent", "minor", "dorian"], andalusian: ["minor"], dark: ["minor", "minpent"],
+    pop: ["majpent", "major"], ballad: ["major", "majpent"], folk: ["majpent", "major"], jazz: ["major"],
     eastern: ["hijaz", "dblharm"], japanese: ["hirajoshi", "in"], blues: ["blues", "minpent"], tonic: ["minpent", "dorian", "hijaz", "majpent"], drone: ["minpent", "dorian", "hijaz"] },
   beats: { rock: [90, 130], halftime: [70, 90], shuffle: [80, 100], bossa: [90, 110], funk: [95, 115], house: [118, 126], onedrop: [70, 85], maqsum: [88, 104], machine: [120, 135], hiphop: [80, 95],
     synthwave: [88, 112], bighalf: [72, 88], chill: [78, 92], eshuffle: [84, 100], emaqsum: [92, 106], etresillo: [92, 108] },
@@ -8150,7 +8150,7 @@ function rollSurprise() {
   const p = makePreset({ scale, root, wave, autoVib: Math.random() < .4, bpm, fx: fxPick,
     drums: { style: beat, swing: STYLE_SWING[beat] ?? 0 }, pad: { sound: padSnd, prog, every: pick1([1, 2]), rhythm, pump, vol: .65, feel: pick1(["tight", "natural", "loose"]) },
     bass: { on: true, sound: pick1(SURPRISE.basses), vol: .75, pat: arp ? "drive" : "hold", arp: arp ? pick1(["up", "updown"]) : "off", rate: "1/16" },
-    lead: { follow: pick1(["chords", "fixed", "scale"]), snd2: pick1(SURPRISE.waves.filter(w => w !== wave)), vol: .85, vol2: .65 } });
+    lead: { follow: pick1(["chords", "scale"]), snd2: pick1(SURPRISE.waves.filter(w => w !== wave)), vol: .85, vol2: .65 } });
   const beatName = $("style").querySelector(`option[value="${beat}"]`)?.textContent || beat;
   return { id: "surprise", name: `${beatName} ${SC[scale].name.replace(/ \(.*\)/, "")} in ${NAMES[root]}`, cols, p };
 }
@@ -10189,7 +10189,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.53.1 TEST</p>
+    <p class="hm-ver">GlassPad 5.54 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -11971,7 +11971,7 @@ function hmJump() {
   }
   pvClear(); hpv.on = false; pvGain(pvTarget(), .3);
   homeClose();
-  if (!T.playing && (hpv.id || !fromPad)) setPlaying(true, audio.ctx.currentTime + .05);
+  if (!T.playing) setPlaying(true, audio.ctx.currentTime + .05);
   if (!fromPad) setLayout("pad");
   hpv.id = null;
 }
@@ -11989,6 +11989,89 @@ function hmJump() {
   homeOpen = function (fromPad) { hpv.id = null; pvClear(); hpv.on = false; const r = hmOpen552.apply(this, arguments); $("home").querySelector(".hm-hero").classList.remove("lockd"); $("home").classList.remove("hmlock"); pvSync(); requestAnimationFrame(() => hmEnds()); return r; };
   const hmClose552 = homeClose;
   homeClose = function () { if (hpv.t1 || hpv.t2) { pvClear(); if (hpv.on) pvGain(pvTarget(), .3); hpv.on = false; } return hmClose552.apply(this, arguments); };
+}
+// 5.54: quick fixes from his notes. Lead arp plays the chord's notes; game pad gets a ‹ Home button (the band fades out going
+// Home), a bigger mic in the theme colour and the sliders icon for settings; Pro mode leaves the settings; Home loses its back
+// button; Make your own: round back button, no From chip or Live preview label, and ▶ plays the band with your sounds.
+const arpNotes554 = arpNotes;
+arpNotes = function (kind, lane, midi, isKb, style, strips, chAt) {
+  if (kind === "lead" && !isKb) {
+    const ch = chAt || (T.playing && pad.on && pad.cur) || liveChord;
+    if (ch && !ch.drone && ch.tones && ch.tones.length > 1) {
+      const pcs = new Set(ch.tones.map(t => mod12(Math.round(cbase(ch) + t)))), m0 = Math.round(midi), d = midi - m0, oct = leadArp.range === 2 ? 2 : 1, out = [midi];
+      for (let m = m0 + 1; m < m0 + 12 * oct; m++) if (pcs.has(mod12(m))) out.push(m + d);
+      out.push(midi + 12 * oct);
+      if (out.length >= 3) return out;
+    }
+  }
+  return arpNotes554.apply(this, arguments);
+};
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  #gMic { width: 46px; height: 46px; color: #fff; border: 1.5px solid var(--mc, #ff5a6a); background: color-mix(in srgb, var(--mc, #ff5a6a) 22%, rgba(10,12,20,.55));
+    box-shadow: 0 0 12px color-mix(in srgb, var(--mc, #ff5a6a) 55%, transparent); }
+  #gMic svg { width: 22px; height: 22px; }
+  #gGear svg { width: 20px; height: 20px; display: block; }
+  #gHome { flex: none; width: 40px; height: 40px; border-radius: 50%; padding: 0; display: none; place-items: center; color: #eef1f7; margin-right: 6px;
+    background: rgba(10,12,20,.5); border: 1px solid rgba(255,255,255,.22); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+  #gHome svg { width: 18px; height: 18px; }
+  body.game:not(.studio) #gHome { display: grid; }
+  #home #hmBack { display: none !important; }
+  #mk .hm-x { flex: none; width: 44px; height: 44px; aspect-ratio: 1; }
+  #mkFrom, #mkPrev .tip { display: none !important; }`;
+  document.head.appendChild(st);
+  $("gGear").innerHTML = SV.gear;
+  const pro = $("gPro") && $("gPro").closest(".gr"); if (pro) pro.hidden = true;
+  const hb = document.createElement("button"); hb.id = "gHome"; hb.className = "g-only"; hb.setAttribute("aria-label", "Home"); hb.innerHTML = SV.back;
+  $("styleChip").before(hb);
+  hb.addEventListener("click", () => homeOpen(true));
+  const sync = () => {
+    try { if (hb.nextElementSibling !== $("styleChip")) $("styleChip").before(hb); } catch (_) {}
+    try { $("gMic").style.setProperty("--mc", styleColour() || "#ff5a6a"); } catch (_) {}
+  };
+  sync(); setInterval(sync, 700);
+}
+// going Home from the pad: the band fades out over a second; Back to it starts it again
+{
+  const hmOpen554 = homeOpen;
+  homeOpen = function (fromPad) {
+    const r = hmOpen554.apply(this, arguments);
+    if (fromPad && T.playing && audio) {
+      pvGain(0, 1);
+      hpv.t2 = setTimeout(() => { if (T.playing) setPlaying(false); setTimeout(() => pvGain(pvTarget(), .05), 200); pvSync(); }, 1050);
+    }
+    return r;
+  };
+}
+// Make your own: ▶ plays your theme as it stands (band + your sounds), fading in and out like Home; leaving puts things back
+const mkpv = { prev: null };
+function mkPreviewPlay() {
+  const t = mk.t; if (!t) return;
+  if (!mkpv.prev) try { mkpv.prev = { setup: capture(), qs: { id: qs.id, name: qs.name, cols: qs.cols }, theme: TH.id }; } catch (_) {}
+  const tmp = { ...t, id: "__mkpv", name: t.name || $("mkName").value || "My theme" };
+  myRegister(tmp);
+  pvStart(() => {
+    loadStyle(styleOf("__mkpv"));
+    for (const k of ["lead", "bass"]) { const nm = k === "lead" ? t.myLead : t.myBass; if (!nm) continue; const c = samples.find(x => x.name === nm); if (c) { if (!c.buf) try { c.buf = clipBuf(c); } catch (_) {} try { vsAssign(c, k); } catch (_) {} } }
+  });
+}
+function mkHearSync() { const b = $("mkHear"); if (b) { const on = T.playing && !$("mk").hidden; b.innerHTML = on ? SV.stop : SV.play; b.setAttribute("aria-label", on ? "Stop" : "Hear it"); } }
+{
+  const old = $("mkHear"), b = old.cloneNode(true); old.replaceWith(b);
+  b.addEventListener("click", () => { if (T.playing) { pvStop(); setTimeout(mkHearSync, 450); return; } mkPreviewPlay(); mkHearSync(); });
+  setInterval(() => { if (!$("mk").hidden) mkHearSync(); }, 500);
+  const mkClose554 = mkClose;
+  mkClose = function (toHome) {
+    if (mkpv.prev) {
+      pvClear(); hpv.on = false;
+      if (T.playing) setPlaying(false);
+      setTimeout(() => pvGain(pvTarget(), .05), 150);
+      try { restoreLast(mkpv.prev); } catch (_) {}
+      mkpv.prev = null;
+    }
+    return mkClose554.apply(this, arguments);
+  };
 }
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }

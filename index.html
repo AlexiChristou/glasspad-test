@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.49 TEST · game mode · 7 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.50 TEST · game mode · 8 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1525,7 +1525,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.49 TEST · game mode · 7 Oct 2026</p>
+      <p class="ver">GlassPad 5.50 TEST · game mode · 8 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10189,7 +10189,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.49 TEST</p>
+    <p class="hm-ver">GlassPad 5.50 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -11689,6 +11689,65 @@ stpSync();
   const spOpen548 = spOpen; spOpen = function (p) { spOpen548(p); if (p === "look") fill(); };
   $("stpBg").addEventListener("change", e => { STP.bg = e.target.value; stpSave(); game.bgKey = ""; });
   $("stpNames").addEventListener("click", () => { STP.names = !STP.names; stpSave(); fill(); });
+}
+// 5.50: Studio pages lose the old PRO boxes, and sound rows get a round ▶ to try the sound
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  #spBody .more-box.pro, #spBody .cb.pro, #spBody .sl-pro.pro { border: 0 !important; padding: 0 !important; margin-top: 0 !important; border-radius: 0; }
+  #spBody .more-box.pro::before, #spBody .cb.pro::before, #spBody .sl-pro.pro::before { content: none !important; }
+  #spBody .group.pro > label::after { content: none !important; }
+  .sp-try { display: none; }
+  #spBody .sp-try { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 36px; height: 36px; border-radius: 18px; padding: 0; margin-left: 8px;
+    background: color-mix(in srgb, var(--sc, #f0b04a) 18%, rgba(10,12,20,.8)); border: 1.5px solid var(--sc, #f0b04a); color: #fff;
+    box-shadow: 0 0 10px color-mix(in srgb, var(--sc, #f0b04a) 45%, transparent); }
+  #spBody .sp-try svg { width: 14px; height: 14px; margin-left: 2px; }
+  #spBody .sp-try.go { background: var(--sc, #f0b04a); color: #05060b; box-shadow: 0 0 18px var(--sc, #f0b04a); }
+  #spBody .sp-try[hidden] { display: none; }
+  #spBody .row > .group > select:has(+ .sp-try) { width: min(176px, calc(100vw - 204px)); }
+  #spBody #stpBox { padding: 4px 16px 4px; gap: 12px 16px; background: var(--panel); }
+  #spBody #stpBox .group { gap: 4px; }
+  #spBody #stpBox .group > label:first-child { min-width: 92px; }`;
+  document.head.appendChild(st);
+  const TRY = { wave: "lead", wave2: "lead2", bassSound: "bass", padSound: "chords", drumKit: "drums" };
+  for (const [id, k] of Object.entries(TRY)) {
+    const sel = $(id); if (!sel) continue;
+    const b = document.createElement("button"); b.type = "button"; b.className = "sp-try"; b.dataset.try = k; b.setAttribute("aria-label", "Try this sound");
+    b.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"></path></svg>';
+    sel.after(b);
+  }
+  const sync2 = () => { const b = document.querySelector('.sp-try[data-try="lead2"]'); if (b) b.hidden = $("wave2").value === "off"; };
+  $("wave2").addEventListener("change", sync2); sync2(); setInterval(sync2, 1000);
+  const key = () => (+rootSel.value || 0) % 12;
+  function tryChords() {
+    if (T.playing) return;
+    let ch = pad.cur; try { if (!ch) ch = chordAtIndex(0); } catch (_) {}
+    if (!ch) ch = { tones: [0, 3, 7], base: 48 + key(), name: "" };
+    try { releasePad(); padChord(ch, audio.ctx.currentTime + .02, stepDur() * 8); } catch (_) {}
+  }
+  function tryDrums() {
+    if (T.playing) return;
+    const S = T.meter.steps, d = stepDur(), t0 = audio.ctx.currentTime + .05;
+    for (let s = 0; s < S; s++) {
+      let hits = []; try { hits = drumKind(s, "normal"); } catch (_) {}
+      for (const [inst0, vel, off] of hits) {
+        const inst = (drum.beat && S === 16 ? null : KIT[drum.style]?.[inst0]) || inst0;
+        try { hit(inst, t0 + (s + (off || 0)) * d, vel); } catch (_) {}
+      }
+    }
+  }
+  window.addEventListener("click", e => {
+    const b = e.target.closest && e.target.closest(".sp-try"); if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    try { ensureAudio(); } catch (_) {}
+    const k = b.dataset.try;
+    if (k === "lead") mkTaste("lead", undefined, [0, 4, 7, 12, 7]);
+    else if (k === "lead2") mkTaste("lead", $("wave2").value, [0, 4, 7, 12, 7]);
+    else if (k === "bass") mkTaste("bass", undefined, [0, 7, 12, 7]);
+    else if (k === "chords") tryChords();
+    else if (k === "drums") tryDrums();
+    b.classList.add("go"); setTimeout(() => b.classList.remove("go"), 900);
+  }, true);
 }
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = true; homeOpen(false); }

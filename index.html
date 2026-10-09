@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.58 TEST · game mode · 9 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.59 TEST · game mode · 9 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1525,7 +1525,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.58 TEST · game mode · 9 Oct 2026</p>
+      <p class="ver">GlassPad 5.59 TEST · game mode · 9 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10189,7 +10189,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.58 TEST</p>
+    <p class="hm-ver">GlassPad 5.59 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -12652,6 +12652,219 @@ $("sp").addEventListener("change", () => { if (SPN.part) setTimeout(() => { spnF
     const P = ST_PARTS[p], secs = P.secs; P.secs = [];   // the old page would move whole sections in: here they're built control by control
     let r; try { r = spOpen558.apply(this, arguments); } finally { P.secs = secs; }
     spnBuild(p); $("sp").scrollTop = 0;
+    return r;
+  };
+}
+// 5.59: Studio Lead and Bass pages, his notes on 5.58 (canvas boards "Studio: Effects as a grid", "Studio: section info",
+// "Studio: Lead and Bass info texts", "Studio: My sounds, ready / recording").
+// Effects: pedals two across, bigger, no sideways scrolling (so a scroll can't catch a slider); ON/OFF on each pedal;
+// a note that the echo and reverb rooms are in Mix, with a button there. The lead's Tremolo gets Free / In time (as the 2nd sound).
+// Every section heading gets an ⓘ that opens its help in a sheet (texts rewritten for Studio); the Notes ⓘ goes.
+// My sounds: a big red Record (pulses and fills over the 4 seconds while recording, section glows red), the status line
+// back under it, and each sound gets a ⌄ button for its options, with Remove inside them.
+const SPN_INFO = {"lead": [["1", "SOUND", ["The lead is the top part of the pad: left–right picks the note, up–down opens the filter (brighter towards the top).", "Sound is its voice; ▶ plays a short phrase in your key. My sounds plays the lead with your own recorded sounds (set them up in 7).", "Level is how loud the lead is against the band. It's the same fader as Lead in Mix."]], ["2", "SHAPE", ["Shapes the lead's main sound (the 2nd sound keeps its own).", "Attack: how quickly a note starts. Low is instant, higher fades each note in.", "Release: how long a note rings on after you let go.", "Resonance: a sharper, whistling edge on the filter as you slide up.", "Detune: spreads the sound's voices apart for a thicker, wider sound.", "Vibrato: a steady wobble on every note. For a wobble that only swells in on notes you hold, use Auto vibrato in Playing."]], ["3", "EFFECTS", ["The lead's own pedals, in the order the sound goes through them. Tap a pedal's name to switch it on, then shape it with its sliders. Pedals that are off use no processing.", "Octave adds the same note an octave down, up or both. Drive adds grit (Tone makes it brighter or darker). Chorus thickens the sound, Flanger sweeps with a jet-like whoosh, Phaser swirls, Tremolo pulses the volume, free or in time with the band.", "Echo and Reverb set how much of the lead goes into the echo and the reverb. How they sound (room size and tone, echo time, in time or free, repeats) is set in Mix, because every part shares them.", "With a 2nd sound on, tap 2nd sound to see its own pedals."]], ["4", "2ND SOUND", ["A second voice for a second finger: while one finger holds a lead note, the next finger plays this sound, so two sounds can play at once. Off: every finger plays the main sound.", "▶ plays a taste of it. Level is its volume (also 2nd sound in Mix). Its effects are its own: in Effects, tap 2nd sound."]], ["5", "PLAYING", ["Glide: notes slide into each other as your finger moves to another strip, instead of jumping.", "Auto vibrato: hold a note and a vibrato swells in after a moment. Short notes stay clean.", "Notes sets how your strips follow the chords. Fixed scale: your scale whatever chord plays; the strips never move. Bend to chords: your scale, but a note that clashes with the chord moves onto the chord's note (dots mark the chord's notes). Follow chords: a new scale for every chord, but the strips stay laid out from your key, so home is always in the same place. Chord root: the strips restart on each chord's root, which glows. Chord notes: only the notes of the chord that's playing, spread across the pad, so you can't hit a wrong note.", "Flavour (with Follow chords and Chord root): Match my scale; Safe (pentatonic, the hardest to hit a bad note); Full (7 notes); Blues (adds the blue note).", "Playing on the keyboard (⚙ › Play on) adds Brightness and Slide to shape here."]], ["6", "ARP", ["The arpeggiator turns a held note into a run of notes in time with the band. Switch it on and off with ARP on the pad, under LEAD; HOLD there keeps notes going after you let go.", "It plays the notes of the chord that's playing, from the note you hold upwards, then the octave.", "Style: Up, Down, Up-down or Random. Speed: from 1/2 (slow) to 1/32 (very fast); the triplets give a rolling feel. Range: 1 or 2 octaves."]], ["7", "MY SOUNDS", ["Play the lead with your own sounds: a word, a hum, a clap. Record (up to 4 seconds) or Add a file; up to 8 sounds, each trimmed to 2.5 seconds. GlassPad finds each sound's note and plays it on every strip; Tune holds the whole sound on that note.", "Tap ⌄ on a sound for more: its name, which part plays it (Lead, Bass, Both or Off), Start (Word keeps soft starts like “sh”; Hit trims it tight so it lands on the beat), its Note, Compare (against a plain tone), Start / End to trim it, and Remove.", "Play with: Lead turns your sounds on for the lead (the same as picking My sounds in Sound). With several: Next sound each note takes turns; Split across the pad gives each part of the pad its own sound. Octave moves your sounds up or down.", "Note length. Even: low notes stop at the sound's own length. Stretched: every note keeps the whole sound (smooth grain, or tight). Natural: low notes play slower and longer, like tape.", "Repeat while held repeats the sound on the beat while you hold. Repeats: next sound steps through your sounds; same sound repeats the one you touched.", "Saved sounds is different: Save sound keeps the lead's whole sound under a name (sound, shape, effects, 2nd sound, glide, auto vibrato, level and octave) to load again on any setup."]]], "bass": [["1", "SOUND", ["The bass is the bottom part of the pad. It plays the chord's notes, an octave down.", "Sound is its voice; ▶ plays a short bass phrase. Level is how loud the bass is; it's the same fader as Bass in Mix."]], ["2", "SHAPE", ["Attack: how quickly a bass note starts. Release: how long it rings on after you let go. Short for tight, punchy lines; longer for smooth ones."]], ["3", "EFFECTS", ["The bass's own pedals, in the order the sound goes through them. Tap a pedal's name to switch it on. Pedals that are off use no processing.", "Octave adds the note an octave down, up or both. Drive adds grit. Compressor evens out the notes and adds punch. Filter: Sweep moves by itself in time with the band, Env opens on each note (a funky “wow”), Still stays put. Chorus thickens and widens.", "Echo and Reverb set how much of the bass goes in; how they sound is set in Mix, shared by every part."]], ["4", "HOW IT PLAYS", ["Rhythm None: every tap is one note, for your own bass line. Pick a Rhythm (Pulse, Driving 16ths, Quarters, Off-beat, Gallop, Octave bounce, Tresillo 3-3-2, Funk) and a held note repeats in time with the band.", "Arp walks through the chord's notes in that rhythm: Up, Down, Up-down, Random, or Walk the scale (up and down the scale). Switch it on and off with ARP on the pad, under BASS. Turning it on turns HOLD on too, so the bass keeps going after you let go: tap another bass note to switch, the same one again (or Stop) to end it. Turning it off turns HOLD off.", "Arp speed: Every hit follows the rhythm, or pick a speed. Arp range: 1 or 2 octaves.", "Strips. Same layout: root, 3rd and 5th always in the same places. All chord notes: adds 7ths and extras, so the number of strips changes with the chord. Fixed: the key's own chord. Full scale: every note of the scale. With Fixed and Full scale, dots mark the notes of the chord that's playing."]], ["5", "MY SOUNDS", ["Play the bass with your own sounds, the same way as the lead: Record or Add a file, and tap ⌄ on a sound to set which part plays it (Lead, Bass, Both or Off).", "Play with: Bass turns your sounds on for the bass (the same as picking My sounds in Sound). With several, Octave, Note length and Repeat work as on the lead. With the bass arp on, Repeat while held comes on by itself so the sound keeps going.", "Saved sounds: Save sound keeps the bass's whole sound under a name (sound, shape, effects, level and octave)."]]]};
+{
+  // the lead's Tremolo: Free / In time, like the other parts' (a sine in time with the band, so no clicks)
+  const tr = FX.find(f => f.id === "trem");
+  if (tr && !tr.choice) tr.choice = { key: "sync", opts: [["free", "Free"], ["time", "In time"]] };
+  if (!S.trem.sync) S.trem.sync = "free";
+  const applyFx559 = applyFx;
+  applyFx = function (id, changed) {
+    const r = applyFx559.apply(this, arguments);
+    if (id === "trem" && audio && A_ok() && S.trem.sync === "time") {
+      try { audio.trLfo.frequency.setTargetAtTime(1 / (TREM_DIV[pickIdx(S.trem.rate, TREM_DIV.length)][0] * 60 / T.bpm), audio.ctx.currentTime, .02); } catch (_) {}
+    }
+    return r;
+  };
+  function A_ok() { return !!(audio && audio.trLfo); }
+  const fxShow559 = fxShow;
+  fxShow = function (part, id, k, v) {
+    if (part === "lead" && id === "trem" && k === "rate" && S.trem.sync === "time") return TREM_DIV[pickIdx(v, TREM_DIV.length)][1];
+    return fxShow559.apply(this, arguments);
+  };
+  const retimeFx559 = retimeFx;
+  retimeFx = function () { const r = retimeFx559.apply(this, arguments); try { applyFx("trem"); } catch (_) {} return r; };
+}
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  /* the help box sits above the Studio pages now (it opened behind them) */
+  #infoModal { z-index: 85; }
+  /* effects: two across, no sideways scrolling */
+  .spn-sec .board { overflow: visible !important; padding: 0 !important; margin: 0 !important; }
+  .spn-sec .board-inner { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: auto !important; align-items: stretch !important; }
+  .spn-sec .pedal { width: auto !important; min-width: 0; border-radius: 14px; padding: 0 12px 14px !important; gap: 12px !important; }
+  .spn-sec .pedal > .toggle { margin: 0 -12px !important; padding: 0 12px !important; width: calc(100% + 24px) !important; height: 46px; box-sizing: border-box; font: 600 14.5px "IBM Plex Sans", var(--body) !important; gap: 4px !important;
+    border-bottom: 1px solid rgba(255,255,255,.08) !important; border-radius: 14px 14px 0 0; }
+  .spn-sec .pedal.on > .toggle { border-bottom-color: color-mix(in srgb, var(--pc1) 25%, transparent) !important; }
+  .spn-sec .pedal .led { position: relative; width: 10px !important; height: 10px !important; margin-left: 34px; }
+  .spn-sec .pedal .led::before { content: "OFF"; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); font: 500 9.5px var(--mono); letter-spacing: .08em; color: #7d8293; }
+  .spn-sec .pedal.on .led::before { content: "ON"; color: var(--pc1); }
+  .spn-sec .pedal .knob { row-gap: 6px; }
+  .spn-sec .pedal .knob label, .spn-sec .pedal .knob output { font: 400 10.5px var(--mono) !important; letter-spacing: .06em; }
+  .spn-sec .pedal:not(.on) .knob label, .spn-sec .pedal:not(.on) .knob output { color: #8a8fa0 !important; }
+  .spn-sec .pedal .knob input[type=range] { height: 26px !important; }
+  .spn-sec .pedal input[type=range]::-webkit-slider-runnable-track { height: 6px !important; border-radius: 3px; }
+  .spn-sec .pedal input[type=range]::-webkit-slider-thumb { width: 22px !important; height: 22px !important; margin-top: -8px !important; }
+  .spn-sec .pedal .seg { gap: 4px !important; }
+  .spn-sec .pedal .seg button { height: 28px; padding: 0 !important; font-size: 10.5px !important; border-radius: 8px !important; }
+  .spn-mixnote { display: flex; align-items: center; gap: 10px; border-radius: 12px; border: 1px dashed color-mix(in srgb, var(--nm) 55%, transparent); padding: 10px 12px; }
+  .spn-mixnote span { flex: 1; font: 400 12px/17px "IBM Plex Sans", var(--body); color: #d6cff5; }
+  .spn-mixnote button { flex: none; height: 36px; padding: 0 14px; border-radius: 18px; background: transparent; border: 1.5px solid color-mix(in srgb, var(--nm) 55%, transparent); color: #fff; font: 400 13px "IBM Plex Sans", var(--body); }
+  /* ⓘ on every section heading, and its sheet */
+  .spn-h .spn-i { flex: none; width: 30px; height: 30px; border-radius: 50%; padding: 0; display: grid; place-items: center; background: rgba(6,3,14,.85); border: 1.5px solid color-mix(in srgb, var(--nm) 55%, transparent); color: #d8d0ff; }
+  .spn-h .spn-i svg { width: 14px; height: 14px; }
+  .spn-sec #notesInfo { display: none; }
+  #spnInfo { position: fixed; inset: 0; z-index: 80; background: rgba(3,3,10,.66); display: flex; align-items: flex-end; justify-content: center; }
+  #spnInfo[hidden] { display: none; }
+  #spnInfo .box { width: 100%; max-width: 560px; max-height: 82vh; box-sizing: border-box; border-radius: 24px 24px 0 0; background: rgba(10,6,22,.98); border-top: 2px solid var(--pc1, #ff3fd8);
+    box-shadow: 0 -4px 24px color-mix(in srgb, var(--pc1, #ff3fd8) 60%, transparent); padding: 18px 20px max(20px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 14px; color: #eef1f7; }
+  #spnInfo .hd { display: flex; align-items: center; gap: 10px; }
+  #spnInfo .hd i { width: 26px; height: 26px; box-sizing: border-box; border-radius: 50%; border: 1.5px solid var(--pc1, #ff3fd8); display: grid; place-items: center; font: 700 12px var(--display); font-style: normal; }
+  #spnInfo .hd b { font: 900 18px var(--display); letter-spacing: .04em; text-shadow: 0 0 10px color-mix(in srgb, var(--pc1, #ff3fd8) 60%, transparent); }
+  #spnInfo .tx { overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+  #spnInfo .tx p { margin: 0; font: 400 14px/21px "IBM Plex Sans", var(--body); color: #e3ddfa; }
+  #spnInfo .ok { flex: none; height: 48px; border-radius: 24px; border: 0; background: var(--pc1, #ff3fd8); color: var(--pcT, #0a0412); font: 600 15px "IBM Plex Sans", var(--body); }
+  /* My sounds: the big Record, its status line, and the sounds */
+  .spn-sec #micRec { display: none !important; }
+  #spnRec { position: relative; height: 56px; border-radius: 28px; overflow: hidden; background: rgba(255,77,94,.08); border: 2px solid #ff4d5e; box-shadow: 0 0 14px rgba(255,77,94,.45), inset 0 0 12px rgba(255,77,94,.18);
+    color: #fff; display: flex; align-items: center; justify-content: center; gap: 12px; font: 600 16px "IBM Plex Sans", var(--body); flex: none; }
+  #spnRec[hidden] { display: none; }
+  #spnRec .dot { width: 16px; height: 16px; border-radius: 50%; background: #ff4d5e; box-shadow: 0 0 10px #ff4d5e; position: relative; }
+  #spnRec small { font: 400 11px var(--mono); color: #ffb3bb; position: relative; }
+  #spnRec .spn-bar { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(255,255,255,.22); }
+  #spnRec span:not(.spn-bar) { position: relative; }
+  #spnRec.on { background: #ff4d5e; border-color: #ff4d5e; box-shadow: 0 0 30px rgba(255,77,94,.8); animation: spnBeat .8s ease-in-out infinite; }
+  #spnRec.on .dot { width: 14px; height: 14px; border-radius: 3px; background: #fff; box-shadow: none; }
+  #spnRec.on small { color: #fff; font-size: 13px; font-weight: 500; }
+  #spnRec.on::after { content: ""; position: absolute; inset: 0; border-radius: 28px; box-shadow: 0 0 0 0 rgba(255,77,94,.7); animation: spnRing .8s ease-out infinite; }
+  @keyframes spnBeat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+  @keyframes spnRing { 0% { box-shadow: 0 0 0 0 rgba(255,140,150,.9); } 100% { box-shadow: 0 0 0 14px rgba(255,77,94,0); } }
+  .spn-sec #sampHint { display: block !important; font: 400 12.5px/17px "IBM Plex Sans", var(--body); color: #b3a9dc; }
+  .spn-sec #sampHint:empty::before { content: "Hum, sing or say a word. Short sounds work best."; }
+  .spn-sec.rec { border-color: #ff4d5e !important; box-shadow: 0 0 22px rgba(255,77,94,.55), inset 0 0 22px rgba(255,77,94,.18) !important; }
+  .spn-sec.rec #sampHint { color: #ff9aa5; font-weight: 600; }
+  .spn-sec.rec .slots { opacity: .45; pointer-events: none; }
+  .spn-sec .spn-btns > label.btn, .spn-sec .spn-btns > .snd-new { flex: 1; justify-content: center; height: 38px !important; border-radius: 19px !important; }
+  .spn-sl { font: 500 10.5px var(--mono); letter-spacing: .1em; color: #a99fd0; margin-top: 4px; }
+  .spn-sec .slot { border-radius: 14px; background: rgba(6,3,14,.9); border: 1.5px solid rgba(255,255,255,.14); }
+  .spn-sec .slot.open { border-color: var(--nm); }
+  .spn-sec .sl-head { grid-template-columns: auto minmax(0, 1fr) auto auto auto; gap: 8px; padding: 8px 8px 8px 10px; }
+  .spn-sec .slot .sl-play { width: 34px; height: 34px; background: transparent; border: 1.5px solid var(--pc1); color: #fff; }
+  .spn-sec .slot .nm { display: flex; flex-direction: column; gap: 1px; padding: 2px 0; font: 500 14.5px "IBM Plex Sans", var(--body); color: #fff; }
+  .spn-sec .slot .nm::after { content: none; }
+  .spn-sec .slot .nm em { font: 400 10px var(--mono); font-style: normal; letter-spacing: .08em; color: var(--nm); }
+  .spn-sec .slot .nm em.lead { color: var(--nl); } .spn-sec .slot .nm em.bass { color: var(--nb); } .spn-sec .slot .nm em.off { color: #7d8293; }
+  .spn-sec .sl-badge { border-color: rgba(255,255,255,.22); color: #fff; border-radius: 8px; }
+  .spn-sec .slot .sl-tune { height: 30px; padding: 0 10px; border-radius: 15px; background: transparent; border: 1px solid rgba(255,255,255,.25); color: #e6e0ff; font: 400 12px "IBM Plex Sans", var(--body); }
+  .spn-sec .slot .sl-tune[aria-pressed="true"] { background: var(--pc1); border-color: var(--pc1); color: var(--pcT, #0a0412); font-weight: 600; }
+  .spn-sec .slot .sl-del { display: none; }
+  .slot .sl-more { display: none; }
+  .spn-sec .slot .sl-more { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; padding: 0; background: transparent; border: 1.5px solid color-mix(in srgb, var(--nm) 55%, transparent); color: #fff; }
+  .spn-sec .slot.open .sl-more { background: color-mix(in srgb, var(--nm) 22%, transparent); border-color: var(--nm); }
+  .spn-sec .slot .sl-more svg { width: 16px; height: 16px; }
+  .spn-sec .sl-body { border-top: 1px solid rgba(255,255,255,.08); padding: 12px; gap: 10px; }
+  .spn-sec .nudge > .cb-notes { min-width: 40px; font: 400 10.5px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: #b8aee6; }
+  .spn-sec .sl-line > .cb-notes { min-width: 52px; font: 400 10.5px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: #b8aee6; }
+  .spn-sec .slot .sl-name { height: 36px; border-radius: 10px; background: #05040c; border: 1.5px solid color-mix(in srgb, var(--nm) 55%, transparent); color: #fff; padding: 0 10px; font-size: 14px; }
+  .spn-sec .slot .modeSeg { display: flex; gap: 4px; flex: 1; border: 0; background: none; }
+  .spn-sec .slot .modeSeg button { flex: 1; height: 32px; border-radius: 9px !important; border: 1px solid rgba(255,255,255,.22) !important; background: transparent; color: #e6e0ff; font: 400 13px "IBM Plex Sans", var(--body); padding: 0 !important; }
+  .spn-sec .slot .modeSeg button[aria-pressed="true"] { background: var(--pc1); border-color: var(--pc1) !important; color: var(--pcT, #0a0412); font-weight: 600; }
+  .spn-sec .slot .sl-body select.note { flex: 1; height: 34px; }
+  .spn-sec .slot .sl-body .cmp, .spn-sec .slot .nudge button { height: 32px; min-width: 32px; border-radius: 16px; background: transparent; border: 1px solid rgba(255,255,255,.25); color: #fff; }
+  .spn-sec .slot .sl-rm { align-self: flex-start; height: 34px; padding: 0 14px !important; border-radius: 17px; background: transparent; border: 1px solid rgba(255,77,94,.6); color: #ff9aa5; font: 400 13px "IBM Plex Sans", var(--body) !important; }
+  .spn-sec .slot .sl-rm.sure { background: #ff4d5e; border-color: #ff4d5e; color: #fff; }`;
+  document.head.appendChild(st);
+  document.body.insertAdjacentHTML("beforeend", `<div id="spnInfo" hidden role="dialog" aria-modal="true"><div class="box"><div class="hd"><i></i><b></b></div><div class="tx"></div><button class="ok">Got it</button></div></div>`);
+  const close = () => { $("spnInfo").hidden = true; };
+  $("spnInfo").querySelector(".ok").addEventListener("click", close);
+  $("spnInfo").addEventListener("click", e => { if (e.target.id === "spnInfo") close(); });
+}
+SV.info = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5v.5"/></svg>';
+SV.chevD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+SV.chevU = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>';
+function spnInfoOpen(p, i) {
+  const it = (SPN_INFO[p] || [])[i]; if (!it) return;
+  const box = $("spnInfo"), sp = $("sp");
+  for (const v of ["--pc1", "--pcT"]) box.style.setProperty(v, sp.style.getPropertyValue(v));
+  box.querySelector(".hd i").textContent = it[0]; box.querySelector(".hd b").textContent = it[1];
+  box.querySelector(".tx").innerHTML = it[2].map(x => `<p>${escH(x)}</p>`).join("");
+  box.hidden = false; box.querySelector(".tx").scrollTop = 0;
+}
+// the sounds list: name with the part under it, ⌄ for more, Remove inside
+{
+  const renderSlots559 = renderSlots;
+  renderSlots = function () {
+    const r = renderSlots559.apply(this, arguments);
+    const rows = $("slots").children;
+    samples.forEach((c, i) => {
+      const row = rows[i]; if (!row) return;
+      const nm = row.querySelector(".nm"), part = c.part || "both", open = row.classList.contains("open");
+      const em = document.createElement("em"); em.className = part; em.textContent = part.toUpperCase();
+      nm.appendChild(em);
+      const more = document.createElement("button"); more.type = "button"; more.className = "sl-more";
+      more.setAttribute("aria-expanded", open); more.setAttribute("aria-label", (open ? "Fewer" : "More") + " options for " + c.name);
+      more.innerHTML = open ? SV.chevU : SV.chevD;
+      more.addEventListener("click", () => nm.click());
+      row.querySelector(".sl-head").appendChild(more);
+      const body = row.querySelector(".sl-body");
+      if (body) {
+        const rm = document.createElement("button"); rm.type = "button"; rm.className = "sl-rm"; rm.textContent = "Remove this sound";
+        rm.addEventListener("click", () => {
+          if (!rm.classList.contains("sure")) { rm.classList.add("sure"); rm.textContent = "Tap again to remove"; setTimeout(() => { if (rm.isConnected) { rm.classList.remove("sure"); rm.textContent = "Remove this sound"; } }, 3000); return; }
+          const d = row.querySelector(".sl-del"); d.click(); d.click();
+        });
+        body.appendChild(rm);
+      }
+    });
+    const n = $("spnSlN"); if (n) { n.textContent = `YOUR SOUNDS · ${samples.length} OF ${MAX_SAMPLES}`; n.hidden = !samples.length; }
+    return r;
+  };
+}
+{
+  const spnBuild559 = spnBuild;
+  spnBuild = function (p) {
+    const r = spnBuild559.apply(this, arguments);
+    const secs = [...$("spBody").querySelectorAll(":scope > .spn-sec")];
+    // ⓘ on each heading
+    secs.forEach((s, i) => {
+      const h = s.querySelector(".spn-h"); if (!h || h.querySelector(".spn-i")) return;
+      const b = document.createElement("button"); b.type = "button"; b.className = "spn-i"; b.innerHTML = SV.info;
+      b.setAttribute("aria-label", "About " + (h.querySelector("b").textContent || "").toLowerCase());
+      b.addEventListener("click", () => spnInfoOpen(p, i));
+      h.appendChild(b);
+    });
+    // effects: the Mix note
+    const fx = secs[2], board = fx && fx.querySelector(".board");
+    if (board) {
+      const m = document.createElement("div"); m.className = "spn-mixnote";
+      m.innerHTML = `<span>Echo and Reverb set how much of the ${p} goes in. How they sound (room size, echo time, repeats) is in Mix, shared by every part.</span><button type="button">Mix ›</button>`;
+      m.querySelector("button").addEventListener("click", () => spOpen("mix"));
+      board.after(m);
+    }
+    // My sounds: Record, the status line, then file / save, then your sounds
+    const ms = secs[secs.length - 1], btns = ms && ms.querySelector(".spn-btns");
+    if (btns) {
+      const rec = document.createElement("button"); rec.type = "button"; rec.id = "spnRec";
+      rec.innerHTML = `<span class="spn-bar"></span><span class="dot"></span><span class="t">Record a sound</span><small>UP TO 4 S</small>`;
+      rec.hidden = $("micRec").hidden;
+      rec.addEventListener("click", () => $("micRec").click());
+      btns.before(rec);
+      spnMove($("sampHint"), ms); btns.before($("sampHint"));
+      const sn = document.createElement("div"); sn.className = "spn-sl"; sn.id = "spnSlN"; $("slots").before(sn);
+      renderSlots();
+    }
+    clearInterval(SPN.rt);
+    SPN.rt = setInterval(() => {
+      if ($("sp").hidden || !SPN.part) { clearInterval(SPN.rt); return; }
+      const b = $("spnRec"); if (!b) return;
+      const on = !!mic.on, secs = on ? Math.min(4, (performance.now() - mic.t0) / 1000) : 0;
+      b.classList.toggle("on", on); b.closest(".spn-sec").classList.toggle("rec", on);
+      b.querySelector(".t").textContent = on ? "Stop" : "Record a sound";
+      b.querySelector("small").textContent = on ? `${secs.toFixed(1)} s / 4` : "UP TO 4 S";
+      b.querySelector(".spn-bar").style.width = on ? (secs / 4 * 100).toFixed(1) + "%" : "0";
+      b.setAttribute("aria-pressed", on);
+    }, 100);
     return r;
   };
 }

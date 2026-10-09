@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.57 TEST · game mode · 8 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.58 TEST · game mode · 9 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1525,7 +1525,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.57 TEST · game mode · 8 Oct 2026</p>
+      <p class="ver">GlassPad 5.58 TEST · game mode · 9 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10189,7 +10189,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.57 TEST</p>
+    <p class="hm-ver">GlassPad 5.58 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -12435,6 +12435,223 @@ function hmPickSetup(u) {
   spOpen = function (p) {
     const r = spOpen557.apply(this, arguments);
     t.hidden = !NAME[p]; t.dataset.try = p; t.innerHTML = `${SV.play}Try the ${NAME[p] || ""}`;
+    return r;
+  };
+}
+// 5.58: Studio Lead and Bass pages in the original neon look (boards "Studio: Lead options" / "Studio: Bass options").
+// Numbered sections in working order. Lead: Sound · Shape · Effects · 2nd sound · Playing · Arp · My sounds.
+// Bass: Sound · Shape · Effects · How it plays · My sounds. The panel's real controls are moved in one by one (comment
+// markers remember their place) and put back when the page closes, so every control keeps its own code.
+// Hold and ARP on/off live only on the pad's dock now; the arp style pickers here set the style the dock's ARP turns on.
+// No on/off switch by the headings. Play on (Strips / Keyboard) moved to ⚙ settings (shown in Studio only).
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  #sp.neon { background: #03030a; --sc: var(--pc1); }
+  #sp.neon::after { content: none; }
+  #sp.neon::before { left: -40px; top: -220px; width: 520px; height: 520px; background: radial-gradient(circle, color-mix(in srgb, var(--pc1) 26%, transparent), transparent 62%); }
+  #sp.neon .nstrips { opacity: .22; }
+  #sp.neon .st { position: relative; z-index: 1; gap: 12px; }
+  #sp.neon .sp-top { background: none; }
+  #sp.neon .sp-top::before { content: ""; position: absolute; left: 50%; transform: translateX(-50%); width: 100vw; top: 0; bottom: -16px; z-index: -1; pointer-events: none; background: linear-gradient(180deg, rgba(3,3,10,.95) 62%, rgba(3,3,10,0)); }
+  #sp.neon #spTitle { text-shadow: 0 0 10px var(--pc1), 0 0 26px color-mix(in srgb, var(--pc1) 60%, transparent) !important; }
+  #sp.neon #spBack { background: rgba(12,6,24,.7); border: 1.5px solid color-mix(in srgb, var(--nm) 55%, transparent); box-shadow: 0 0 10px color-mix(in srgb, var(--nm) 45%, transparent); color: #fff; }
+  #sp.neon .sp-play { width: 42px; height: 42px; background: rgba(12,6,24,.7); border: 1.5px solid var(--pc1); box-shadow: 0 0 10px var(--pc1); color: #fff; }
+  #sp.neon .sp-play svg { width: 16px; height: 16px; }
+  #sp.neon #spBody { gap: 12px; }
+  .spn-sec { border-radius: 18px; background: rgba(8,4,18,.78); border: 1.5px solid color-mix(in srgb, var(--nm) 50%, transparent); box-shadow: inset 0 0 22px color-mix(in srgb, var(--nm) 19%, transparent);
+    padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .spn-h { display: flex; align-items: center; gap: 10px; margin-bottom: 2px; }
+  .spn-h i { width: 24px; height: 24px; flex: none; box-sizing: border-box; border-radius: 50%; border: 1.5px solid var(--pc1); box-shadow: 0 0 8px color-mix(in srgb, var(--pc1) 60%, transparent);
+    display: grid; place-items: center; font: 700 11px var(--display); font-style: normal; color: #fff; }
+  .spn-h b { font: 700 13px var(--display); letter-spacing: .08em; color: #fff; text-shadow: 0 0 8px color-mix(in srgb, var(--pc1) 60%, transparent); white-space: nowrap; }
+  .spn-h span { flex: 1; height: 1.5px; background: linear-gradient(90deg, var(--pc1), transparent); opacity: .7; }
+  .spn-note { font: 400 11px/15px "IBM Plex Sans", var(--body); color: #a99fd0; }
+  .spn-sec .group, .spn-sec .row.snd-save { display: flex; align-items: center; gap: 10px; min-height: 40px; margin: 0; padding: 0; flex-wrap: nowrap; width: auto; min-width: 0; }
+  .spn-sec .group[hidden], .spn-sec .row.snd-save[hidden] { display: none; }
+  .spn-sec .group.lvl { display: flex !important; }
+  .spn-sec .group.lvl[hidden] { display: none !important; }
+  .spn-sec .row.snd-save { background: transparent; border: 0; }
+  .spn-sec .group > label:first-child, .spn-sec .group > .lbl:first-child, .spn-sec .snd-save > label, .spn-l {
+    width: 92px !important; min-width: 92px !important; flex: none; font: 400 11px/14px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #b8aee6; }
+  .spn-sec select { flex: 1; min-width: 0; width: auto !important; max-width: none !important; height: 38px; border-radius: 11px; background: rgba(6,3,14,.85) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;
+    border: 1.5px solid color-mix(in srgb, var(--nm) 50%, transparent); color: #fff; font: 400 14px "IBM Plex Sans", var(--body); padding: 0 32px 0 12px; -webkit-appearance: none; appearance: none; }
+  .spn-sec select.spn-hot { border-color: var(--pc1); box-shadow: 0 0 8px color-mix(in srgb, var(--pc1) 35%, transparent); }
+  .spn-sec .sp-try { width: 34px !important; height: 34px !important; margin-left: 0 !important; background: rgba(6,3,14,.85) !important; border: 1.5px solid var(--pc1) !important; box-shadow: 0 0 8px color-mix(in srgb, var(--pc1) 45%, transparent) !important; }
+  .spn-sec .sp-try.go { background: var(--pc1) !important; }
+  .spn-sec input[type=range] { flex: 1; min-width: 0; width: auto; height: 24px; margin: 0; background: transparent; -webkit-appearance: none; appearance: none; }
+  .spn-sec input[type=range]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--nm), var(--pc1)) 0 0 / var(--p, 50%) 100% no-repeat, rgba(255,255,255,.1); }
+  .spn-sec input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; margin-top: -6px; background: #fff; border: 0; box-shadow: 0 0 10px var(--pc1); }
+  .spn-sec input[type=range]::-moz-range-track { height: 4px; border-radius: 2px; background: rgba(255,255,255,.1); }
+  .spn-sec input[type=range]::-moz-range-progress { height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--nm), var(--pc1)); }
+  .spn-sec input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 0 10px var(--pc1); }
+  .spn-sec .group > output { width: 52px; flex: none; text-align: right; font: 400 12px var(--mono); color: #eef1f7; }
+  .spn-sec .info-btn { flex: none; width: 30px; height: 30px; border-radius: 50%; padding: 0; background: transparent; border: 1px solid color-mix(in srgb, var(--nm) 50%, transparent); color: #b8aee6; }
+  .spn-pills { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; min-width: 0; }
+  .spn-sec .spn-pills > button, .spn-sec .spn-pills > label.btn, .spn-sec .spn-btns > button, .spn-sec .spn-btns > label.btn {
+    height: 34px; padding: 0 14px; border-radius: 17px; display: inline-flex; align-items: center; gap: 6px; box-sizing: border-box; margin: 0;
+    background: transparent; border: 1.5px solid color-mix(in srgb, var(--nm) 50%, transparent); color: #e6e0ff; font: 400 13px "IBM Plex Sans", var(--body); letter-spacing: 0; text-transform: none; box-shadow: none; }
+  .spn-sec .spn-pills > button[aria-pressed="true"] { background: var(--pc1); border-color: var(--pc1); color: var(--pcT, #0a0412); font-weight: 600; box-shadow: 0 0 12px color-mix(in srgb, var(--pc1) 60%, transparent); }
+  .spn-btns { display: flex; gap: 8px; flex-wrap: wrap; padding: 2px 0; }
+  .spn-sec .spn-btns > [hidden] { display: none !important; }
+  .spn-sec .snd-save .snd-del { flex: none; width: 34px; height: 34px; border-radius: 50%; padding: 0; }
+  .spn-sec .snd-save .snd-namebox:not([hidden]) { display: flex; gap: 6px; flex: 1; min-width: 0; }
+  .spn-sec .snd-save .snd-namebox input { flex: 1; min-width: 0; width: auto; height: 34px; border-radius: 10px; border: 1.5px solid var(--pc1); background: #05040c; color: #fff; padding: 0 10px; }
+  .spn-sec .snd-save .snd-namebox button { height: 34px; padding: 0 12px; border-radius: 17px; background: var(--pc1); border: 0; color: var(--pcT, #0a0412); font-weight: 600; }
+  .spn-sec .snd-save:has(.snd-namebox:not([hidden])) select { display: none; }
+  .spn-sec .slots { display: flex; flex-direction: column; gap: 6px; }
+  .spn-sec .slots:empty { display: none; }
+  /* the effects board: one row of neon pedals that scrolls sideways */
+  .spn-sec .board { background: transparent; border: 0; padding: 2px 14px 6px; margin: 0 -14px; overflow-x: auto; scrollbar-width: none; }
+  .spn-sec .board::-webkit-scrollbar { display: none; }
+  .spn-sec .board-inner { gap: 8px; align-items: flex-start; }
+  .spn-sec .flow { display: none; }
+  .spn-sec .pedal { width: 140px; box-sizing: border-box; border-radius: 12px; background: rgba(6,3,14,.9); border: 1.5px solid rgba(255,255,255,.22); padding: 8px 9px 9px; gap: 5px; }
+  .spn-sec .pedal.on { border-color: var(--pc1) !important; box-shadow: 0 0 10px color-mix(in srgb, var(--pc1) 55%, transparent); }
+  .spn-sec .pedal > .toggle { margin: -8px -9px -2px; padding: 9px 9px 7px; width: calc(100% + 18px); font: 500 12px "IBM Plex Sans", var(--body); letter-spacing: 0; color: #fff; }
+  .spn-sec .pedal .led { width: 8px; height: 8px; background: #3a3f4d; box-shadow: none; }
+  .spn-sec .pedal.on > .toggle .led { background: var(--pc1) !important; box-shadow: 0 0 6px var(--pc1) !important; }
+  .spn-sec .knob label, .spn-sec .knob output { font: 400 9px var(--mono); color: #b8aee6; letter-spacing: .06em; }
+  .spn-sec .knob input[type=range] { height: 18px; }
+  .spn-sec .pedal:not(.on) .knob input[type=range]::-webkit-slider-runnable-track { background: linear-gradient(#555a66, #555a66) 0 0 / var(--p, 50%) 100% no-repeat, rgba(255,255,255,.1); }
+  .spn-sec .pedal:not(.on) .knob input[type=range]::-webkit-slider-thumb { box-shadow: none; background: #c9cfdb; }
+  .spn-sec .pedal .seg { border: 0; gap: 3px; display: grid; overflow: visible; }
+  .spn-sec .pedal .seg button { border: 1px solid rgba(255,255,255,.2) !important; border-radius: 5px; padding: 3px 0; font: 400 9px var(--mono); color: #e6e0ff; background: transparent; white-space: nowrap; }
+  .spn-sec .pedal .seg button[aria-pressed="true"] { background: var(--pc1) !important; color: var(--pcT, #0a0412) !important; border-color: var(--pc1) !important; }
+  .spn-fxwho { display: flex; gap: 6px; }
+  .spn-fxwho[hidden] { display: none; }
+  /* the pinned buttons: Try in this part's colour, Play on the pad in the other one, both outlined */
+  #sp.neon #spDock { background: linear-gradient(180deg, rgba(3,3,10,0), rgba(3,3,10,.94) 45%); }
+  #sp.neon #spPad { flex: 1; height: 52px; border-radius: 26px; background: rgba(12,6,24,.72); border: 2px solid var(--pc2); color: #fff; font: 500 14px "IBM Plex Sans", var(--body);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--pc2) 60%, transparent), inset 0 0 12px color-mix(in srgb, var(--pc2) 30%, transparent); }
+  #sp.neon #spPad svg { display: none; }
+  #sp.neon .sp-trybig { font: 500 14px "IBM Plex Sans", var(--body); }
+  #sp.neon .sp-trybig.go { color: var(--pcT, #0a0412); }
+  /* Play on: now in ⚙ settings, Studio only */
+  body:not(.studio) #gPlayOnR { display: none; }
+  #gPlayOnR #surfaceSeg { display: flex; }`;
+  document.head.appendChild(st);
+  // Play on → the settings sheet
+  const pg = $("surfaceSeg").closest(".group");
+  $("gBandVol").closest(".gr").insertAdjacentHTML("afterend", `<div class="gr" id="gPlayOnR"><div><label>Play on</label><small>Strips, or a keyboard for the lead</small></div></div>`);
+  $("surfaceSeg").classList.add("gseg"); $("gPlayOnR").appendChild($("surfaceSeg")); pg.hidden = true;
+}
+const SPN = { marks: [], part: null, t: 0 };
+function spnMove(el, into) {
+  if (!el) return null;
+  const m = document.createComment("spn"); el.before(m); SPN.marks.push([el, m]); into.appendChild(el); return el;
+}
+function spnRestore() {
+  for (let i = SPN.marks.length - 1; i >= 0; i--) { const [el, m] = SPN.marks[i]; if (m.parentNode) m.parentNode.insertBefore(el, m); m.remove(); }
+  SPN.marks = []; SPN.part = null; clearInterval(SPN.t);
+  const sp = $("sp"); sp.classList.remove("neon"); const ns = sp.querySelector(":scope > .nstrips"); if (ns) ns.remove();
+}
+// the page's colours: the Studio colour theme's lead / bass / highlight, never white (as Home)
+function spnCols() {
+  const o = { lead: TH.leadLine || TH.acc || NEON_DEF.lead, bass: TH.acc2 || NEON_DEF.bass, mid: TH.leadLine ? TH.acc : NEON_DEF.mid };
+  const lum = h => { const v = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255); return .2126 * v[0] + .7152 * v[1] + .0722 * v[2]; };
+  for (const k of ["lead", "bass", "mid"]) if (!/^#[0-9a-f]{6}$/i.test(o[k] || "")) o[k] = NEON_DEF[k];
+  const ok = ["bass", "lead", "mid"].filter(k => lum(o[k]) < .8);
+  for (const k of ["lead", "bass", "mid"]) if (lum(o[k]) >= .8) o[k] = neonMix(o[ok.find(x => x !== k) || "lead"] || NEON_DEF.mid, "#000000", .3);
+  if (o.mid.toLowerCase() === o.lead.toLowerCase() || o.mid.toLowerCase() === o.bass.toLowerCase()) o.mid = NEON_DEF.mid;
+  return o;
+}
+function spnFill(root) {
+  for (const r of (root || $("sp")).querySelectorAll(".spn-sec input[type=range]")) {
+    const lo = +r.min || 0, hi = +r.max || 1, p = Math.max(0, Math.min(100, ((+r.value - lo) / ((hi - lo) || 1)) * 100));
+    r.style.setProperty("--p", p.toFixed(1) + "%");
+  }
+}
+function spnSec(n, title) {
+  const s = document.createElement("section"); s.className = "spn-sec";
+  s.innerHTML = `<div class="spn-h"><i>${n}</i><b>${title}</b><span></span></div>`; $("spBody").appendChild(s); return s;
+}
+const spnNote = (s, txt) => { const p = document.createElement("div"); p.className = "spn-note"; p.textContent = txt; s.appendChild(p); return p; };
+function spnRow(s, label) {
+  const g = document.createElement("div"); g.className = "group"; g.innerHTML = `<span class="spn-l">${label}</span>`; s.appendChild(g); return g;
+}
+// an arp style picker without "Off": ARP on the pad switches the arp; this picks the style it plays
+function spnArpPick(s, label, realId, memKey) {
+  const g = spnRow(s, label), real = $(realId), sel = document.createElement("select");
+  for (const o of real.options) if (o.value !== "off") sel.add(new Option(o.text, o.value));
+  const sync = () => { sel.value = real.value !== "off" ? real.value : (STP[memKey] || "up"); };
+  sync(); g.appendChild(sel);
+  sel.addEventListener("change", () => {
+    STP[memKey] = sel.value; try { stpSave(); } catch (_) {}
+    if (real.value !== "off") { real.value = sel.value; real.dispatchEvent(new Event("change", { bubbles: true })); }
+  });
+  real.addEventListener("change", sync);
+  return sel;
+}
+function spnFxNote(s) {
+  const n = spnNote(s, "");
+  const upd = () => { try { n.textContent = "Order: " + PART_FX[fxPart].map(f => f.name).join(" → "); } catch (_) {} };
+  upd(); return upd;
+}
+function spnBuild(p) {
+  const sp = $("sp"), body = $("spBody"), c = spnCols(), lead = p === "lead";
+  SPN.part = p; body.innerHTML = "";
+  const pc1 = lead ? c.lead : c.bass, pc2 = lead ? c.bass : c.lead;
+  neonSet(sp, c); sp.style.setProperty("--pc1", pc1); sp.style.setProperty("--pc2", pc2); sp.style.setProperty("--pcT", neonInk(pc1));
+  sp.classList.add("neon"); neonStrips(sp);
+  const mv = (id, s) => spnMove(typeof id === "string" ? $(id) : id, s);
+  const grp = id => $(id) && $(id).closest(".group");
+  const secs = [];
+  if (lead) {
+    let s = spnSec(1, "SOUND"); mv(grp("wave"), s); mv(grp("lvol"), s); $("wave").classList.add("spn-hot"); secs.push(s);
+    s = spnSec(2, "SHAPE"); for (const id of ["tAttack", "tRelease", "tRes", "tDetune", "tVib"]) mv(grp(id), s); secs.push(s);
+    s = spnSec(3, "EFFECTS");
+    const who = document.createElement("div"); who.className = "spn-fxwho spn-pills";
+    who.innerHTML = `<button type="button" data-fx="lead">Lead</button><button type="button" data-fx="lead2">2nd sound</button>`;
+    s.appendChild(who);
+    mv(document.querySelector("#d-fx .board"), s);
+    const upd = spnFxNote(s);
+    const whoSync = () => { const two = $("wave2").value !== "off"; who.hidden = !two; if (!two && fxPart === "lead2") { fxPart = "lead"; renderBoard(); }
+      who.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.fx === fxPart)); upd(); spnFill(s); };
+    who.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; fxPart = b.dataset.fx; renderBoard(); whoSync(); });
+    SPN.whoSync = whoSync; secs.push(s);
+    s = spnSec(4, "2ND SOUND"); mv(grp("wave2"), s); mv("lvol2Group", s);
+    spnNote(s, "Plays on your second finger. Its own effects: tap 2nd sound in Effects."); secs.push(s);
+    s = spnSec(5, "PLAYING");
+    const touch = spnRow(s, "Touch"), tp = document.createElement("span"); tp.className = "spn-pills"; touch.appendChild(tp);
+    mv("glide", tp); mv("autoVib", tp);
+    mv(grp("leadNotes"), s); mv("leadFlavourG", s); mv("kbTone", s); secs.push(s);
+    s = spnSec(6, "ARP"); spnNote(s, "Turn it on and off with ARP on the pad.");
+    spnArpPick(s, "Style", "leadArp", "lastLA"); mv(grp("leadRate"), s); mv(grp("leadRange"), s); secs.push(s);
+  } else {
+    let s = spnSec(1, "SOUND"); mv(grp("bassSound"), s); mv(grp("bvol"), s); $("bassSound").classList.add("spn-hot"); secs.push(s);
+    s = spnSec(2, "SHAPE"); mv(grp("bAttack"), s); mv(grp("bRelease"), s); secs.push(s);
+    s = spnSec(3, "EFFECTS"); mv(document.querySelector("#d-fx .board"), s); spnFxNote(s); SPN.whoSync = null; secs.push(s);
+    s = spnSec(4, "HOW IT PLAYS"); spnNote(s, "The arp plays the chord in the rhythm you pick. Turn it on and off with ARP on the pad.");
+    mv(grp("bassPat"), s); spnArpPick(s, "Arp", "bassArp", "lastBA"); mv(grp("bassRate"), s); mv(grp("bassRange"), s); mv(grp("bassLayout"), s); secs.push(s);
+  }
+  // My sounds: saved sounds, record / add a file / save, your clips, and every option
+  const s = spnSec(lead ? 7 : 5, "MY SOUNDS"), save = $("snd-" + (lead ? "lead" : "bass"));
+  mv(save, s);
+  const btns = document.createElement("div"); btns.className = "spn-btns"; s.appendChild(btns);
+  mv("micRec", btns); mv("clipPick", btns); mv("filePick", btns); mv(save.querySelector(".snd-new"), btns);
+  mv("slots", s);
+  const pw = $("useLead").closest(".group"), pwr = spnRow(s, "Play with"), pwp = document.createElement("span"); pwp.className = "spn-pills"; pwr.appendChild(pwp);
+  mv("useLead", pwp); mv("useBass", pwp);
+  mv(grp("sampMode"), s); mv(grp("sampOct"), s); mv(grp("sampLen"), s);
+  const rr = spnRow(s, "Repeat"), rp = document.createElement("span"); rp.className = "spn-pills"; rr.appendChild(rp);
+  mv("sampHold", rp); mv("sampRepCycle", rp);
+  secs.push(s);
+  // nothing in the sections is a "PRO" box any more
+  if (SPN.whoSync) SPN.whoSync();
+  spnFill(); clearInterval(SPN.t);
+  SPN.t = setInterval(() => { if ($("sp").hidden || !SPN.part) return; spnFill(); if (SPN.whoSync) SPN.whoSync(); }, 800);
+}
+$("sp").addEventListener("input", e => { if (e.target.matches && e.target.matches(".spn-sec input[type=range]")) spnFill(); }, true);
+$("sp").addEventListener("change", () => { if (SPN.part) setTimeout(() => { spnFill(); if (SPN.whoSync) SPN.whoSync(); }); });
+{
+  const spOpen558 = spOpen, spClose558 = spClose;
+  spClose = function () { spnRestore(); try { $("wave").classList.remove("spn-hot"); $("bassSound").classList.remove("spn-hot"); } catch (_) {} return spClose558.apply(this, arguments); };
+  spOpen = function (p) {
+    if (p !== "lead" && p !== "bass") return spOpen558.apply(this, arguments);
+    const P = ST_PARTS[p], secs = P.secs; P.secs = [];   // the old page would move whole sections in: here they're built control by control
+    let r; try { r = spOpen558.apply(this, arguments); } finally { P.secs = secs; }
+    spnBuild(p); $("sp").scrollTop = 0;
     return r;
   };
 }

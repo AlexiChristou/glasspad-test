@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.59 TEST · game mode · 9 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.60 TEST · game mode · 11 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1525,7 +1525,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.59 TEST · game mode · 9 Oct 2026</p>
+      <p class="ver">GlassPad 5.60 TEST · game mode · 11 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10189,7 +10189,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.59 TEST</p>
+    <p class="hm-ver">GlassPad 5.60 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -12868,6 +12868,419 @@ function spnInfoOpen(p, i) {
     return r;
   };
 }
+// 5.60: Studio Chords and Drums pages in neon (boards "Studio: Chords, a preset / My chords / pick a progression",
+// "Studio: Drums"), progressions you can save (Yours), Saved sounds moved up into each Sound section with a list sheet
+// (▶ to hear, tap to use, ✎ to rename or delete), and an ON switch in the page header for Bass, Chords and Drums.
+// My chords sets its own key: no Key / Scale there, "The lead plays" lists the scales that fit instead.
+// Key lift (tone / semitone / 4th, when it lands, the fill) moves to the Song page.
+Object.assign(SPN_INFO, {"chords": [["1", "WHICH CHORDS", ["Progression picks the chords the band loops. Tap it for the list: Yours (the progressions you've saved), Make your own, and the presets.", "A preset is written in chord numbers, so it follows the Key: the same progression plays in A or in D. Scale sets the notes on your strips and colours the chords (the same progression sounds moody in minor pentatonic and bright in major pentatonic). Change sets how long each chord lasts. Use its beat and scale puts back the scale and drums that suit the preset.", "Make my own from these copies the chords into My chords, where you can change them.", "My chords: any chords you like, up to 16. Tap + to add one after the chord you picked; tap a chord to change its root, type, extra and length, or to move or delete it. Type chords instead lets you write them, like Am Dm7:½ G:2. Your chords set the key, so there's no Key here: under The lead plays, pick the scale for your strips from the ones that fit your chords best.", "Numbers: tap the chord numbers 1 to 7 in the order you want (up to 8). They follow the Key, like a preset.", "Save these chords keeps My chords or your numbers under a name, in Yours. ✎ renames or deletes one.", "Key changes (KEY ▲▼ on the pad) are set on the Song page."]], ["2", "SOUND", ["Sound is the instrument the chords are played on; ▶ plays the chord (when the band is stopped). The synth sounds (Big saws, Synth pad, Warm pad, Synth stab) move each chord to its nearest notes.", "Level is how loud the chords are. It's the same fader as Chords in Mix.", "Saved: the chord sounds you've kept (the sound, its level and its effects). Tap it for the list: ▶ to hear one, tap a name to use it, ✎ to rename or delete. Save this sound keeps the one you have now."]], ["3", "RHYTHM", ["Rhythm is how the chords are played in time: held (Sustain, or Swell to fade each one in), on the beat, 8ths, off-beat stabs, Pushes, Charleston, Latin 3-3-2, Gallop, Trance gate or Half-time. Rhythm maker lets you draw your own.", "Strum rolls each chord like a guitar. Pump makes the chords duck on every kick and swell back (the bass a little too): the breathing sound of synth music.", "Feel is how human the chords are played. Off is machine-tight; Tight, Natural and Loose add more. Its parts (timing, accents, phrasing, voicing, brightness, lock to drums) switch on and off below it, and Amount sets how strong it is."]], ["4", "ARP", ["The arpeggiator plays the chord in time instead of all at once.", "Arp speed: Every hit follows the rhythm, or pick a speed. Arp style: Over a bed holds the chord softly underneath with the arpeggio an octave above; Pairs plays two chord notes a step; Single notes plays one at a time."]], ["5", "EFFECTS", ["The chords' own pedals, in the order the sound goes through them. Tap a pedal's name to switch it on. Pedals that are off use no processing.", "Filter: Sweep moves by itself in time with the band, Env opens on each chord, Still stays put. Ensemble is a wide, lush chorus. Phaser swirls. Tremolo pulses the volume, free or in time with the band.", "Echo and Reverb set how much of the chords goes in; how they sound is set in Mix, shared by every part."]]], "drums": [["1", "BEAT", ["Style picks the beat: Rock, Funk, Boom bap, House, Half-time, Shuffle, Bossa nova, One drop and Maqsum, or the electronic ones (80s machine, Synthwave, Big half-time, Chillwave, Electro shuffle, Electro maqsum, Electro 3-3-2). Beats you make show as My beat.", "Swing pushes the off-beats later for a laid-back, shuffled feel (fills swing with it). Fills adds a drum fill every 4 or 8 bars.", "Beat maker: draw your own beat on a grid, with Low, Normal and High levels (the BAND button on the game pad picks the level) and a fill for each. Start from the style playing or from scratch."]], ["2", "KIT", ["Kit is the drum sounds: the band's synth drums, or the sampled kits (test). ▶ plays a bar of the beat (when the band is stopped).", "Played by (test): the app's own beat, or a real drummer's groove.", "Level is how loud the drums are. It's the same fader as Drums in Mix."]], ["3", "EFFECTS", ["The drums' own pedals. Compressor evens out the hits and adds punch; Drive adds grit. Tap a pedal's name to switch it on.", "Echo and Reverb set how much of the drums goes in; how they sound is set in Mix, shared by every part."]]]});
+SPN_INFO.lead[0][2].push("Saved: your saved lead sounds. Tap it for the list: ▶ to hear one, tap a name to use it, ✎ to rename or delete. Save this sound keeps the whole sound under a name (sound, shape, effects, 2nd sound, glide, auto vibrato, level and octave).");
+SPN_INFO.bass[0][2].push("Saved: your saved bass sounds. Tap it for the list: ▶ to hear one, tap a name to use it, ✎ to rename or delete. Save this sound keeps the whole sound under a name (sound, shape, effects, level and octave).");
+for (const k of ["lead", "bass"]) { const ms = SPN_INFO[k][SPN_INFO[k].length - 1][2]; if (/^Saved sounds/.test(ms[ms.length - 1])) ms.pop(); }
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  /* the old Saved sounds row (My sounds) is replaced by the one in Sound */
+  .spn-sec .row.snd-save, .spn-btns .snd-new { display: none !important; }
+  .spn-pick { flex: 1; min-width: 0; height: 44px; border-radius: 12px; background: rgba(6,3,14,.85); border: 1.5px solid var(--pc1); box-shadow: 0 0 10px color-mix(in srgb, var(--pc1) 20%, transparent);
+    color: #fff; display: flex; align-items: center; gap: 8px; padding: 0 12px; font: 500 15px "IBM Plex Sans", var(--body); text-align: left; }
+  .spn-pick span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .spn-pick small { flex: none; font: 400 10px var(--mono); letter-spacing: .08em; color: #b8aee6; }
+  .spn-pick svg { width: 12px; height: 12px; flex: none; }
+  .spn-pick.quiet { border-color: color-mix(in srgb, var(--nm) 50%, transparent); box-shadow: none; font-weight: 400; font-size: 14px; height: 40px; }
+  .spn-namebox { display: flex; gap: 8px; }
+  .spn-namebox[hidden] { display: none; }
+  .spn-namebox input { flex: 1; min-width: 0; height: 40px; border-radius: 11px; background: #05040c; border: 1.5px solid var(--pc1); color: #fff; padding: 0 12px; font: 400 15px "IBM Plex Sans", var(--body); }
+  .spn-namebox button, .spn-go { height: 40px; padding: 0 18px; border-radius: 20px; background: var(--pc1); border: 0; color: var(--pcT, #0a0412); font: 600 14px "IBM Plex Sans", var(--body); }
+  .spn-wide { height: 40px; border-radius: 20px; background: transparent; border: 1.5px solid color-mix(in srgb, var(--nm) 55%, transparent); color: #e6e0ff; font: 400 13px "IBM Plex Sans", var(--body); }
+  .spn-wide[hidden] { display: none; }
+  .spn-savebox { border-radius: 14px; border: 1.5px dashed color-mix(in srgb, var(--pc1) 55%, transparent); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .spn-savebox[hidden] { display: none; }
+  .spn-cap { font: 500 10.5px var(--mono); letter-spacing: .1em; color: #c9bfff; text-transform: uppercase; }
+  /* the page header's ON switch */
+  .spn-on { margin-left: auto; height: 34px; padding: 0 5px 0 12px; border-radius: 17px; background: rgba(6,3,14,.8); border: 1.5px solid var(--pc1); color: #fff; display: flex; align-items: center; gap: 8px; font: 500 11px var(--mono); letter-spacing: .1em; }
+  .spn-on i { width: 36px; height: 22px; border-radius: 11px; background: var(--pc1); position: relative; display: block; transition: background .15s; }
+  .spn-on i::after { content: ""; position: absolute; top: 3px; right: 3px; width: 16px; height: 16px; border-radius: 50%; background: #0a0412; transition: right .15s; }
+  .spn-on[aria-pressed="false"] { border-color: rgba(255,255,255,.25); color: #8a8fa0; }
+  .spn-on[aria-pressed="false"] i { background: #3a3f4d; } .spn-on[aria-pressed="false"] i::after { right: 17px; background: #8a8fa0; }
+  #sp.neon .spn-on ~ .sp-play { margin-left: 0; }
+  #sp.neon.partoff #spBody { opacity: .5; }
+  /* chords: which section shows what */
+  #sp[data-cm="manual"] .spn-auto, #sp:not([data-cm="manual"]) .spn-man { display: none !important; }
+  #sp[data-own="1"] .spn-noown { display: none !important; }
+  .spn-sec #ownBox:not([hidden]) { display: flex !important; flex-direction: column; align-items: stretch; gap: 8px; }
+  .spn-sec #ownBox > label { display: none; }
+  .spn-sec .own-degs { display: grid !important; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .spn-sec .own-degs button { height: 50px; border-radius: 10px; background: rgba(6,3,14,.9); border: 1.5px solid color-mix(in srgb, var(--nm) 55%, transparent); color: #fff; font: 700 15px var(--display); padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .spn-sec .own-degs button small { font: 400 10px "IBM Plex Sans", var(--body); color: #b8aee6; }
+  .spn-sec .chips2 { display: flex; flex-wrap: wrap; gap: 6px; }
+  .spn-sec .chips2 button { height: 44px; min-width: 52px; border-radius: 12px; background: rgba(6,3,14,.9); border: 2px solid rgba(255,255,255,.22); color: #fff; font: 600 15px "IBM Plex Sans", var(--body); }
+  .spn-sec .chips2 button.sel { border-color: var(--pc1); box-shadow: 0 0 8px color-mix(in srgb, var(--pc1) 40%, transparent); }
+  .spn-sec #ownDel { align-self: flex-start; height: 34px; padding: 0 14px; border-radius: 17px; background: transparent; border: 1px solid rgba(255,77,94,.6); color: #ff9aa5; }
+  .spn-sec #jamChordsLine { display: block; font: 500 15px "IBM Plex Sans", var(--body); color: #fff; padding: 2px 0; }
+  .spn-sec .scale-desc { font: 400 12px/17px "IBM Plex Sans", var(--body); color: #b3a9dc; }
+  .spn-sec #feelG { min-height: 0 !important; } .spn-sec #feelG > label { display: none; }
+  .spn-sec #feelBtn { flex: 1; height: 40px; border-radius: 12px; background: transparent; border: 1.5px dashed color-mix(in srgb, var(--pc1) 55%, transparent); color: #fff; font: 400 13px "IBM Plex Sans", var(--body); }
+  .spn-sec #manualBox { display: flex; flex-direction: column; gap: 10px; border: 0 !important; padding: 0 !important; margin: 0 !important; background: none; }
+  .spn-sec #manualBox[hidden] { display: none !important; }
+  .spn-sec #manualBox .hint { display: block; font: 400 12px/17px "IBM Plex Sans", var(--body); color: #b3a9dc; }
+  .spn-sec .mc-ed { border-radius: 14px; border: 1.5px solid var(--pc1); background: rgba(6,3,14,.9); padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+  .spn-sec .mc-ed[hidden] { display: none; }
+  .spn-sec .mc-ed #cbName { font: 700 20px var(--display); }
+  .spn-sec .mc-ed .group:last-child button { height: 36px; min-width: 44px; border-radius: 18px; background: transparent; border: 1.5px solid color-mix(in srgb, var(--nm) 55%, transparent); color: #fff; }
+  .spn-sec .mc-more { display: flex; gap: 8px; }
+  .spn-sec .mc-more button { flex: 1; height: 38px; border-radius: 19px; background: transparent; border: 1.5px solid color-mix(in srgb, var(--nm) 55%, transparent); color: #e6e0ff; font: 400 13px "IBM Plex Sans", var(--body); text-decoration: none; }
+  .spn-sec .mc-type { display: flex; gap: 8px; } .spn-sec .mc-type[hidden] { display: none; }
+  .spn-sec .mc-type input { flex: 1; min-width: 0; height: 40px; border-radius: 11px; background: #05040c; border: 1.5px solid var(--pc1); color: #fff; padding: 0 10px; }
+  .spn-sec .mc-type button { height: 40px; padding: 0 14px; border-radius: 20px; background: var(--pc1); border: 0; color: var(--pcT, #0a0412); font-weight: 600; }
+  .spn-sec #suggRow { border: 0 !important; padding: 0 !important; margin: 0 !important; background: none; }
+  .spn-sec #suggRow .cb-row { display: none; }
+  .spn-sec .sugg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .spn-sec .sugg button { height: 34px; padding: 0 12px; border-radius: 17px; background: transparent; border: 1.5px solid color-mix(in srgb, var(--nm) 55%, transparent); color: #e6e0ff; font: 400 13px "IBM Plex Sans", var(--body); display: inline-flex; align-items: center; gap: 6px; }
+  .spn-sec .sugg button small { font: 400 10px var(--mono); color: #a99fd0; }
+  .spn-sec .sugg button[aria-pressed="true"] { background: var(--pc1); border-color: var(--pc1); color: var(--pcT, #0a0412); font-weight: 600; } .spn-sec .sugg button[aria-pressed="true"] small { color: var(--pcT, #0a0412); }
+  .spn-sec #feelPro { flex-direction: column; align-items: stretch !important; gap: 8px !important; }
+  .spn-sec #feelPro > label:first-child { display: none; }
+  .spn-sec .fp-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+  .spn-sec .fp-grid button { height: 32px; padding: 0 12px; border-radius: 16px; background: transparent; border: 1.5px solid color-mix(in srgb, var(--nm) 55%, transparent); color: #e6e0ff; font: 400 12.5px "IBM Plex Sans", var(--body); width: auto; }
+  .spn-sec .fp-grid button[aria-pressed="true"] { background: color-mix(in srgb, var(--pc1) 22%, transparent); border-color: var(--pc1); color: #fff; }
+  .spn-sec .fp-amt { display: flex; align-items: center; gap: 10px; font: 400 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #b8aee6; }
+  .spn-sec .bm-open { flex: 1; height: 40px; border-radius: 20px; background: transparent; border: 1.5px solid color-mix(in srgb, var(--nm) 55%, transparent); color: #fff; font: 500 13px "IBM Plex Sans", var(--body); }
+  .spn-sec #bmOpenD { height: 60px; border-radius: 16px; border: 2px solid var(--pc1); box-shadow: 0 0 14px color-mix(in srgb, var(--pc1) 50%, transparent), inset 0 0 12px color-mix(in srgb, var(--pc1) 18%, transparent); font-size: 16px; font-weight: 600; }
+  /* the list sheets (saved sounds, progressions) and the rename sheet */
+  #spnList, #spnEd { position: fixed; inset: 0; z-index: 82; background: rgba(3,3,10,.66); display: flex; align-items: flex-end; justify-content: center; }
+  #spnList[hidden], #spnEd[hidden] { display: none; }
+  #spnList .box, #spnEd .box { width: 100%; max-width: 560px; max-height: 86vh; box-sizing: border-box; border-radius: 24px 24px 0 0; background: rgba(10,6,22,.98); border-top: 2px solid var(--pc1, #ff3fd8);
+    box-shadow: 0 -4px 24px color-mix(in srgb, var(--pc1, #ff3fd8) 55%, transparent); padding: 16px 16px max(18px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; color: #eef1f7; }
+  #spnList .hd { display: flex; align-items: center; gap: 10px; }
+  #spnList .hd b, #spnEd b { font: 900 18px var(--display); letter-spacing: .04em; }
+  #spnList .hd button { margin-left: auto; width: 38px; height: 38px; border-radius: 50%; background: transparent; border: 1.5px solid color-mix(in srgb, var(--nm) 55%, transparent); color: #fff; font-size: 16px; }
+  #spnList .ls > * { flex: none; }
+  #spnList .ls { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-bottom: 4px; }
+  #spnList .lb { font: 500 10.5px var(--mono); letter-spacing: .12em; color: #c9bfff; margin-top: 6px; }
+  #spnList .it { display: flex; align-items: center; gap: 8px; min-height: 54px; padding: 6px 8px; border-radius: 14px; background: rgba(6,3,14,.9); border: 1.5px solid rgba(255,255,255,.12); }
+  #spnList .it.on { border: 2px solid var(--pc1); box-shadow: 0 0 12px color-mix(in srgb, var(--pc1) 25%, transparent); }
+  #spnList .it .nm { flex: 1; min-width: 0; min-height: 44px; background: none; border: 0; color: #fff; text-align: left; padding: 0 6px; display: flex; flex-direction: column; justify-content: center; gap: 2px; font: 500 15px "IBM Plex Sans", var(--body); }
+  #spnList .it .nm small { font: 400 11px var(--mono); color: #a99fd0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #spnList .it .nm .t { display: flex; align-items: center; gap: 0; min-width: 0; }
+  #spnList .it .nm em { display: inline-block; width: auto; position: static; font: 500 9px var(--mono); font-style: normal; letter-spacing: .1em; color: var(--pc1); border: 1px solid color-mix(in srgb, var(--pc1) 60%, transparent); border-radius: 6px; padding: 1px 5px; margin-left: 6px; }
+  #spnList .it .pv, #spnList .it .ed { flex: none; width: 38px; height: 38px; border-radius: 50%; padding: 0; display: grid; place-items: center; background: transparent; border: 1.5px solid color-mix(in srgb, var(--nm) 55%, transparent); color: #fff; }
+  #spnList .it .pv { border-color: var(--pc1); } #spnList .it .pv.go { background: var(--pc1); color: var(--pcT, #0a0412); }
+  #spnList .it svg { width: 14px; height: 14px; }
+  #spnList .spn-mk { display: flex; gap: 8px; }
+  #spnList .spn-mk button { flex: 1; height: 44px; border-radius: 22px; background: transparent; border: 1.5px solid var(--pc1); color: #fff; font: 500 13.5px "IBM Plex Sans", var(--body); }
+  #spnList .empty { font: 400 13px/19px "IBM Plex Sans", var(--body); color: #b3a9dc; padding: 6px 2px; }
+  #spnEd .box { gap: 12px; }
+  #spnEd input { height: 44px; border-radius: 12px; border: 1.5px solid var(--pc1); background: #05040c; color: #fff; font: 500 16px "IBM Plex Sans", var(--body); padding: 0 12px; }
+  #spnEd .r { display: flex; gap: 8px; }
+  #spnEd .r button { flex: 1; height: 44px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,.25); background: rgba(255,255,255,.06); color: #eef1f7; font: 700 12px var(--display); letter-spacing: .05em; }
+  #spnEd .r .ok { background: var(--pc1); color: var(--pcT, #0a0412); border-color: var(--pc1); }
+  #spnEd .r .del.sure { background: #ff4d5e; border-color: #ff4d5e; color: #fff; }`;
+  document.head.appendChild(st);
+  document.body.insertAdjacentHTML("beforeend", `<div id="spnList" hidden role="dialog" aria-modal="true"><div class="box"><div class="hd"><b></b><button aria-label="Close">✕</button></div><div class="ls"></div></div></div>
+<div id="spnEd" hidden role="dialog" aria-modal="true"><div class="box"><b></b><input maxlength="28" autocomplete="off"><div class="r"><button class="del">DELETE</button><button class="no">CANCEL</button><button class="ok">SAVE</button></div></div></div>`);
+  $("spnList").querySelector(".hd button").addEventListener("click", () => spnListClose());
+  $("spnList").addEventListener("click", e => { if (e.target.id === "spnList") spnListClose(); });
+  $("spnEd").addEventListener("click", e => { if (e.target.id === "spnEd") $("spnEd").hidden = true; });
+  $("spnEd").querySelector(".no").addEventListener("click", () => { $("spnEd").hidden = true; });
+}
+SV.pencil2 = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>';
+SV.play2 = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>';
+const spnColsFrom = el => { for (const v of ["--pc1", "--pcT", "--nm"]) for (const id of ["spnList", "spnEd"]) $(id).style.setProperty(v, $("sp").style.getPropertyValue(v)); };
+function spnListOpen(title, render) { spnColsFrom(); SPN.listR = render; $("spnList").querySelector(".hd b").textContent = title; render($("spnList").querySelector(".ls")); $("spnList").hidden = false; }
+function spnListClose() { $("spnList").hidden = true; SPN.listR = null; spnPvEnd(true); }
+function spnListRedraw() { if (SPN.listR && !$("spnList").hidden) SPN.listR($("spnList").querySelector(".ls")); }
+// rename / delete (two taps) for a saved thing
+function spnEdOpen(title, name, onSave, onDel) {
+  spnColsFrom(); const ed = $("spnEd"), inp = ed.querySelector("input"), del = ed.querySelector(".del");
+  ed.querySelector("b").textContent = title; inp.value = name; del.classList.remove("sure"); del.textContent = "DELETE";
+  ed.querySelector(".ok").onclick = () => { const v = inp.value.trim().slice(0, 28); if (v) onSave(v); ed.hidden = true; };
+  del.onclick = () => { if (!del.classList.contains("sure")) { del.classList.add("sure"); del.textContent = "SURE?"; return; } onDel(); ed.hidden = true; };
+  inp.onkeydown = e => { if (e.key === "Enter") ed.querySelector(".ok").click(); };
+  ed.hidden = false;
+}
+/* ----- saved sounds: in the Sound section of Lead, Bass and Chords ----- */
+const SPN_SND = { lead: "lead", bass: "bass", chords: "pad" };
+SPN.sndName = {};
+try { Object.assign(SPN.sndName, JSON.parse(localStorage.getItem("glasspad.snd.cur") || "{}")); } catch (_) {}
+const spnSndKeep = () => { try { localStorage.setItem("glasspad.snd.cur", JSON.stringify(SPN.sndName)); } catch (_) {} };
+const spnSame = (a, b) => { try { return JSON.stringify(a) === JSON.stringify(b); } catch (_) { return false; } };
+function spnTry(k) { const b = document.querySelector(`.sp-try[data-try="${k === "pad" ? "chords" : k}"]:not(.sp-trybig)`); if (b) b.click(); }
+function spnPvEnd(revert) {
+  const p = SPN.pv; if (!p) return; clearTimeout(p.t); SPN.pv = null;
+  if (revert) sndPut(p.k, p.snap);
+  document.querySelectorAll("#spnList .pv.go").forEach(b => b.classList.remove("go"));
+}
+function spnSndRow(p, sec, after) {
+  const k = SPN_SND[p];
+  const g = document.createElement("div"); g.className = "group";
+  g.innerHTML = `<span class="spn-l">Saved</span><button type="button" class="spn-pick quiet"><span></span><small></small>${SV.chevD}</button>`;
+  const save = document.createElement("button"); save.type = "button"; save.className = "spn-wide"; save.textContent = "Save this sound";
+  const nb = document.createElement("div"); nb.className = "spn-namebox"; nb.hidden = true;
+  nb.innerHTML = `<input maxlength="24" placeholder="Name this sound" autocomplete="off"><button type="button">Save</button>`;
+  after.after(g); g.after(save); save.after(nb);
+  const inp = nb.querySelector("input");
+  const doSave = () => {
+    const name = inp.value.trim().slice(0, 24); if (!name) { inp.focus(); return; }
+    const l = sndList(k), i = l.findIndex(x => x.name === name), e = { name, data: sndGrab(k) };
+    if (i >= 0) l[i] = e; else l.push(e);
+    toast(sndStore(k, l) ? (i >= 0 ? `Updated "${name}"` : `Saved "${name}"`) : `Saved "${name}" for this session only`);
+    SPN.sndName[k] = name; spnSndKeep(); nb.hidden = true; save.hidden = false; spnSndSync();
+  };
+  save.addEventListener("click", () => { nb.hidden = false; save.hidden = true; const cur = SPN.sndName[k]; inp.value = cur && sndList(k).some(x => x.name === cur) ? cur : ""; inp.focus(); });
+  nb.querySelector("button").addEventListener("click", doSave);
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") doSave(); });
+  g.querySelector(".spn-pick").addEventListener("click", () => spnListOpen(p === "chords" ? "SAVED CHORD SOUNDS" : p === "bass" ? "SAVED BASS SOUNDS" : "SAVED LEAD SOUNDS", ls => spnSndList(k, ls)));
+  SPN.sndRow = { k, g };
+  spnSndSync();
+}
+function spnSndSync() {
+  const r = SPN.sndRow; if (!r || !r.g.isConnected) return;
+  const l = sndList(r.k), cur = l.find(x => x.name === SPN.sndName[r.k]);
+  r.g.querySelector(".spn-pick span").textContent = cur ? cur.name : l.length ? "Pick a saved sound" : "None saved yet";
+  r.g.querySelector(".spn-pick small").textContent = cur && !SPN.pv && !spnSame(cur.data, sndGrab(r.k)) ? "CHANGED" : l.length ? l.length + " SAVED" : "";
+}
+function spnSndList(k, ls) {
+  const l = sndList(k);
+  if (!l.length) { ls.innerHTML = `<div class="empty">No saved sounds yet. Shape a sound you like, then tap Save this sound.</div>`; return; }
+  ls.innerHTML = l.map((x, i) => `<div class="it${x.name === SPN.sndName[k] ? " on" : ""}" data-i="${i}"><button class="pv" aria-label="Hear ${escH(x.name)}">${SV.play2}</button><button class="nm">${escH(x.name)}<small>${escH(spnSndDesc(k, x.data))}</small></button><button class="ed" aria-label="Rename or delete ${escH(x.name)}">${SV.pencil2}</button></div>`).join("");
+  ls.onclick = e => {
+    const it = e.target.closest(".it"); if (!it) return; const x = sndList(k)[+it.dataset.i]; if (!x) return;
+    if (e.target.closest(".pv")) {
+      // hear it: put it on, play a taste, then put back what you had
+      const keepSnap = SPN.pv ? SPN.pv.snap : sndGrab(k); spnPvEnd(false);
+      SPN.pv = { k, snap: keepSnap }; sndPut(k, x.data); spnTry(k);
+      e.target.closest(".pv").classList.add("go");
+      SPN.pv.t = setTimeout(() => spnPvEnd(true), k === "pad" ? 2600 : 2200);
+    } else if (e.target.closest(".ed")) {
+      spnEdOpen("SAVED SOUND", x.name, nn => {
+        const L = sndList(k); if (L.some((y, j) => y.name === nn && j !== +it.dataset.i)) { toast(`"${nn}" is taken`); return; }
+        if (SPN.sndName[k] === x.name) { SPN.sndName[k] = nn; spnSndKeep(); }
+        L[+it.dataset.i].name = nn; sndStore(k, L); spnListRedraw(); spnSndSync();
+      }, () => { const L = sndList(k); L.splice(+it.dataset.i, 1); sndStore(k, L); toast(`Deleted "${x.name}"`); spnListRedraw(); spnSndSync(); });
+    } else {
+      spnPvEnd(false); sndPut(k, x.data); SPN.sndName[k] = x.name; spnSndKeep(); toast(`"${x.name}" loaded`);
+      spnListClose(); spnSndSync(); try { spnFill(); } catch (_) {}
+    }
+  };
+}
+function spnSndDesc(k, d) {
+  const opt = (id, v) => { const o = $(id) && [...$(id).options].find(o => o.value === v); return o ? o.text : v || ""; };
+  if (k === "lead") return [opt("wave", d.wave), d.snd2 && d.snd2 !== "off" ? "+ " + opt("wave2", d.snd2) : ""].filter(Boolean).join(" ");
+  if (k === "bass") return opt("bassSound", d.sound);
+  return opt("padSound", d.sound);
+}
+/* ----- progressions you save ----- */
+const MP_KEY = "glasspad.myprogs";
+const mpList = () => { try { return JSON.parse(localStorage.getItem(MP_KEY) || "[]"); } catch (_) { return []; } };
+const mpStore = l => { try { localStorage.setItem(MP_KEY, JSON.stringify(l)); return true; } catch (_) { return false; } };
+// the old typed sequences ("Your sequences") come across once, as Numbers
+try {
+  if (!localStorage.getItem(MP_KEY + ".mig")) {
+    const l = mpList();
+    for (const key of userProgs) { const d = parseProg(key.slice(2)); if (d && !l.some(x => x.kind === "nums" && spnSame(x.degs, d))) l.push({ name: d.map(n => n + 1).join("–"), kind: "nums", degs: d }); }
+    mpStore(l); localStorage.setItem(MP_KEY + ".mig", "1");
+  }
+} catch (_) {}
+function mpNow() {
+  if (pad.mode === "manual") return { kind: "mine", text: manualTextOf(manual.chords) };
+  if (pad.prog === "own") return { kind: "nums", degs: (PROGS.own.list || []).slice() };
+  return null;
+}
+function mpLoaded() {
+  const n = mpNow(); if (!n) return null;
+  return mpList().find(x => x.name === SPN.mpName && x.kind === n.kind && (n.kind === "mine" ? x.text === n.text : spnSame(x.degs, n.degs))) || null;
+}
+function mpLoad(x) {
+  if (x.kind === "mine") {
+    const r = parseProgression(x.text); manual.chords = r.out; cb.sel = -1;
+    if (pad.mode !== "manual") { $("prog").value = "mine"; $("prog").dispatchEvent(new Event("change")); } else manualChanged();
+  } else {
+    PROGS.own.list = x.degs.slice(0, 8); ownChanged();
+    if (pad.prog !== "own" || pad.mode !== "auto") { $("prog").value = "own"; $("prog").dispatchEvent(new Event("change")); }
+  }
+  SPN.mpName = x.name; spnChordsSync();
+}
+const mpDesc = x => x.kind === "mine" ? x.text.split(" ").map(s => s.replace(/:.*/, "")).slice(0, 8).join(" · ") : x.degs.map(d => d >= 10 ? (d - 9) + "⁷" : d + 1).join(" – ") + " · follows the key";
+function mpPickerList(ls) {
+  const l = mpList(), cur = mpLoaded(), presets = Object.keys(PROGS).filter(k => k !== "own" && !k.startsWith("u:"));
+  const it = (attrs, name, sub, on, tag, ed) => `<div class="it${on ? " on" : ""}" ${attrs}><button class="nm"><span class="t">${escH(name)}${tag ? `<em>${tag}</em>` : ""}</span>${sub ? `<small>${escH(sub)}</small>` : ""}</button>${ed ? `<button class="ed" aria-label="Rename or delete ${escH(name)}">${SV.pencil2}</button>` : ""}</div>`;
+  let h = `<div class="lb">YOURS</div>` + (l.length ? l.map((x, i) => it(`data-mp="${i}"`, x.name, mpDesc(x), cur && cur.name === x.name, x.kind === "mine" ? "MY CHORDS" : "NUMBERS", true)).join("") : `<div class="empty">Nothing saved yet. Make your own below, then Save these chords.</div>`);
+  h += `<div class="lb">MAKE YOUR OWN</div><div class="spn-mk"><button data-new="mine">My chords (any chords)</button><button data-new="own">Numbers (follow the key)</button></div>`;
+  h += `<div class="lb">PRESETS · FOLLOW THE KEY</div>` + presets.map(k => { const n = PROGS[k][0], m = n.match(/^(.*?)\s+([0-9].*)$/); return it(`data-pk="${k}"`, m ? m[1] : n, m ? m[2] : (PROGS[k][1] ? "" : "a drone on the key note"), pad.mode === "auto" && pad.prog === k, "", false); }).join("");
+  ls.innerHTML = h;
+  ls.onclick = e => {
+    const b = e.target.closest("button"); if (!b) return; const row = b.closest(".it");
+    if (b.dataset.new) { SPN.mpName = null; $("prog").value = b.dataset.new; $("prog").dispatchEvent(new Event("change")); spnListClose(); spnChordsSync(); return; }
+    if (!row) return;
+    if (row.dataset.pk) { SPN.mpName = null; $("prog").value = row.dataset.pk; $("prog").dispatchEvent(new Event("change")); spnListClose(); spnChordsSync(); return; }
+    const i = +row.dataset.mp, x = mpList()[i]; if (!x) return;
+    if (b.classList.contains("ed")) {
+      spnEdOpen("YOUR PROGRESSION", x.name, nn => {
+        const L = mpList(); if (L.some((y, j) => y.name === nn && j !== i)) { toast(`"${nn}" is taken`); return; }
+        if (SPN.mpName === x.name) SPN.mpName = nn; L[i].name = nn; mpStore(L); spnListRedraw(); spnChordsSync();
+      }, () => { const L = mpList(); L.splice(i, 1); mpStore(L); toast(`Deleted "${x.name}"`); spnListRedraw(); spnChordsSync(); });
+      return;
+    }
+    mpLoad(x); spnListClose();
+  };
+}
+// a preset → My chords, to change it
+function mpFromPreset() {
+  const dg = progDegs(); if (!dg) return;
+  const bars = pad.every || 1, txt = dg.map(d => progChordAt(d, homeBase()).name.replace(/\s/g, "") + (bars !== 1 ? ":" + bars : "")).join(" ");
+  const r = parseProgression(txt);
+  if (!r.out.length) { toast("Couldn't copy these chords"); return; }
+  manual.chords = r.out; cb.sel = -1; SPN.mpName = null;
+  $("prog").value = "mine"; $("prog").dispatchEvent(new Event("change"));
+  toast("Copied into My chords"); spnChordsSync();
+}
+function spnChordsSync() {
+  const sp = $("sp"); if (SPN.part !== "chords") return;
+  sp.dataset.cm = pad.mode === "manual" ? "manual" : "auto"; sp.dataset.own = pad.mode === "auto" && pad.prog === "own" ? "1" : "";
+  const btn = $("spnProgBtn"); if (!btn) return;
+  const cur = mpLoaded(), now = mpNow();
+  btn.querySelector("span").textContent = cur ? cur.name : pad.mode === "manual" ? "My chords" : pad.prog === "own" ? "Numbers (your own)" : (PROGS[pad.prog] || [pad.prog])[0];
+  btn.querySelector("small").textContent = cur ? (cur.kind === "mine" ? "MY CHORDS" : "NUMBERS") : "";
+  const sb = $("spnSaveBox"); if (sb) {
+    const can = now && (now.kind === "mine" ? manual.chords.some(c => c.sym) : now.degs.length);
+    sb.hidden = !can;
+    if (can && document.activeElement !== sb.querySelector("input")) sb.querySelector("input").placeholder = cur ? cur.name : "Name these chords";
+  }
+  const mk = $("spnMkOwn"); if (mk) mk.hidden = pad.mode !== "auto" || !progDegs();
+}
+/* ----- the Chords and Drums pages ----- */
+function spnTitleRow(s, cap, tag) {
+  const d = document.createElement("div"); d.style.cssText = "display:flex;align-items:center;gap:8px;margin-top:4px";
+  d.innerHTML = `<span class="spn-cap">${cap}</span>` + (tag ? `<span class="spn-cap" style="border:1px solid var(--pc1);color:var(--pc1);border-radius:6px;padding:1px 5px;font-size:9px">${tag}</span>` : "");
+  s.appendChild(d); return d;
+}
+function spnBuildCD(p) {
+  const sp = $("sp"), body = $("spBody"), c = spnCols(); body.innerHTML = "";
+  SPN.part = p;
+  const pc1 = c.mid, pc2 = c.lead;
+  neonSet(sp, c); sp.style.setProperty("--pc1", pc1); sp.style.setProperty("--pc2", pc2); sp.style.setProperty("--pcT", neonInk(pc1));
+  sp.classList.add("neon"); neonStrips(sp);
+  const mv = (id, s) => spnMove(typeof id === "string" ? $(id) : id, s);
+  const grp = id => $(id) && $(id).closest(".group");
+  const secs = [];
+  if (p === "chords") {
+    let s = spnSec(1, "WHICH CHORDS");
+    const pr = document.createElement("div"); pr.className = "group";
+    pr.innerHTML = `<span class="spn-l">Progression</span><button type="button" class="spn-pick" id="spnProgBtn"><span></span><small></small>${SV.chevD}</button>`;
+    s.appendChild(pr); pr.querySelector("button").addEventListener("click", () => spnListOpen("PROGRESSION", mpPickerList));
+    mv("ownBox", s);
+    const jl = mv("jamChordsLine", s); if (jl) jl.classList.add("spn-auto", "spn-noown");
+    for (const id of ["root", "scale"]) { const g = mv(grp(id), s); if (g) g.classList.add("spn-auto"); }
+    const sd = mv("jamScaleDesc", s); if (sd) sd.classList.add("spn-auto");
+    { const g = mv(grp("every"), s); if (g) g.classList.add("spn-auto"); }
+    const fg = mv("feelG", s); if (fg) fg.classList.add("spn-auto", "spn-noown");
+    const mk = document.createElement("button"); mk.type = "button"; mk.className = "spn-wide spn-auto"; mk.id = "spnMkOwn"; mk.textContent = "Make my own from these";
+    mk.addEventListener("click", mpFromPreset); s.appendChild(mk);
+    const slot = document.createElement("i"); slot.id = "spnMbSlot"; slot.hidden = true; s.appendChild(slot);
+    mv("manualBox", s);
+    const sb = document.createElement("div"); sb.className = "spn-savebox"; sb.id = "spnSaveBox";
+    sb.innerHTML = `<span class="spn-cap">Save these chords</span><div class="spn-namebox"><input maxlength="28" autocomplete="off" placeholder="Name these chords"><button type="button">Save</button></div><span class="spn-note">Saved progressions go in the Progression list, under Yours.</span>`;
+    s.appendChild(sb);
+    const doSave = () => {
+      const inp = sb.querySelector("input"), name = (inp.value.trim() || (mpLoaded() || {}).name || "").slice(0, 28), now = mpNow();
+      if (!name) { inp.focus(); return; } if (!now) return;
+      const l = mpList(), i = l.findIndex(x => x.name === name), e = { name, ...now };
+      if (i >= 0) l[i] = e; else l.push(e);
+      toast(mpStore(l) ? (i >= 0 ? `Updated "${name}"` : `Saved "${name}"`) : `Couldn't save "${name}"`);
+      SPN.mpName = name; inp.value = ""; inp.blur(); spnChordsSync();
+    };
+    sb.querySelector("button").addEventListener("click", doSave);
+    sb.querySelector("input").addEventListener("keydown", e => { if (e.key === "Enter") doSave(); });
+    const lp = spnTitleRow(s, "The lead plays", "No key here"); lp.classList.add("spn-man");
+    const ln = spnNote(s, "Your chords set the key. Pick the scale your strips use: these fit your chords best."); ln.classList.add("spn-man");
+    const sg = mv("suggRow", s); if (sg) sg.classList.add("spn-man");
+    secs.push(s);
+    s = spnSec(2, "SOUND"); const sg2 = mv(grp("padSound"), s); mv(grp("pvol"), s); $("padSound").classList.add("spn-hot"); spnSndRow("chords", s, $("pvol").closest(".group")); secs.push(s);
+    s = spnSec(3, "RHYTHM"); mv(grp("rhythm"), s);
+    const rb = document.createElement("div"); rb.className = "spn-btns"; s.appendChild(rb); mv("bmOpenC", rb);
+    const strum = spnRow(s, "Strum"), sp2 = document.createElement("span"); sp2.className = "spn-pills"; strum.appendChild(sp2); mv("padStrum", sp2);
+    mv(grp("padPump"), s); mv(grp("padFeel"), s); mv("feelPro", s); secs.push(s);
+    s = spnSec(4, "ARP"); mv(grp("padArp"), s); mv("padArpRateG", s); mv("padArpStyleG", s); secs.push(s);
+    s = spnSec(5, "EFFECTS"); mv(document.querySelector("#d-fx .board"), s); spnFxNote(s); secs.push(s);
+  } else {
+    let s = spnSec(1, "BEAT"); mv(grp("style"), s); mv(grp("swing"), s); mv(grp("drumFills"), s);
+    const bb = document.createElement("div"); bb.className = "spn-btns"; s.appendChild(bb); mv("bmOpenD", bb); secs.push(s);
+    s = spnSec(2, "KIT"); mv(grp("drumKit"), s); mv(grp("drumGroove"), s); mv(grp("dvol"), s); $("drumKit").classList.add("spn-hot"); secs.push(s);
+    s = spnSec(3, "EFFECTS"); mv(document.querySelector("#d-fx .board"), s); spnFxNote(s); secs.push(s);
+  }
+  // ⓘ on each heading, the Mix note under the pedals
+  secs.forEach((s, i) => {
+    const h = s.querySelector(".spn-h"); const b = document.createElement("button"); b.type = "button"; b.className = "spn-i"; b.innerHTML = SV.info;
+    b.setAttribute("aria-label", "About " + (h.querySelector("b").textContent || "").toLowerCase()); b.addEventListener("click", () => spnInfoOpen(p, i)); h.appendChild(b);
+  });
+  const board = secs[secs.length - 1].querySelector(".board");
+  if (board) {
+    const m = document.createElement("div"); m.className = "spn-mixnote";
+    m.innerHTML = `<span>Echo and Reverb set how much of the ${p} goes in. How they sound (room size, echo time, repeats) is in Mix, shared by every part.</span><button type="button">Mix ›</button>`;
+    m.querySelector("button").addEventListener("click", () => spOpen("mix")); board.after(m);
+  }
+  spnFill(); clearInterval(SPN.t);
+  SPN.t = setInterval(() => { if ($("sp").hidden || !SPN.part) return; spnFill(); spnChordsSync(); spnSndSync(); }, 800);
+  spnChordsSync();
+}
+{
+  // Lead and Bass: Saved goes up into Sound
+  const spnBuild560 = spnBuild;
+  spnBuild = function (p) {
+    if (p === "chords" || p === "drums") return spnBuildCD(p);
+    const r = spnBuild560.apply(this, arguments);
+    const s1 = $("spBody").querySelector(".spn-sec"), lv = $(p === "lead" ? "lvol" : "bvol");
+    if (s1 && lv) spnSndRow(p, s1, lv.closest(".group"));
+    const t0 = SPN.t; clearInterval(t0);
+    SPN.t = setInterval(() => { if ($("sp").hidden || !SPN.part) return; spnFill(); if (SPN.whoSync) SPN.whoSync(); spnSndSync(); }, 800);
+    return r;
+  };
+  // Chords and Drums open as neon pages too; Bass, Chords and Drums get an ON switch in the header
+  const ONS = { bass: "bassOn", chords: "padOn", drums: "drumsOn" };
+  const spOpen560 = spOpen, spClose560 = spClose;
+  spClose = function () {
+    document.querySelectorAll("#sp .spn-on").forEach(x => x.remove()); $("sp").classList.remove("partoff");
+    delete $("sp").dataset.cm; delete $("sp").dataset.own; SPN.sndRow = null;
+    try { $("padSound").classList.remove("spn-hot"); $("drumKit").classList.remove("spn-hot"); } catch (_) {}
+    return spClose560.apply(this, arguments);
+  };
+  spOpen = function (p) {
+    let r;
+    if (p === "chords" || p === "drums") {
+      const P = ST_PARTS[p], secs = P.secs; P.secs = [];
+      try { r = spOpen560.apply(this, arguments); } finally { P.secs = secs; }
+      spnBuild(p); $("sp").scrollTop = 0;
+    } else r = spOpen560.apply(this, arguments);
+    if (ONS[p]) {
+      const tg = $(ONS[p]), b = document.createElement("button"); b.type = "button"; b.className = "spn-on";
+      b.innerHTML = `<span>ON</span><i></i>`; b.setAttribute("aria-label", `${ST_PARTS[p].name.toLowerCase()} on or off`);
+      const sync = () => { const on = tg.getAttribute("aria-pressed") === "true"; b.setAttribute("aria-pressed", on); b.querySelector("span").textContent = on ? "ON" : "OFF"; $("sp").classList.toggle("partoff", !on); };
+      b.addEventListener("click", () => { tg.click(); setTimeout(sync); });
+      $("spPlay").before(b); sync();
+    }
+    if (p === "song") {
+      // key changes live with the song now
+      const box = document.createElement("section"); box.className = "spn-keych";
+      box.style.cssText = "border-radius:18px;background:rgba(10,12,20,.65);border:1.5px solid rgba(255,255,255,.16);padding:14px;display:flex;flex-direction:column;gap:8px";
+      box.innerHTML = `<b style="font:700 14px var(--display);letter-spacing:.06em;color:#fff">KEY CHANGES</b><span style="font:400 12px/17px 'IBM Plex Sans',var(--body);color:#a3abbb">KEY ▲▼ on the pad lifts the whole band. How far it goes, when it lands and whether the drums fill into it:</span>`;
+      $("spBody").appendChild(box); spnMove($("liftPro"), box);
+    }
+    return r;
+  };
+}
+// the chord builder goes back to its home when the chord mode changes: keep it on the page while Chords is open
+{
+  const placeBuilder560 = placeBuilder;
+  placeBuilder = function () {
+    const r = placeBuilder560.apply(this, arguments);
+    const slot = $("spnMbSlot");
+    if (SPN.part === "chords" && slot && slot.isConnected && pad.mode !== "song") slot.after($("manualBox"));
+    return r;
+  };
+}
+// a chord picked in My chords, a scale chip or a progression change: keep the page in step
+$("sp").addEventListener("click", () => { if (SPN.part === "chords") setTimeout(spnChordsSync); }, false);
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }
 

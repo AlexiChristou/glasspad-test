@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.60 TEST · game mode · 11 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.61 TEST · game mode · 11 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1451,6 +1451,8 @@
     <div class="gr"><div><label>Low latency</label><small>Notes sound sooner after your touch. If it crackles, turn it off. Takes effect when you reopen the app</small></div><button class="gsw" id="gLowLat" aria-pressed="false"></button></div>
     <div class="gr"><div><label>Neighbour light</label><small>How far a press lights the strips around it</small></div><input type="range" id="gNReach" min="0" max="1" step="0.05" value="1"></div>
     <div class="gr"><div><label>Speed</label><small id="gFx"></small></div><button id="gFxOn" hidden>Full effects on</button></div>
+    <div class="gr"><div><label>Studio</label><small>New: jams, My sounds and soloing styles. Old: the 5.60 Studio pages</small></div><div class="gseg" id="gStudioNew"><button data-v="new">New</button><button data-v="old">Old</button></div></div>
+    <div class="gr"><div><label>Smooth, after a chord</label><small>Go back to your scale, or keep the change until the next clash</small></div><div class="gseg" id="gSmoothKeep"><button data-v="back">Go back</button><button data-v="keep">Keep</button></div></div>
     <div class="gr"><div><label>Copy setup</label><small>Sound, chords, colours and more, to paste to Claude</small></div><button id="gCopy">Copy</button></div>
   </div>
 </div></div>
@@ -1525,7 +1527,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.60 TEST · game mode · 11 Oct 2026</p>
+      <p class="ver">GlassPad 5.61 TEST · game mode · 11 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -2428,7 +2430,9 @@ function leadStepsFor(ch) {
   if (lm === "move") { const r = mod12(cbase(ch) - leadBase + (ch.rootRel ?? ch.tones[0])); return [...new Set(steps.map(x => +mod12(x + r).toFixed(2)))].sort((a, b) => a - b); }
   const off = cbase(ch) - leadBase;
   const ct = [...new Set(ch.tones.map(t => +mod12(t + off).toFixed(2)))];
-  return lm === "tones" ? ct.sort((a, b) => a - b) : adaptScale(steps, ct);
+  if (lm === "tones") return ct.sort((a, b) => a - b);
+  if (typeof smoothKeep === "function" && smoothKeep()) return stickyBend(steps, ct, ch);
+  return adaptScale(steps, ct);
 }
 // spell a chord's notes from its root letter: E7 has G♯ (not A♭), B♭7 has A♭ (not G♯)
 const LETTERS = "CDEFGAB", LETTER_STEP = { 0: 0, 1: 1, 2: 1, 3: 2, 4: 2, 5: 3, 6: 4, 7: 4, 8: 4, 9: 5, 10: 6, 11: 6 };
@@ -3388,13 +3392,14 @@ function buildSamplerVoice(kind, midi, cut, t, frac) {
   // every clip plays the lane's note at its true pitch, moved by whole octaves to sit in the zone
   const effRoot = clip => rootOf(clip) + sampleShift(kind, clip);
   const pool = samplesFor(kind);
-  const st = { idx: Math.max(0, pool.indexOf(pickSample(frac, pool))), pos: 0, next: t, endAt: Infinity, done: false, timer: 0 };
+  const st = { idx: Math.max(0, pool.indexOf(pickSample(frac, pool, kind))), pos: 0, next: t, endAt: Infinity, done: false, timer: 0 };
   const midiAt = tt => { let m = v.pitchLog[0][1]; for (const [pt, pm] of v.pitchLog) { if (pt <= tt) m = pm; else break; } return m; };
   const nextClip = () => {
     st.pos = 0;
-    const repeat = samp.hold || (state.hold && kind === "lead");
+    const repeat = sampOpt(kind, pool[st.idx], "hold") || (state.hold && kind === "lead");
     if (!repeat) { st.done = true; return; }
-    if (samp.mode === "cycle" && samp.repCycle !== false && pool.length > 1) st.idx = (st.idx + 1) % pool.length;
+    { const md = sampOpt(kind, null, "mode");
+      if (sampOpt(kind, null, "repCycle") !== false && pool.length > 1) { if (md === "cycle") st.idx = (st.idx + 1) % pool.length; else if (md === "shuffle") st.idx = (st.idx + 1 + Math.floor(Math.random() * (pool.length - 1))) % pool.length; } }
     // each repeat starts on the next beat: the band's beat when it's playing, otherwise counted from the touch
     // (a word starts a little early, by its soft start, so the loud part lands on the beat)
     const beat = 60 / T.bpm, g0 = T.playing ? T.next - T.abs * beat / 4 : t;
@@ -3408,9 +3413,10 @@ function buildSamplerVoice(kind, midi, cut, t, frac) {
       const clip = pool[st.idx];
       if (!clip || st.next >= st.endAt) { st.done = true; break; }
       const m = midiAt(st.next), dur = clip.buf.duration, root = effRoot(clip);
-      if (samp.len === "stretch" || samp.len === "tight") {
+      const sLen = sampOpt(kind, clip, "len");
+      if (sLen === "stretch" || sLen === "tight") {
         // "tight" is the original version 1.0 sound: shorter slices with straight-line fades
-        const tight = samp.len === "tight", gl = tight ? .09 : GRAIN, hop = gl / 2;
+        const tight = sLen === "tight", gl = tight ? .09 : GRAIN, hop = gl / 2;
         for (const o of outs) {
           const src = ctx.createBufferSource(); src.buffer = clip.buf;
           src.playbackRate.value = clampRate(2 ** ((m + o.semi - root) / 12));
@@ -3426,7 +3432,7 @@ function buildSamplerVoice(kind, midi, cut, t, frac) {
       } else {
         // one smooth sound per note; "even" fades out notes that would run longer than the clip
         const r0 = clampRate(2 ** ((m - root) / 12)), natural = dur / r0;
-        const seg = samp.len === "even" ? Math.min(natural, dur) : natural;
+        const seg = sLen === "even" ? Math.min(natural, dur) : natural;
         for (const o of outs) {
           const src = ctx.createBufferSource(); src.buffer = clip.buf;
           src.playbackRate.value = clampRate(2 ** ((m + o.semi - root) / 12));
@@ -7000,16 +7006,17 @@ const samp = { mode: "cycle", hold: false, len: "even", rr: 0, oct: 0 };
 function sampleShift(kind, clip) {
   const zone = kind === "lead" ? lanes : bassLanes;
   const center = (zone[0].midi + zone[zone.length - 1].midi) / 2;
-  return 12 * (Math.round((center - rootOf(clip)) / 12) - samp.oct);   // (a higher octave means treating the clip as lower)
+  return 12 * (Math.round((center - rootOf(clip)) / 12) - sampOpt(kind, clip, "oct"));   // (a higher octave means treating the clip as lower)
 }
 let samples = [];                  // [{ name, root, auto, pitched, sr, data, buf, part }]
 const MAX_SAMPLES = 8;
 // part: "both" (default), "lead" or "bass" — which pad a sound plays on
 // part: "both" (default), "lead", "bass" or "off" (kept, but not played)
-const samplesFor = kind => samples.filter(c => (c.part || "both") === "both" || c.part === kind);
-function pickSample(frac, pool = samples) {
-  const n = pool.length;
-  if (samp.mode === "split") return pool[Math.min(n - 1, Math.floor(frac * n))];
+const samplesFor = kind => (typeof mysPool === "function" && mysPool(kind)) || samples.filter(c => (c.part || "both") === "both" || c.part === kind);
+function pickSample(frac, pool = samples, kind) {
+  const n = pool.length, md = kind ? sampOpt(kind, null, "mode") : samp.mode;
+  if (md === "split") return pool[Math.min(n - 1, Math.floor(frac * n))];
+  if (md === "shuffle") return pool[Math.floor(Math.random() * n)];
   return pool[samp.rr++ % n];
 }
 const idb = {
@@ -7262,7 +7269,8 @@ async function addClip(file) {
   }
 }
 function storeSamples() {
-  idb.put("samples", samples.map(({ name, root, pick, tune, sr, data, nudge, part, start, trimEnd }) => ({ name, root, pick: pick ?? "start", tune: !!tune, sr, data, nudge: nudge || 0, part: ["lead", "bass", "off"].includes(part) ? part : "both", start: start === "hit" ? "hit" : "word", trimEnd: trimEnd || 0 }))).catch(() => {
+  samples.forEach(c => { if (!c.id) c.id = "c" + Math.random().toString(36).slice(2, 9); });
+  idb.put("samples", samples.map(({ id, play, name, root, pick, tune, sr, data, nudge, part, start, trimEnd }) => ({ id, play: play || null, name, root, pick: pick ?? "start", tune: !!tune, sr, data, nudge: nudge || 0, part: ["lead", "bass", "off"].includes(part) ? part : "both", start: start === "hit" ? "hit" : "word", trimEnd: trimEnd || 0 }))).catch(() => {
     $("sampHint").textContent = "This browser won't keep sounds after you close the page, so they'll work for this session only.";
   });
 }
@@ -10189,7 +10197,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.60 TEST</p>
+    <p class="hm-ver">GlassPad 5.61 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -13281,6 +13289,807 @@ function spnBuildCD(p) {
 }
 // a chord picked in My chords, a scale chip or a progression change: keep the page in step
 $("sp").addEventListener("click", () => { if (SPN.part === "chords") setTimeout(spnChordsSync); }, false);
+/* ---------- 5.61: the jam Studio (Test switch Studio New / Old; snapshot of 5.60 on GitHub: branch v5.60-before-jam) ----------
+   Studio home = your jams (= the old setups) + "Your sounds and beats". A jam page puts a jam together: chords (progression,
+   key and scale, sound, rhythm), drums (beat), bass (sound, how it plays), lead (sound, 2nd sound), soloing style, tempo,
+   mix and look. Every row: pick from a list (▶ to hear first), and Edit opens the editor on it with the band still playing;
+   coming back asks whether to keep the change in your sounds. Lead / Bass / Chords / Drums pages are the editors.
+   My sounds is its own page: recordings (each with its own "how it plays") and sets (several recordings that take turns);
+   the Lead and Bass editors pick one as their sound (Sound: My sounds → My sound). Soloing styles are names for the
+   lead's Notes modes; Smooth (Bend to chords) can keep its changes until the next clash (Test switch). */
+const JAM = { stack: [], cur: null, popping: false, edit: null, t: 0 };
+function studioNew() { try { return localStorage.getItem("glasspad.studioNew") !== "old"; } catch (_) { return true; } }
+function smoothKeep() { try { return localStorage.getItem("glasspad.smoothKeep") === "keep"; } catch (_) { return false; } }
+const jamOn = () => studioNew() && !game.on;
+/* ----- Smooth that keeps its changes: only what clashes moves, and it stays moved until something else clashes ----- */
+const STK = { steps: null, sig: "", key: "", reset() { this.steps = null; this.sig = ""; } };
+function stickyBend(steps, ct, ch) {
+  const key = scaleSel.value + ":" + rootSel.value + ":" + laneShift;
+  if (key !== STK.key) { STK.key = key; STK.reset(); }
+  const sig = (ch.name || "") + "|" + ct.join(",");
+  const live = ch === liveChord || ch === pad.cur;
+  if (live && sig === STK.sig && STK.steps) return STK.steps;
+  let base = STK.steps || steps;
+  if (base.length > steps.length + 2) base = steps;   // never let it drift into a crowd of notes
+  const out = adaptScale(base, ct);
+  if (live) { STK.steps = out; STK.sig = sig; }
+  return out;
+}
+for (const [id, key, def] of [["gStudioNew", "glasspad.studioNew", "new"], ["gSmoothKeep", "glasspad.smoothKeep", "back"]]) {
+  const el = $(id), sync = () => { let v = def; try { v = localStorage.getItem(key) || def; } catch (_) {} el.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === v)); };
+  el.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    try { localStorage.setItem(key, b.dataset.v); } catch (_) {}
+    sync();
+    if (id === "gSmoothKeep") { STK.reset(); try { lanes = leadLanesFor(liveChord); retuneLead(); } catch (_) {} }
+  });
+  sync();
+}
+/* ----- My sounds: recordings and sets, picked by the lead or the bass ----- */
+const MYS = { sets: [], src: { lead: null, bass: null } };
+try { MYS.sets = JSON.parse(localStorage.getItem("glasspad.mysets") || "[]"); } catch (_) {}
+try { Object.assign(MYS.src, JSON.parse(localStorage.getItem("glasspad.mysrc") || "{}")); } catch (_) {}
+const mysSave = () => { try { localStorage.setItem("glasspad.mysets", JSON.stringify(MYS.sets)); localStorage.setItem("glasspad.mysrc", JSON.stringify(MYS.src)); } catch (_) {} };
+function mysIds() { let ch = false; samples.forEach(c => { if (!c.id) { c.id = "c" + Math.random().toString(36).slice(2, 9); ch = true; } }); if (ch) storeSamples(); }
+function mysActive(kind) {
+  if (!jamOn()) return null;
+  const s = MYS.src[kind]; if (!s) return null;
+  const on = kind === "lead" ? $("wave").value === "sampler" : bass.sound === "sampler"; if (!on) return null;
+  if (s.t === "set") {
+    const set = MYS.sets.find(x => x.id === s.id); if (!set) return null;
+    const clips = set.items.map(id => samples.find(c => c.id === id)).filter(Boolean);
+    return clips.length ? { set, clips } : null;
+  }
+  const rec = samples.find(c => c.id === s.id); return rec ? { rec, clips: [rec] } : null;
+}
+function mysPool(kind) { const a = mysActive(kind); return a ? a.clips : null; }
+function sampOpt(kind, clip, key) {
+  const a = kind && mysActive(kind);
+  if (!a) return key === "repCycle" ? samp.repCycle : samp[key];
+  if (key === "mode") return a.set ? (a.set.mode || "cycle") : "cycle";
+  if (key === "repCycle") return a.set ? a.set.rep !== "same" : true;
+  if (key === "hold") { const h = a.set ? !!a.set.hold : !!(a.rec.play && a.rec.play.hold); return h || (kind === "bass" && bassPat.arp !== "off"); }
+  const pl = ((clip || a.clips[0]) || {}).play || {};
+  if (key === "len") return pl.len || "even";
+  if (key === "oct") return +pl.oct || 0;
+  return samp[key];
+}
+const mysName = s => { if (!s) return ""; if (s.t === "set") { const x = MYS.sets.find(y => y.id === s.id); return x ? x.name : ""; } const c = samples.find(y => y.id === s.id); return c ? c.name : ""; };
+function mysUse(kind, s) {
+  MYS.src[kind] = s; mysSave();
+  if (kind === "lead") { if ($("wave").value !== "sampler") { $("wave").value = "sampler"; $("wave").dispatchEvent(new Event("change", { bubbles: true })); } }
+  else if (bass.sound !== "sampler") { $("bassSound").value = "sampler"; $("bassSound").dispatchEvent(new Event("change", { bubbles: true })); }
+  try { lanes = leadLanesFor(liveChord); } catch (_) {}
+  updateSummaries();
+}
+function mysPlaySet(set, btn) {
+  const clips = set.items.map(id => samples.find(c => c.id === id)).filter(Boolean);
+  clips.slice(0, 6).forEach((c, i) => setTimeout(() => { try { playClipOnce(c); } catch (_) {} }, i * 520));
+  if (btn) { btn.classList.add("go"); setTimeout(() => btn.classList.remove("go"), clips.length * 520 + 200); }
+}
+// jams (= setups) and saved sounds remember what the lead and bass play from My sounds
+{
+  const cap = capture; capture = function () { const p = cap.apply(this, arguments); try { p.mysrc = JSON.parse(JSON.stringify(MYS.src)); } catch (_) {} return p; };
+  const ap = applyPreset; applyPreset = function (p) { const r = ap.apply(this, arguments); if (p && p.mysrc) { MYS.src = { lead: p.mysrc.lead || null, bass: p.mysrc.bass || null }; mysSave(); } return r; };
+  SND_KEYS.lead2 = "glasspad.snd.lead2";
+  const g0 = sndGrab, p0 = sndPut;
+  sndGrab = function (k) {
+    if (k === "lead2") return { snd2: lead.snd2, vol2: lead.vol2, pfx: bmClone(PFX.lead2) };
+    const d = g0.apply(this, arguments); if (k === "lead" || k === "bass") d.src = MYS.src[k] ? { ...MYS.src[k] } : null; return d;
+  };
+  sndPut = function (k, d) {
+    if (k === "lead2") {
+      const set = (id, v, ev) => { if (v == null) return; $(id).value = v; $(id).dispatchEvent(new Event(ev, { bubbles: true })); };
+      set("wave2", d.snd2, "change"); set("lvol2", d.vol2, "input");
+      const pf = bmClone(PFX); pf.lead2 = d.pfx || pf.lead2; setPfx(pf); updateSummaries(); return;
+    }
+    if ((k === "lead" || k === "bass") && d && "src" in d) { MYS.src[k] = d.src ? { ...d.src } : null; mysSave(); }
+    return p0.apply(this, arguments);
+  };
+}
+// a built-in sound is a plain sound: default shape, no extra effects (the shared echo and reverb rooms are left alone)
+function jamPlain(k, v) {
+  const D = DEFAULT_PRESET, pf = D.pfx || {};
+  if (k === "lead") {
+    const fx = bmClone(D.fx || {}); if (fx.echo) fx.echo = { on: fx.echo.on, send: fx.echo.send }; if (fx.reverb) fx.reverb = { on: fx.reverb.on, mix: fx.reverb.mix };
+    return { wave: v, glide: !!D.glide, autoVib: !!D.autoVib, fx, tone: { ...(D.tone || {}) }, snd2: lead.snd2, vol2: lead.vol2, vol: lead.vol, oct: leadOct, pfx: bmClone(PFX.lead2), src: null };
+  }
+  if (k === "bass") return { sound: v, vol: bass.vol, tone: { ...(D.bassTone || {}) }, oct: bassOct, pfx: pf.bass, src: null };
+  if (k === "lead2") return { snd2: v, vol2: lead.vol2, pfx: pf.lead2 };
+  return { sound: v, vol: pad.vol, pfx: pf.pad };
+}
+/* ----- styles ----- */
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  #sp.jamnew .spn-on { display: none !important; }
+  #sp.jamnew.partoff #spBody { opacity: 1 !important; }
+  #sp .jam-hide { display: none !important; }
+  #sp.jamnew .spn-sec .mc-strip .chip { border-radius: 12px; background: rgba(6,3,14,.9); border: 2px solid rgba(255,255,255,.22); color: #fff; font-family: "IBM Plex Sans", var(--body); }
+  #sp.jamnew .spn-sec .mc-strip .chip.sel { border-color: var(--pc1); box-shadow: 0 0 10px color-mix(in srgb, var(--pc1) 40%, transparent); }
+  #sp.jamnew .spn-sec .mc-strip .chip .fill { background: linear-gradient(90deg, color-mix(in srgb, var(--pc1) 8%, transparent), color-mix(in srgb, var(--pc1) 35%, transparent)); }
+  #sp.jamnew .spn-sec .mc-strip .chip .grip { background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--pc1) 45%, transparent)); border-left-color: var(--pc1); }
+  #spTitle small { display: block; font: 500 10px var(--mono); letter-spacing: .14em; color: #c9bfff; text-shadow: none; margin-bottom: -2px; }
+  #sp[data-p="jam"] #spTitle, #sp[data-p="jamhome"] #spTitle, #sp[data-p="mysounds"] #spTitle { font-size: 24px !important; min-width: 0; line-height: 1.05; white-space: normal; overflow: visible; }
+  .jam-save { margin-left: auto; height: 34px; padding: 0 12px; border-radius: 17px; border: 0; background: var(--pc1); color: var(--pcT, #0a0412); font: 600 11px var(--mono); white-space: nowrap; box-shadow: 0 0 12px color-mix(in srgb, var(--pc1) 55%, transparent); }
+  .jam-save[hidden] { display: none; }
+  #sp.jamnew .spn-on ~ .sp-play { margin-left: auto; }
+  #sp .jam-save:not([hidden]) ~ .sp-play { margin-left: 0; }
+  .jam-row { display: flex; align-items: center; gap: 8px; min-height: 50px; }
+  .jam-row[hidden] { display: none; }
+  .jam-row > .l { width: 74px; flex: none; font: 400 10.5px/13px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #b8aee6; }
+  .jam-row > .v { flex: 1; min-width: 0; height: 46px; border-radius: 12px; background: rgba(6,3,14,.85); border: 1.5px solid color-mix(in srgb, var(--nm) 50%, transparent); color: #fff; display: flex; align-items: center; gap: 6px; padding: 0 10px; text-align: left; }
+  .jam-row > .v > span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .jam-row > .v b { font: 500 14px "IBM Plex Sans", var(--body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .jam-row > .v small { font: 400 10px var(--mono); color: #a99fd0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .jam-row > .v svg { width: 12px; height: 12px; flex: none; }
+  .jam-row > .pv, .jam-row > .ed { flex: none; height: 36px; border-radius: 18px; background: transparent; color: #fff; padding: 0; }
+  .jam-row > .pv { width: 36px; border: 1.5px solid var(--pc1); display: grid; place-items: center; }
+  .jam-row > .pv svg { width: 12px; height: 12px; margin-left: 2px; }
+  .jam-row > .pv.go { background: var(--pc1); color: var(--pcT, #0a0412); }
+  .jam-row > .ed { padding: 0 12px; border: 1.5px solid color-mix(in srgb, var(--nm) 55%, transparent); font: 400 12.5px "IBM Plex Sans", var(--body); }
+  .jam-sel { flex: 1; min-width: 0; height: 40px; border-radius: 11px; background: rgba(6,3,14,.85); border: 1.5px solid color-mix(in srgb, var(--nm) 50%, transparent); color: #fff; font: 400 14px "IBM Plex Sans", var(--body); padding: 0 10px; }
+  .jam-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .jam-chips button { height: 36px; padding: 0 13px; border-radius: 18px; background: transparent; border: 1.5px solid color-mix(in srgb, var(--nm) 55%, transparent); color: #e6e0ff; font: 400 13.5px "IBM Plex Sans", var(--body); }
+  .jam-chips button[aria-pressed="true"] { background: var(--pc1); border-color: var(--pc1); color: var(--pcT, #0a0412); font-weight: 600; box-shadow: 0 0 10px color-mix(in srgb, var(--pc1) 50%, transparent); }
+  .jam-fit { display: flex; align-items: flex-start; gap: 8px; font: 400 12.5px/17px "IBM Plex Sans", var(--body); color: #d6cff5; }
+  .jam-fit i { width: 10px; height: 10px; border-radius: 50%; flex: none; margin-top: 4px; background: #3ee08a; box-shadow: 0 0 8px #3ee08a; }
+  .jam-fit.warn i { background: #ffb547; box-shadow: 0 0 8px #ffb547; }
+  .jam-tempo { display: flex; align-items: center; gap: 10px; }
+  .jam-tempo input { flex: 1; }
+  .jam-tempo output { width: 64px; text-align: right; font: 400 13px var(--mono); }
+  .jam-btns { display: flex; gap: 8px; }
+  .jam-btns > * { flex: 1; }
+  .jam-banner { display: flex; align-items: center; gap: 10px; border-radius: 14px; padding: 10px 12px; background: color-mix(in srgb, var(--pc1) 18%, transparent); border: 1.5px solid var(--pc1); font: 400 12.5px/17px "IBM Plex Sans", var(--body); color: #fff; }
+  .jam-banner i { width: 10px; height: 10px; border-radius: 50%; flex: none; background: #3ee08a; box-shadow: 0 0 8px #3ee08a; }
+  .jh-lbl { font: 500 11px var(--mono); letter-spacing: .14em; color: #c9bfff; margin-top: 4px; }
+  .jh-note { font: 400 12.5px "IBM Plex Sans", var(--body); color: #b3a9dc; margin-top: -6px; }
+  .jh-row { display: flex; gap: 10px; overflow-x: auto; margin: 0 -16px; padding: 4px 16px 6px; scrollbar-width: none; }
+  .jh-row::-webkit-scrollbar { display: none; }
+  .jh-t { flex: none; width: 128px; height: 150px; border-radius: 16px; overflow: hidden; position: relative; background: #07060f; border: 1.5px solid color-mix(in srgb, var(--nm) 55%, transparent); color: #fff; padding: 0; text-align: left; }
+  .jh-t.cur { border: 2px solid var(--pc1); box-shadow: 0 0 14px color-mix(in srgb, var(--pc1) 55%, transparent); }
+  .jh-t .str { position: absolute !important; left: 0; right: 0; top: 0; bottom: 48px; display: flex; }
+  .jh-t .str span { flex: 1; display: block; position: static !important; }
+  .jh-t .nm { position: absolute; left: 10px; right: 8px; bottom: 22px; font: 600 14px "IBM Plex Sans", var(--body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .jh-t .mt { position: absolute; left: 10px; bottom: 8px; font: 400 10px var(--mono); color: #a99fd0; }
+  .jh-t .tag { position: absolute; left: 8px; top: 8px; font: 500 9px var(--mono); letter-spacing: .1em; color: var(--pcT, #0a0412); background: var(--pc1); border-radius: 6px; padding: 1px 5px; }
+  .jh-t .ed { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border-radius: 50%; padding: 0; display: grid; place-items: center; background: rgba(5,6,11,.75); border: 1px solid rgba(255,255,255,.25); color: #eef1f7; }
+  .jh-t .ed svg { width: 12px; height: 12px; }
+  .jh-new { flex: none; width: 92px; height: 150px; border-radius: 16px; background: transparent; border: 1.5px dashed var(--pc1); color: #fff; font: 400 13px "IBM Plex Sans", var(--body); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+  .jh-new b { font-size: 28px; font-weight: 400; }
+  .jh-open { height: 56px; border-radius: 28px; border: 0; background: var(--pc1); color: var(--pcT, #0a0412); font: 700 15px "IBM Plex Sans", var(--body); box-shadow: 0 0 20px color-mix(in srgb, var(--pc1) 55%, transparent); }
+  .jh-lib { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .jh-lib button { min-height: 64px; border-radius: 14px; background: rgba(6,3,14,.9); border: 1.5px solid color-mix(in srgb, var(--nm) 55%, transparent); color: #fff; text-align: left; padding: 8px 12px; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+  .jh-lib b { font: 600 14px "IBM Plex Sans", var(--body); }
+  .jh-lib small { font: 400 10px var(--mono); color: #a99fd0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .jm-rec { position: relative; width: 100%; align-self: stretch; flex: none; height: 56px; border-radius: 28px; overflow: hidden; background: rgba(255,77,94,.08); border: 2px solid #ff4d5e; box-shadow: 0 0 14px rgba(255,77,94,.45); color: #fff; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 12px; font: 600 16px "IBM Plex Sans", var(--body); }
+  .jm-rec .ms-dot { flex: none; width: 16px; height: 16px; border-radius: 50%; background: #ff4d5e; box-shadow: 0 0 10px #ff4d5e; position: relative; }
+  .jm-rec small { font: 400 11px var(--mono); color: #ffb3bb; position: relative; }
+  .jm-rec .ms-bar { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(255,255,255,.22); }
+  .jm-rec span { position: relative; }
+  .jm-rec.on { background: #ff4d5e; animation: spnBeat .8s ease-in-out infinite; }
+  .jm-rec.on .ms-dot { width: 14px; height: 14px; border-radius: 3px; background: #fff; box-shadow: none; }
+  .jm-rec.on small { color: #fff; font-size: 13px; }
+  .ms-status { font: 400 12.5px/17px "IBM Plex Sans", var(--body); color: #b3a9dc; }
+  .ms-set { border-radius: 14px; background: rgba(6,3,14,.9); border: 1.5px solid color-mix(in srgb, var(--pc1) 55%, transparent); }
+  .ms-set .hd { display: flex; align-items: center; gap: 10px; min-height: 58px; padding: 6px 8px 6px 10px; }
+  .ms-set .hd > span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .ms-set .hd b { font: 600 15px "IBM Plex Sans", var(--body); }
+  .ms-set .hd small { font: 400 10.5px var(--mono); color: #a99fd0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ms-set .ic { width: 30px; height: 30px; flex: none; border-radius: 9px; background: color-mix(in srgb, var(--pc1) 20%, transparent); border: 1px solid var(--pc1); display: grid; place-items: center; }
+  .ms-set .ic svg { width: 16px; height: 16px; }
+  .ms-set .bd { border-top: 1px solid rgba(255,255,255,.08); padding: 10px 12px 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .ms-set .bd[hidden] { display: none; }
+  .ms-round { width: 36px; height: 36px; flex: none; border-radius: 18px; padding: 0; display: grid; place-items: center; background: transparent; border: 1.5px solid var(--pc1); color: #fff; }
+  .ms-round.go { background: var(--pc1); color: var(--pcT, #0a0412); }
+  .ms-round svg { width: 12px; height: 12px; }
+  .ms-round.more { border-color: color-mix(in srgb, var(--nm) 55%, transparent); }
+  .ms-round.more svg { width: 16px; height: 16px; }
+  .ms-pill { height: 36px; padding: 0 14px; border-radius: 18px; background: transparent; border: 1.5px solid var(--pc1); color: #fff; font: 500 13px "IBM Plex Sans", var(--body); }
+  .ms-pill.quiet { border-color: color-mix(in srgb, var(--nm) 55%, transparent); font-weight: 400; }
+  .ms-pill.red { border-color: rgba(255,77,94,.6); color: #ff9aa5; }
+  .ms-pill.sure { background: #ff4d5e; border-color: #ff4d5e; color: #fff; }
+  #sp[data-p="mysounds"] .slot .nm em, #sp[data-p="mysounds"] .sl-line:has(.sl-part) { display: none !important; }
+  .ms-how { display: flex; flex-direction: column; gap: 8px; border-top: 1px dashed rgba(255,255,255,.12); padding-top: 10px; }
+  .ms-how .cap { font: 500 10px var(--mono); letter-spacing: .12em; color: var(--pc1); }
+  .ms-how .r { display: flex; align-items: center; gap: 10px; }
+  .ms-how .r > span { width: 52px; flex: none; font: 400 10.5px var(--mono); letter-spacing: .08em; color: #b8aee6; }
+  .ms-how select { flex: 1; height: 34px; border-radius: 10px; background: rgba(6,3,14,.85); border: 1.5px solid color-mix(in srgb, var(--nm) 50%, transparent); color: #fff; padding: 0 8px; }
+  .ms-seg { flex: 1; display: flex; gap: 4px; }
+  .ms-seg button { flex: 1; height: 32px; border-radius: 9px; border: 1px solid rgba(255,255,255,.22); background: transparent; color: #e6e0ff; font: 400 13px "IBM Plex Sans", var(--body); }
+  .ms-seg button[aria-pressed="true"] { background: var(--pc1); border-color: var(--pc1); color: var(--pcT, #0a0412); font-weight: 600; }
+  #spnList .pk { display: flex; align-items: center; gap: 10px; min-height: 50px; padding: 4px 10px 4px 8px; border-radius: 12px; background: rgba(6,3,14,.9); border: 1.5px solid rgba(255,255,255,.12); }
+  #spnList .pk.on { border: 2px solid var(--pc1); }
+  #spnList .pk .nm2 { flex: 1; font: 500 14.5px "IBM Plex Sans", var(--body); color: #fff; background: none; border: 0; text-align: left; min-height: 40px; }
+  #spnList .pk .no { width: 30px; height: 30px; flex: none; border-radius: 15px; display: grid; place-items: center; font: 700 13px var(--display); border: 2px solid rgba(255,255,255,.3); color: #fff; }
+  #spnList .pk.on .no { background: var(--pc1); border-color: var(--pc1); color: var(--pcT, #0a0412); }
+  #spnList input.nmin { flex: none; height: 42px; border-radius: 11px; background: #05040c; border: 1.5px solid var(--pc1); color: #fff; padding: 0 12px; font: 400 15px "IBM Plex Sans", var(--body); }
+  #spnList .ms-seg { flex: none; }
+  #spnList .ft { display: flex; gap: 8px; margin-top: 4px; flex: none; }
+  #spnList .ft button { flex: 1; height: 46px; border-radius: 23px; font: 600 14px "IBM Plex Sans", var(--body); }
+  #spnList .ft .go2 { background: var(--pc1); border: 0; color: var(--pcT, #0a0412); }
+  #spnList .ft .qt { background: transparent; border: 1.5px solid color-mix(in srgb, var(--nm) 55%, transparent); color: #fff; }
+  #spnList .keep button { height: 50px; border-radius: 14px; font: 500 14.5px "IBM Plex Sans", var(--body); flex: none; }
+  #spnList .keep .a { background: var(--pc1); border: 0; color: var(--pcT, #0a0412); font-weight: 700; }
+  #spnList .keep .b { background: transparent; border: 1.5px solid var(--pc1); color: #fff; }
+  #spnList .keep .c { background: transparent; border: 1.5px solid color-mix(in srgb, var(--nm) 55%, transparent); color: #fff; }
+  .spn-sec .group.jam-dim { opacity: .4; }
+  .spn-sec .group.jam-dim::after { content: "not used with My sounds"; font: 400 10px var(--mono); color: #a99fd0; }`;
+  document.head.appendChild(st);
+}
+SV.stack = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg>';
+Object.assign(ST_PARTS, { jamhome: { name: "STUDIO", secs: [] }, jam: { name: "JAM", secs: [] }, mysounds: { name: "MY SOUNDS", secs: [] } });
+const jamTxt = id => { const s = $(id); return s && s.selectedIndex >= 0 ? s.options[s.selectedIndex].text : ""; };
+function jamName() { const u = suLoaded(); return u ? u.name : (JAM.unsaved ? "New jam" : (currentPreset || "This jam")); }
+function jamPrep(p, mid) {
+  const sp = $("sp"), c = spnCols(); $("spBody").innerHTML = "";
+  SPN.part = p; neonSet(sp, c);
+  const p1 = mid ? c.mid : c.lead, p2 = mid ? c.lead : c.bass;
+  sp.style.setProperty("--pc1", p1); sp.style.setProperty("--pc2", p2); sp.style.setProperty("--pcT", neonInk(p1));
+  sp.classList.add("neon"); neonStrips(sp);
+}
+// a row: label · the current choice (tap = pick from a list) · ▶ · Edit
+function jamRow(sec, label, o) {
+  const r = document.createElement("div"); r.className = "jam-row";
+  r.innerHTML = `<span class="l">${label}</span><button type="button" class="v"><span><b></b><small></small></span>${SV.chevD}</button>` + (o.play ? `<button type="button" class="pv" aria-label="Hear it">${SV.play2}</button>` : "") + (o.edit ? `<button type="button" class="ed">Edit</button>` : "");
+  sec.appendChild(r);
+  r.querySelector(".v").addEventListener("click", o.pick);
+  if (o.play) r.querySelector(".pv").addEventListener("click", e => { const b = e.currentTarget; o.play(); b.classList.add("go"); setTimeout(() => b.classList.remove("go"), 1200); });
+  if (o.edit) r.querySelector(".ed").addEventListener("click", o.edit);
+  r.sync = () => { const [v, s] = o.val(); r.querySelector("b").textContent = v; r.querySelector("small").textContent = s || ""; if (o.show) r.hidden = !o.show(); };
+  JAM.rows.push(r); r.sync(); return r;
+}
+// how the part's current sound reads on its row
+function jamSndName(k) {
+  const nm = SPN.sndName[k], l = sndList(k), x = l.find(y => y.name === nm);
+  if (k === "lead" && $("wave").value === "sampler" && MYS.src.lead) return ["My sound: " + (mysName(MYS.src.lead) || "?"), x ? x.name : ""];
+  if (k === "bass" && bass.sound === "sampler" && MYS.src.bass) return ["My sound: " + (mysName(MYS.src.bass) || "?"), x ? x.name : ""];
+  const base = k === "lead" ? jamTxt("wave") : k === "bass" ? jamTxt("bassSound") : k === "lead2" ? jamTxt("wave2") : jamTxt("padSound");
+  if (x) return [x.name, spnSame(x.data, sndGrab(k)) ? base : base + " · changed"];
+  return [base, "built in"];
+}
+// the list of finished sounds for a part: yours, then the plain built-in ones
+function jamSoundList(k, title) {
+  spnListOpen(title, ls => {
+    const l = sndList(k), sel = k === "lead" ? $("wave") : k === "bass" ? $("bassSound") : k === "lead2" ? $("wave2") : $("padSound");
+    const built = [...sel.options].filter(o => o.value !== "sampler");
+    const it = (attrs, name, sub, on, ed) => `<div class="it${on ? " on" : ""}" ${attrs}><button class="pv" aria-label="Hear ${escH(name)}">${SV.play2}</button><button class="nm"><span class="t">${escH(name)}</span>${sub ? `<small>${escH(sub)}</small>` : ""}</button>${ed ? `<button class="ed" aria-label="Rename or delete ${escH(name)}">${SV.pencil2}</button>` : ""}</div>`;
+    let h = `<div class="empty" style="padding:0">▶ hears it over the band. Tap a name to use it in this jam.</div><div class="lb">YOUR SOUNDS</div>`;
+    h += l.length ? l.map((x, i) => it(`data-i="${i}"`, x.name, spnSndDesc(k === "lead2" ? "lead2" : k, x.data), x.name === SPN.sndName[k], true)).join("") : `<div class="empty">None saved yet. Edit a sound and save it, and it shows here.</div>`;
+    h += `<div class="lb">BUILT IN · PLAIN, NO EXTRA EFFECTS</div>` + built.map(o => it(`data-b="${o.value}"`, o.text, "", !l.some(x => x.name === SPN.sndName[k]) && sel.value === o.value, false)).join("");
+    if (k === "pad") h += `<div class="lb">OR</div>` + it(`data-off="1"`, "No chords", "the band plays without chords", !pad.on, false).replace(/<button class="pv"[^>]*>.*?<\/button>/, "");
+    ls.innerHTML = h;
+    ls.onclick = e => {
+      const row = e.target.closest(".it"); if (!row) return;
+      if (row.dataset.off) { spnPvEnd(true); setModule("padOn", false); spnListClose(); jamSync(); return; }
+      const data = row.dataset.b !== undefined ? jamPlain(k, row.dataset.b) : (sndList(k)[+row.dataset.i] || {}).data; if (!data) return;
+      if (e.target.closest(".pv")) {
+        const keep = SPN.pv ? SPN.pv.snap : sndGrab(k); spnPvEnd(false);
+        SPN.pv = { k, snap: keep }; sndPut(k, data); spnTry(k === "lead2" ? "lead2" : k);
+        e.target.closest(".pv").classList.add("go"); SPN.pv.t = setTimeout(() => spnPvEnd(true), k === "pad" ? 2600 : 2200);
+        return;
+      }
+      if (e.target.closest(".ed")) {
+        const i = +row.dataset.i, x = sndList(k)[i];
+        spnEdOpen("SAVED SOUND", x.name, nn => { const L = sndList(k); if (L.some((y, j) => y.name === nn && j !== i)) { toast(`"${nn}" is taken`); return; } if (SPN.sndName[k] === x.name) { SPN.sndName[k] = nn; spnSndKeep(); } L[i].name = nn; sndStore(k, L); spnListRedraw(); jamSync(); },
+          () => { const L = sndList(k); L.splice(i, 1); sndStore(k, L); spnListRedraw(); jamSync(); });
+        return;
+      }
+      spnPvEnd(false); if (k === "pad") setModule("padOn", true);
+      sndPut(k, data); SPN.sndName[k] = row.dataset.b !== undefined ? null : sndList(k)[+row.dataset.i].name; spnSndKeep();
+      spnListClose(); jamSync();
+    };
+  });
+}
+// a plain list of a select's options (rhythms, bass patterns, time…), plus extras
+function jamOptList(title, selId, extra) {
+  spnListOpen(title, ls => {
+    const sel = $(selId);
+    let h = (extra && extra.top ? extra.top() : "") + `<div class="lb">${extra && extra.label || "BUILT IN"}</div>` + [...sel.options].filter(o => !o.hidden && !o.value.startsWith("__")).map(o => `<div class="it${sel.value === o.value ? " on" : ""}" data-v="${o.value}"><button class="nm"><span class="t">${escH(o.text)}</span></button></div>`).join("") + (extra && extra.bottom ? extra.bottom() : "");
+    ls.innerHTML = h;
+    ls.onclick = e => {
+      const row = e.target.closest("[data-v],[data-x]"); if (!row) return;
+      if (row.dataset.x !== undefined) { extra.pick(row.dataset.x, e); return; }
+      if (extra && extra.before) extra.before();
+      sel.value = row.dataset.v; sel.dispatchEvent(new Event("change", { bubbles: true }));
+      spnListClose(); jamSync();
+    };
+  });
+}
+const bmItems = (kind, cur) => bmList(kind).map((x, i) => `<div class="it${cur && cur.name && x.name === cur.name ? " on" : ""}" data-x="${i}"><button class="nm"><span class="t">${escH(x.name || (kind === "beats" ? "My beat" : "My rhythm"))}</span><small>${kind === "beats" ? "your beat" : "your rhythm"}</small></button></div>`).join("") || `<div class="empty">None yet.</div>`;
+function jamBeatList() {
+  jamOptList("BEAT", "style", {
+    top: () => `<div class="lb">YOUR BEATS</div>` + bmItems("beats", drum.beat) + `<div class="spn-mk"><button data-x="new">+ Make a beat</button><button data-x="off">${drum.on ? "No drums" : "Drums are off"}</button></div>`,
+    label: "STYLES",
+    before: () => setModule("drumsOn", true),
+    pick: x => {
+      spnListClose();
+      if (x === "new") { setModule("drumsOn", true); $("bmOpenD").click(); return; }
+      if (x === "off") { setModule("drumsOn", false); jamSync(); return; }
+      const b = bmList("beats")[+x]; if (b) { setModule("drumsOn", true); setBeat(bmClone(b.data)); }
+      jamSync();
+    },
+  });
+}
+function jamRhythmList() {
+  jamOptList("CHORD RHYTHM", "rhythm", {
+    top: () => `<div class="lb">YOUR RHYTHMS</div>` + bmItems("rhythms", pad.crh) + `<div class="spn-mk"><button data-x="new">+ Make a rhythm</button></div>`,
+    pick: x => { spnListClose(); if (x === "new") { $("bmOpenC").click(); return; } const r = bmList("rhythms")[+x]; if (r) bmUseRhythm(bmClone(r.data)); jamSync(); },
+  });
+}
+/* ----- soloing: names for the lead's Notes modes ----- */
+const SOLO = [["easy", "Easy", "fixed"], ["smooth", "Smooth", "scale"], ["follow", "Follow every chord", "chords"], ["root", "Root first", "root"], ["tones", "Chord notes", "tones"], ["free", "Free", "fixed"]];
+const SOLO_TXT = {
+  easy: "One scale that fits your chords. The strips never change.", smooth: "Your scale; a note that clashes with the chord moves just enough to fit.",
+  follow: "A new scale for every chord; only the notes that differ move.", root: "A new scale for every chord, and the strips restart on its root.",
+  tones: "Only the notes of the chord playing. You can't miss.", free: "Exactly the scale you picked, whatever plays.",
+};
+let soloPick = "easy"; try { soloPick = localStorage.getItem("glasspad.solo") || "easy"; } catch (_) {}
+function soloNow() { const m = leadFollow.mode; if (m === "fixed") return soloPick === "free" ? "free" : "easy"; return (SOLO.find(s => s[2] === m) || SOLO[0])[0]; }
+function soloSet(id) {
+  const s = SOLO.find(x => x[0] === id); if (!s) return;
+  soloPick = id; try { localStorage.setItem("glasspad.solo", id); } catch (_) {}
+  setLeadFollow(s[2]); STK.reset();
+  if (id === "easy") soloEasyFit();
+  jamSync();
+}
+// Easy with your own chords: use a scale that has every note of every chord (your chords set the key)
+function soloEasyFit() {
+  if (pad.mode !== "manual") return;
+  let list = []; try { list = suggestScales(); } catch (_) {}
+  const top = list.find(c => c.fit > .999); if (!top) return;
+  if (+rootSel.value === top.r && scaleSel.value === top.id) return;
+  rootSel.value = top.r; setScale(top.id); buildLanes(); pad.cur = null; refreshChordNow(); updateSummaries(); try { renderSuggestions(); } catch (_) {}
+}
+// which chords the strips' notes rub against (a strip a semitone above a chord note)
+function soloFit() {
+  const root = +rootSel.value || 0, sc = curScale(); if (!sc) return null;
+  const pcs = [...new Set(sc.steps.map(x => mod12(Math.round(x) + root)))];
+  let chords = [];
+  try {
+    if (pad.mode === "manual") chords = manual.chords.filter(c => c.sym).map(c => { const p = parseChord(c.sym); return p && { name: c.sym, pcs: p.iv.map(i => mod12(p.root + i)) }; }).filter(Boolean);
+    else { const dg = progDegs(); if (dg) chords = dg.map(d => { const ch = progChordAt(d, homeBase()); return { name: ch.name, pcs: ch.tones.map(x => mod12(Math.round(x + cbase(ch)))) }; }); }
+  } catch (_) {}
+  const seen = new Set(), bad = [];
+  for (const c of chords) { if (seen.has(c.name)) continue; seen.add(c.name); for (const m of c.pcs) { if (pcs.includes(m)) continue; const near = pcs.filter(x => mod12(x - m) === 1 || mod12(m - x) === 1); if (near.length) bad.push(near.map(x => NAMES[x]).join("/") + " over " + c.name); } }
+  return { notes: pcs.sort((a, b) => mod12(a - root) - mod12(b - root)).map(x => NAMES[x]).join(" "), bad };
+}
+/* ----- the pages ----- */
+function buildJamHome() {
+  jamPrep("jamhome"); $("spTitle").textContent = "STUDIO"; JAM.rows = [];
+  const b = $("spBody");
+  b.insertAdjacentHTML("beforeend", `<div class="jh-lbl">YOUR JAMS</div><div class="jh-row" id="jhRow"></div><button class="jh-open" id="jhOpen"></button>
+    <div class="jh-lbl">YOUR SOUNDS AND BEATS</div><div class="jh-note">Make and keep things here. Jams pick from them.</div><div class="jh-lib" id="jhLib"></div>
+    <button class="spn-wide" id="jhGame" style="margin-top:6px">Game mode</button>`);
+  const row = $("jhRow"), cur = suLoaded();
+  const nb = document.createElement("button"); nb.className = "jh-new"; nb.innerHTML = `<b>+</b>New jam`;
+  nb.addEventListener("click", () => { try { startFresh(); } catch (_) {} su.name = null; currentPreset = ""; JAM.unsaved = true; jamGo("jam"); });
+  row.appendChild(nb);
+  userPresets.forEach(u => {
+    const t = document.createElement("div"); t.className = "jh-t" + (cur && cur.name === u.name ? " cur" : ""); t.setAttribute("role", "button"); t.tabIndex = 0;
+    const cs = suCols(u), meta = (() => { try { const d = u.data; return `${NAMES[mod12(d.root ?? 0)]} ${(SC[d.scale] && SC[d.scale].name || "").replace(/ \(.*\)/, "").split(" ")[0].toLowerCase()} · ${d.bpm || ""}`; } catch (_) { return ""; } })();
+    t.innerHTML = `<span class="str">${cs.map(c => `<span style="background:linear-gradient(180deg,${c}55,transparent);border-left:1.5px solid ${c}"></span>`).join("")}</span>${cur && cur.name === u.name ? `<i class="tag">PLAYING</i>` : ""}<button class="ed" aria-label="Rename or delete ${escH(u.name)}">${SV.pencil}</button><span class="nm">${escH(u.name)}</span><span class="mt">${escH(meta)}</span>`;
+    t.addEventListener("click", e => { if (e.target.closest(".ed")) { suEdOpen(u.name); return; } JAM.unsaved = false; suApply(u); jamGo("jam"); });
+    row.appendChild(t);
+  });
+  $("jhOpen").textContent = "Open " + jamName();
+  $("jhOpen").addEventListener("click", () => jamGo("jam"));
+  const lib = [
+    ["Lead sounds", sndList("lead"), () => jamGo("lead")], ["Bass sounds", sndList("bass"), () => jamGo("bass")],
+    ["Chord sounds", sndList("pad"), () => jamGo("chords")], ["2nd sounds", sndList("lead2"), () => jamGo("lead")],
+    ["Beats", bmList("beats"), () => $("bmOpenD").click()], ["Chord rhythms", bmList("rhythms"), () => $("bmOpenC").click()],
+    ["Progressions", mpList(), () => spnListOpen("PROGRESSION", mpPickerList)], ["My sounds", samples.concat(MYS.sets), () => jamGo("mysounds")],
+  ];
+  for (const [n, l, go] of lib) {
+    const bt = document.createElement("button"); bt.type = "button";
+    bt.innerHTML = `<b>${n}</b><small>${l.length} · ${escH(l.length ? l.slice(0, 2).map(x => x.name || "untitled").join(", ") : "make one")}</small>`;
+    bt.addEventListener("click", go); $("jhLib").appendChild(bt);
+  }
+  $("jhGame").addEventListener("click", () => { spClose(true); stClose(); setGame(true); homeOpen(false); });
+}
+function buildJam() {
+  jamPrep("jam"); JAM.rows = [];
+  const title = () => { $("spTitle").innerHTML = `<small>JAM</small>${escH(jamName())}`; };
+  title(); JAM.title = title;
+  // the save pill in the header
+  const sv = document.createElement("button"); sv.type = "button"; sv.className = "jam-save"; $("spPlay").before(sv);
+  sv.addEventListener("click", () => {
+    const u = suLoaded();
+    if (u && !JAM.unsaved) { const i = userPresets.indexOf(u); userPresets[i] = suEntry(u.name); storePresets(); currentPreset = u.name; renderPresets(); su.base = suSnap(); toast(`Saved "${u.name}"`); jamSync(); return; }
+    let n = userPresets.length + 1, nm = "Jam " + n; while (userPresets.some(x => x.name === nm)) nm = "Jam " + (++n);
+    spnEdOpen("SAVE THIS JAM", nm, name => {
+      if (userPresets.some(x => x.name === name)) { toast(`"${name}" is taken`); return; }
+      userPresets.push(suEntry(name)); storePresets(); currentPreset = name; su.name = name; su.base = suSnap(); renderPresets(); JAM.unsaved = false; toast(`Saved "${name}"`); title(); jamSync();
+    }, null);
+  });
+  JAM.saveBtn = sv;
+  let s = spnSec(1, "CHORDS");
+  jamRow(s, "Chords", {
+    val: () => { const cur = mpLoaded(); return [cur ? cur.name : pad.mode === "manual" ? "My chords" : pad.prog === "own" ? "Numbers" : (PROGS[pad.prog] || [pad.prog])[0],
+      pad.mode === "manual" ? manualTextOf().split(" ").map(x => x.replace(/:.*/, "")).filter(Boolean).slice(0, 8).join(" · ") : ($("jamChordsLine").textContent || "").replace(/^Chords: /, "")]; },
+    pick: () => spnListOpen("PROGRESSION", mpPickerList), play: () => spnTry("pad"), edit: () => jamGo("chords"),
+  });
+  const key = document.createElement("div"); key.className = "jam-row";
+  key.innerHTML = `<span class="l">Key</span><select class="jam-sel" id="jamRoot" aria-label="Key"></select><select class="jam-sel" id="jamScale" aria-label="Scale" style="flex:1.6"></select>`;
+  s.appendChild(key);
+  for (const [px, real] of [["jamRoot", rootSel], ["jamScale", scaleSel]]) {
+    const el = $(px); el.innerHTML = real.innerHTML;
+    el.addEventListener("change", () => { real.value = el.value; real.dispatchEvent(new Event("change", { bubbles: true })); STK.reset(); setTimeout(jamSync); });
+  }
+  JAM.keyRow = key;
+  jamRow(s, "Sound", { val: () => pad.on ? jamSndName("pad") : ["No chords", "the band plays without chords"], pick: () => jamSoundList("pad", "CHORD SOUND"), play: () => spnTry("pad"), edit: () => jamGo("chords") });
+  jamRow(s, "Rhythm", { val: () => [jamTxt("rhythm"), pad.crh ? "your rhythm" : ""], pick: jamRhythmList, edit: () => $("bmOpenC").click() });
+  s = spnSec(2, "DRUMS");
+  jamRow(s, "Beat", { val: () => drum.on ? [jamTxt("style"), "fills: " + jamTxt("drumFills").toLowerCase()] : ["No drums", ""], pick: jamBeatList, play: () => spnTry("drums"), edit: () => jamGo("drums") });
+  s = spnSec(3, "BASS");
+  jamRow(s, "Sound", { val: () => jamSndName("bass"), pick: () => jamSoundList("bass", "BASS SOUND"), play: () => spnTry("bass"), edit: () => jamGo("bass") });
+  jamRow(s, "Plays", { val: () => [jamTxt("bassPat"), bassPat.arp !== "off" ? "arp " + jamTxt("bassArp").toLowerCase() : ""], pick: () => jamOptList("HOW THE BASS PLAYS", "bassPat"), edit: () => jamGo("bass") });
+  s = spnSec(4, "LEAD");
+  jamRow(s, "Sound", { val: () => jamSndName("lead"), pick: () => jamSoundList("lead", "LEAD SOUND"), play: () => spnTry("lead"), edit: () => jamGo("lead") });
+  jamRow(s, "2nd sound", { val: () => lead.snd2 === "off" ? ["Off", "one sound for every finger"] : jamSndName("lead2"), pick: () => jamSoundList("lead2", "2ND SOUND"), edit: () => jamGo("lead") });
+  s = spnSec(5, "SOLOING");
+  spnNote(s, "How your strips follow the chords.");
+  const chips = document.createElement("div"); chips.className = "jam-chips";
+  chips.innerHTML = SOLO.map(([id, n]) => `<button type="button" data-s="${id}">${n}</button>`).join("");
+  chips.addEventListener("click", e => { const b = e.target.closest("button"); if (b) soloSet(b.dataset.s); });
+  s.appendChild(chips); JAM.chips = chips;
+  const desc = spnNote(s, ""); JAM.soloDesc = desc;
+  const fit = document.createElement("div"); fit.className = "jam-fit"; s.appendChild(fit); JAM.fit = fit;
+  s = spnSec(6, "TEMPO");
+  const tp = document.createElement("div"); tp.className = "jam-tempo";
+  tp.innerHTML = `<input type="range" min="50" max="200" step="1" id="jamBpm" aria-label="Tempo"><output id="jamBpmOut"></output>`;
+  s.appendChild(tp);
+  $("jamBpm").addEventListener("input", e => { $("bpm").value = e.target.value; $("bpm").dispatchEvent(new Event("input", { bubbles: true })); $("jamBpmOut").textContent = e.target.value + " bpm"; spnFill(); });
+  const bt = document.createElement("div"); bt.className = "jam-btns";
+  bt.innerHTML = `<button type="button" class="spn-wide" id="jamTap">Tap</button><select class="jam-sel" id="jamSig" aria-label="Time"></select><button type="button" class="spn-wide" id="jamKeyCh">Key changes ›</button>`;
+  s.appendChild(bt);
+  $("jamTap").addEventListener("click", () => $("tap").click());
+  $("jamSig").innerHTML = $("sig").innerHTML; $("jamSig").addEventListener("change", e => { $("sig").value = e.target.value; $("sig").dispatchEvent(new Event("change", { bubbles: true })); });
+  $("jamKeyCh").addEventListener("click", () => jamGo("song"));
+  s = spnSec(7, "MIX & LOOK");
+  const ml = document.createElement("div"); ml.className = "jam-btns";
+  ml.innerHTML = `<button type="button" class="spn-wide">Mix ›</button><button type="button" class="spn-wide">Look ›</button>`;
+  ml.children[0].addEventListener("click", () => jamGo("mix")); ml.children[1].addEventListener("click", () => jamGo("look"));
+  s.appendChild(ml);
+  jamSync();
+}
+function jamSync() {
+  if ($("sp").hidden) return;
+  if (SPN.part === "jam") {
+    (JAM.rows || []).forEach(r => { try { r.sync(); } catch (_) {} });
+    if (JAM.title) JAM.title();
+    const u = suLoaded(), ch = !!(u && !JAM.unsaved && suChanged());
+    if (JAM.saveBtn) { JAM.saveBtn.hidden = !!(u && !JAM.unsaved && !ch); JAM.saveBtn.textContent = u && !JAM.unsaved ? "● Changed · Save" : "Save jam"; }
+    const r = $("jamRoot"), s = $("jamScale");
+    if (r && document.activeElement !== r) r.value = rootSel.value;
+    if (s && document.activeElement !== s) s.value = scaleSel.value;
+    if (r) r.hidden = pad.mode === "manual";
+    const so = soloNow();
+    if (JAM.chips) JAM.chips.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.s === so));
+    if (so === "easy" && pad.mode === "manual") soloEasyFit();
+    if (JAM.soloDesc) JAM.soloDesc.textContent = SOLO_TXT[so] + (so === "smooth" ? (smoothKeep() ? " It keeps the change until the next clash." : " It goes back to your scale after the chord.") : "");
+    if (JAM.fit) {
+      const f = soloFit();
+      if (!f) JAM.fit.hidden = true;
+      else if (so === "easy" || so === "free" || so === "smooth") {
+        const bad = so === "smooth" ? [] : f.bad;
+        JAM.fit.hidden = false; JAM.fit.classList.toggle("warn", bad.length > 0);
+        JAM.fit.innerHTML = `<i></i><span>Your strips: ${f.notes}${bad.length ? ` · clashes: ${escH([...new Set(bad)].slice(0, 3).join(", "))}. Smooth or Follow every chord fixes it.` : so === "smooth" ? " · clashes move as the chords change" : " · fits all your chords"}</span>`;
+      } else { JAM.fit.hidden = false; JAM.fit.classList.remove("warn"); JAM.fit.innerHTML = `<i></i><span>The strips follow every chord, so nothing clashes.</span>`; }
+    }
+    const bp = $("jamBpm"); if (bp && document.activeElement !== bp) { bp.value = T.bpm; $("jamBpmOut").textContent = T.bpm + " bpm"; }
+    const sg = $("jamSig"); if (sg && document.activeElement !== sg) sg.value = $("sig").value;
+    spnFill();
+  }
+}
+// My sounds: record, sets, your recordings
+function buildMySounds() {
+  jamPrep("mysounds"); $("spTitle").textContent = "MY SOUNDS"; JAM.rows = []; mysIds();
+  let s = spnSec(1, "RECORD");
+  const rec = document.createElement("button"); rec.type = "button"; rec.className = "jm-rec"; rec.hidden = $("micRec").hidden;
+  rec.innerHTML = `<span class="ms-bar"></span><span class="ms-dot"></span><span class="t">Record a sound</span><small>UP TO 4 S</small>`;
+  rec.addEventListener("click", () => $("micRec").click());
+  s.appendChild(rec);
+  const status = document.createElement("div"); status.className = "ms-status"; s.appendChild(status);
+  const add = document.createElement("button"); add.type = "button"; add.className = "spn-wide"; add.textContent = "Add a sound file"; add.addEventListener("click", () => $("filePick").click()); s.appendChild(add);
+  JAM.ms = { rec, status };
+  s = spnSec(2, "SETS");
+  spnNote(s, "Several recordings that take turns. Use a set as the lead or bass and every note plays the next one.");
+  const sets = document.createElement("div"); sets.style.cssText = "display:flex;flex-direction:column;gap:8px"; s.appendChild(sets);
+  const mk = document.createElement("button"); mk.type = "button"; mk.className = "spn-wide"; mk.style.borderStyle = "dashed"; mk.textContent = "+ Make a set"; mk.addEventListener("click", () => mysSetSheet(null)); s.appendChild(mk);
+  JAM.msSets = sets; mysRenderSets();
+  s = spnSec(3, "YOUR RECORDINGS");
+  const n = document.createElement("div"); n.className = "spn-sl"; n.id = "msN"; s.appendChild(n);
+  spnMove($("slots"), s);
+  renderSlots();
+  // where you came from: offer to go back with the sound
+  const from = JAM.stack[JAM.stack.length - 1];
+  if (from === "lead" || from === "bass") spnNote(s, `Use as ${from} puts a recording on the ${from} and takes you back.`);
+}
+function mysRenderSets() {
+  const box = JAM.msSets; if (!box) return;
+  box.innerHTML = MYS.sets.length ? "" : `<div class="spn-note">No sets yet.</div>`;
+  MYS.sets.forEach(set => {
+    const names = set.items.map(id => (samples.find(c => c.id === id) || {}).name).filter(Boolean);
+    const how = { cycle: "next each note", shuffle: "shuffle", split: "split across the pad" }[set.mode || "cycle"];
+    const el = document.createElement("div"); el.className = "ms-set";
+    el.innerHTML = `<div class="hd"><button class="ms-round pv" aria-label="Hear ${escH(set.name)}">${SV.play2}</button><span class="ic">${SV.stack}</span><span><b>${escH(set.name)}</b><small>${escH(names.join(" · ") || "empty")} · ${how}</small></span><button class="ms-round more" aria-label="More">${SV.chevD}</button></div>
+      <div class="bd" hidden><button class="ms-pill" data-a="lead">Use as lead</button><button class="ms-pill" data-a="bass">Use as bass</button><button class="ms-pill quiet" data-a="edit">Change it</button><button class="ms-pill red" data-a="del">Delete</button></div>`;
+    el.querySelector(".pv").addEventListener("click", e => mysPlaySet(set, e.currentTarget));
+    el.querySelector(".more").addEventListener("click", e => { const bd = el.querySelector(".bd"); bd.hidden = !bd.hidden; e.currentTarget.innerHTML = bd.hidden ? SV.chevD : SV.chevU; });
+    el.querySelector(".bd").addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      if (b.dataset.a === "lead" || b.dataset.a === "bass") { mysUse(b.dataset.a, { t: "set", id: set.id }); toast(`"${set.name}" is the ${b.dataset.a} now`); jamGoBackTo(b.dataset.a); }
+      else if (b.dataset.a === "edit") mysSetSheet(set);
+      else if (b.dataset.a === "del") {
+        if (!b.classList.contains("sure")) { b.classList.add("sure"); b.textContent = "Tap again"; return; }
+        MYS.sets = MYS.sets.filter(x => x !== set); for (const k of ["lead", "bass"]) if (MYS.src[k] && MYS.src[k].t === "set" && MYS.src[k].id === set.id) MYS.src[k] = null; mysSave(); mysRenderSets();
+      }
+    });
+    box.appendChild(el);
+  });
+}
+// after "Use as lead/bass": back to that editor if that's where you came from, else open it
+function jamGoBackTo(kind) {
+  if (JAM.stack[JAM.stack.length - 1] === kind) jamBack(); else jamGo(kind);
+}
+function mysSetSheet(set) {
+  mysIds();
+  const S0 = set ? { name: set.name, items: set.items.slice(), mode: set.mode || "cycle", rep: set.rep || "next", hold: !!set.hold } : { name: "Set " + (MYS.sets.length + 1), items: [], mode: "cycle", rep: "next", hold: false };
+  spnListOpen(set ? "CHANGE A SET" : "MAKE A SET", ls => {
+    const seg = (key, opts) => `<div class="ms-seg" data-k="${key}">${opts.map(([v, l]) => `<button data-v="${v}" aria-pressed="${String(S0[key]) === String(v)}">${l}</button>`).join("")}</div>`;
+    ls.innerHTML = `<input class="nmin" maxlength="24" value="${escH(S0.name)}" aria-label="Name of the set">
+      <div class="lb">TAP THEM IN THE ORDER THEY PLAY</div>` + (samples.length ? samples.map(c => { const i = S0.items.indexOf(c.id); return `<div class="pk${i >= 0 ? " on" : ""}" data-id="${c.id}"><button class="ms-round pv" aria-label="Hear ${escH(c.name)}">${SV.play2}</button><button class="nm2">${escH(c.name)}</button><span class="no">${i >= 0 ? i + 1 : ""}</span></div>`; }).join("") : `<div class="empty">Record some sounds first.</div>`) + `
+      <div class="lb">EACH NOTE PLAYS</div>${seg("mode", [["cycle", "The next"], ["shuffle", "Random"], ["split", "Split pad"]])}
+      <div class="lb">WHEN A NOTE REPEATS</div>${seg("rep", [["next", "Next sound"], ["same", "Same sound"]])}
+      <div class="lb">REPEAT WHILE HELD</div>${seg("hold", [["false", "Off"], ["true", "On"]])}
+      <div class="ft"><button class="qt" data-a="hear">▶ Hear it</button><button class="go2" data-a="save">Save set</button></div>`;
+    ls.querySelector(".nmin").addEventListener("input", e => { S0.name = e.target.value; });
+    ls.onclick = e => {
+      const pk = e.target.closest(".pk");
+      if (pk) {
+        if (e.target.closest(".pv")) { const c = samples.find(x => x.id === pk.dataset.id); if (c) playClipOnce(c); return; }
+        const i = S0.items.indexOf(pk.dataset.id); if (i >= 0) S0.items.splice(i, 1); else S0.items.push(pk.dataset.id);
+        const nm = ls.querySelector(".nmin").value; spnListRedraw(); ls.querySelector(".nmin").value = nm; return;
+      }
+      const sb = e.target.closest(".ms-seg button");
+      if (sb) { const k = sb.closest(".ms-seg").dataset.k; S0[k] = k === "hold" ? sb.dataset.v === "true" : sb.dataset.v; sb.parentNode.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === sb)); return; }
+      const a = e.target.closest("[data-a]"); if (!a) return;
+      if (a.dataset.a === "hear") { mysPlaySet(S0, a); return; }
+      if (!S0.items.length) { toast("Tap at least one sound"); return; }
+      const name = (ls.querySelector(".nmin").value || "").trim().slice(0, 24) || S0.name;
+      if (set) Object.assign(set, { ...S0, name }); else MYS.sets.push({ id: "s" + Math.random().toString(36).slice(2, 9), ...S0, name });
+      mysSave(); spnListClose(); mysRenderSets(); toast(`Saved "${name}"`);
+    };
+  });
+}
+// in the recordings list: each one's own "how it plays", and Use as lead / bass
+{
+  const rs = renderSlots;
+  renderSlots = function () {
+    const r = rs.apply(this, arguments);
+    if (SPN.part === "mysounds") {
+      const n = $("msN"); if (n) n.textContent = `${samples.length} OF ${MAX_SAMPLES}`;
+      const rows = $("slots").children;
+      samples.forEach((c, i) => {
+        const body = rows[i] && rows[i].querySelector(".sl-body"); if (!body) return;
+        const pl = c.play || {};
+        const how = document.createElement("div"); how.className = "ms-how";
+        how.innerHTML = `<span class="cap">HOW IT PLAYS</span>
+          <div class="r"><span>LENGTH</span><select data-k="len">${[...$("sampLen").options].map(o => `<option value="${o.value}"${(pl.len || "even") === o.value ? " selected" : ""}>${o.text}</option>`).join("")}</select></div>
+          <div class="r"><span>OCTAVE</span><select data-k="oct">${[...$("sampOct").options].map(o => `<option value="${o.value}"${String(pl.oct || 0) === o.value ? " selected" : ""}>${o.text}</option>`).join("")}</select></div>
+          <div class="r"><span>REPEAT</span><div class="ms-seg"><button data-h="0" aria-pressed="${!pl.hold}">Off</button><button data-h="1" aria-pressed="${!!pl.hold}">While held</button></div></div>
+          <div class="jam-btns"><button class="ms-pill" data-u="lead">Use as lead</button><button class="ms-pill" data-u="bass">Use as bass</button></div>`;
+        how.addEventListener("change", e => { const k = e.target.dataset.k; if (!k) return; c.play = { ...(c.play || {}), [k]: k === "oct" ? +e.target.value : e.target.value }; storeSamples(); });
+        how.addEventListener("click", e => {
+          const h = e.target.closest("[data-h]"); if (h) { c.play = { ...(c.play || {}), hold: h.dataset.h === "1" }; storeSamples(); h.parentNode.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === h)); return; }
+          const u = e.target.closest("[data-u]"); if (u) { mysIds(); mysUse(u.dataset.u, { t: "rec", id: c.id }); toast(`"${c.name}" is the ${u.dataset.u} now`); jamGoBackTo(u.dataset.u); }
+        });
+        const rm = body.querySelector(".sl-rm"); body.insertBefore(how, rm || null);
+      });
+      try { mysRenderSets(); } catch (_) {}
+    }
+    return r;
+  };
+}
+/* ----- editors in the jam Studio: My sound row, 2nd sound saving, chords order, the live banner ----- */
+// Saved rows can now be more than one per page (the lead's 1st and 2nd sound)
+SPN_SND.lead2 = "lead2";
+function spnSndRow(p, sec, after) {
+  const k = SPN_SND[p];
+  const g = document.createElement("div"); g.className = "group";
+  g.innerHTML = `<span class="spn-l">Saved</span><button type="button" class="spn-pick quiet"><span></span><small></small>${SV.chevD}</button>`;
+  const save = document.createElement("button"); save.type = "button"; save.className = "spn-wide"; save.textContent = "Save this sound";
+  const nb = document.createElement("div"); nb.className = "spn-namebox"; nb.hidden = true;
+  nb.innerHTML = `<input maxlength="24" placeholder="Name this sound" autocomplete="off"><button type="button">Save</button>`;
+  after.after(g); g.after(save); save.after(nb);
+  const inp = nb.querySelector("input");
+  const doSave = () => {
+    const name = inp.value.trim().slice(0, 24); if (!name) { inp.focus(); return; }
+    const l = sndList(k), i = l.findIndex(x => x.name === name), e = { name, data: sndGrab(k) };
+    if (i >= 0) l[i] = e; else l.push(e);
+    toast(sndStore(k, l) ? (i >= 0 ? `Updated "${name}"` : `Saved "${name}"`) : `Saved "${name}" for this session only`);
+    SPN.sndName[k] = name; spnSndKeep(); nb.hidden = true; save.hidden = false; spnSndSync();
+  };
+  save.addEventListener("click", () => { nb.hidden = false; save.hidden = true; const cur = SPN.sndName[k]; inp.value = cur && sndList(k).some(x => x.name === cur) ? cur : ""; inp.focus(); });
+  nb.querySelector("button").addEventListener("click", doSave);
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") doSave(); });
+  const titles = { lead: "SAVED LEAD SOUNDS", bass: "SAVED BASS SOUNDS", pad: "SAVED CHORD SOUNDS", lead2: "SAVED 2ND SOUNDS" };
+  g.querySelector(".spn-pick").addEventListener("click", () => spnListOpen(titles[k], ls => spnSndList(k, ls)));
+  SPN.sndRows = (SPN.sndRows || []).filter(r => r.g.isConnected); SPN.sndRows.push({ k, g });
+  SPN.sndRow = SPN.sndRows[0];
+  spnSndSync();
+}
+function spnSndSync() {
+  for (const r of (SPN.sndRows || [])) {
+    if (!r.g.isConnected) continue;
+    const l = sndList(r.k), cur = l.find(x => x.name === SPN.sndName[r.k]);
+    r.g.querySelector(".spn-pick span").textContent = cur ? cur.name : l.length ? "Pick a saved sound" : "None saved yet";
+    r.g.querySelector(".spn-pick small").textContent = cur && !SPN.pv && !spnSame(cur.data, sndGrab(r.k)) ? "CHANGED" : l.length ? l.length + " SAVED" : "";
+  }
+}
+{
+  const d0 = spnSndDesc;
+  spnSndDesc = function (k, d) {
+    if (k === "lead2") { const o = [...$("wave2").options].find(o => o.value === d.snd2); return o ? o.text : d.snd2 || ""; }
+    const s = d0.apply(this, arguments);
+    if ((k === "lead" || k === "bass") && d && d.src) return "My sound: " + (mysName(d.src) || "?");
+    return s;
+  };
+}
+function jamMySoundRow(kind, sec, after) {
+  const g = document.createElement("div"); g.className = "group"; g.id = "jamMyRow";
+  g.innerHTML = `<span class="spn-l">My sound</span><button type="button" class="spn-pick"><span></span><small></small>${SV.chevD}</button>`;
+  after.after(g);
+  g.querySelector("button").addEventListener("click", () => spnListOpen("MY SOUND FOR THE " + kind.toUpperCase(), ls => {
+    mysIds();
+    const cur = MYS.src[kind];
+    const it = (attrs, name, sub, on, set) => `<div class="it${on ? " on" : ""}" ${attrs}><button class="pv" aria-label="Hear ${escH(name)}">${SV.play2}</button><button class="nm"><span class="t">${set ? "▤ " : ""}${escH(name)}</span><small>${escH(sub)}</small></button></div>`;
+    let h = `<div class="lb">SETS</div>` + (MYS.sets.map(s => it(`data-set="${s.id}"`, s.name, s.items.map(id => (samples.find(c => c.id === id) || {}).name).filter(Boolean).join(" · "), cur && cur.t === "set" && cur.id === s.id, true)).join("") || `<div class="empty">No sets yet.</div>`);
+    h += `<div class="lb">RECORDINGS</div>` + (samples.map(c => it(`data-rec="${c.id}"`, c.name, "recording", cur && cur.t === "rec" && cur.id === c.id, false)).join("") || `<div class="empty">No recordings yet.</div>`);
+    h += `<div class="spn-mk"><button data-new="1">+ Create a sound</button></div>`;
+    ls.innerHTML = h;
+    ls.onclick = e => {
+      if (e.target.closest("[data-new]")) { spnListClose(); jamGo("mysounds"); return; }
+      const row = e.target.closest(".it"); if (!row) return;
+      const s = row.dataset.set ? { t: "set", id: row.dataset.set } : { t: "rec", id: row.dataset.rec };
+      if (e.target.closest(".pv")) { if (s.t === "set") mysPlaySet(MYS.sets.find(x => x.id === s.id) || { items: [] }); else { const c = samples.find(x => x.id === s.id); if (c) playClipOnce(c); } return; }
+      mysUse(kind, s); spnListClose(); jamEdSync();
+    };
+  }));
+  return g;
+}
+function jamEdSync() {
+  if ($("sp").hidden || !jamOn()) return;
+  const p = SPN.part;
+  if (p === "lead" || p === "bass") {
+    const g = $("jamMyRow"); if (g) {
+      const on = p === "lead" ? $("wave").value === "sampler" : bass.sound === "sampler";
+      g.hidden = !on;
+      g.querySelector("span:not(.spn-l)").textContent = mysName(MYS.src[p]) || "Pick one";
+      g.querySelector("small").textContent = MYS.src[p] ? (MYS.src[p].t === "set" ? "SET" : "RECORDING") : "";
+    }
+    if (p === "lead") { const sm = $("wave").value === "sampler"; for (const id of ["tRes", "tDetune"]) { const gg = $(id) && $(id).closest(".group"); if (gg) gg.classList.toggle("jam-dim", sm); } }
+  }
+  if (SPN.part === "mysounds" && JAM.ms) {
+    const b = JAM.ms.rec, on = !!mic.on, secs = on ? Math.min(4, (performance.now() - mic.t0) / 1000) : 0;
+    b.classList.toggle("on", on); b.querySelector(".t").textContent = on ? "Stop" : "Record a sound";
+    b.querySelector("small").textContent = on ? `${secs.toFixed(1)} s / 4` : "UP TO 4 S"; b.querySelector(".ms-bar").style.width = on ? (secs / 4 * 100) + "%" : "0";
+    JAM.ms.status.textContent = $("sampHint").textContent || "Hum, sing, say a word or clap. Short sounds work best. Up to 8.";
+    if (on !== JAM.wasRec) { if (!on && JAM.wasRec) setTimeout(() => { mysIds(); renderSlots(); }, 400); JAM.wasRec = on; }
+  }
+}
+{
+  const b0 = spnBuild;
+  spnBuild = function (p) {
+    const r = b0.apply(this, arguments);
+    if (!jamOn()) return r;
+    const secs = [...$("spBody").querySelectorAll(":scope > .spn-sec")];
+    if (p === "lead" || p === "bass") {
+      // My sounds moves to its own page; the editor picks a recording or set as the sound
+      const last = secs[secs.length - 1]; if (last) last.classList.add("jam-hide");
+      const sg = (p === "lead" ? $("wave") : $("bassSound")).closest(".group");
+      jamMySoundRow(p, secs[0], sg);
+      if (p === "lead") { const two = secs[3], l2 = $("lvol2Group"); if (two && l2) spnSndRow("lead2", two, l2); }
+    }
+    if (p === "chords") {
+      // Which chords · Sound · Effects · Rhythm · Arp
+      const [w, snd, rh, arp, fx] = secs; if (fx && rh) { rh.before(fx); [w, snd, fx, rh, arp].forEach((s, i) => { const n = s && s.querySelector(".spn-h i"); if (n) n.textContent = i + 1; }); }
+    }
+    if (JAM.edit && JAM.edit.p === p) {
+      const bn = document.createElement("div"); bn.className = "jam-banner";
+      bn.innerHTML = `<i></i><span>Live: the band keeps playing while you tweak. Changes are in this jam straight away.</span>`;
+      $("spBody").prepend(bn);
+    }
+    clearInterval(JAM.t); JAM.t = setInterval(jamEdSync, 400); jamEdSync();
+    return r;
+  };
+}
+/* ----- navigation: Studio home → jam → editors and back ----- */
+const JAM_K = { lead: "lead", bass: "bass", chords: "pad" };
+function jamGo(p) { if (JAM.cur && JAM.cur !== p) JAM.stack.push(JAM.cur); JAM.popping = true; spOpen(p); JAM.popping = false; }
+function jamBack() {
+  const leaving = JAM.cur, ed = JAM.edit;
+  const prev = JAM.stack.pop();
+  if (!prev) {
+    if (leaving === "jamhome") { spClose(true); stClose(); setGame(true); homeOpen(false); return; }
+    JAM.popping = true; spOpen("jamhome"); JAM.popping = false; return;
+  }
+  JAM.popping = true; spOpen(prev); JAM.popping = false;
+  if (ed && ed.p === leaving && prev === "jam") jamKeepAsk(ed);
+}
+// coming back from an editor with a changed sound: keep it just here, or in your sounds too
+function jamKeepAsk(ed) {
+  const k = JAM_K[ed.p]; if (!k) return;
+  if (JSON.stringify(sndGrab(k)) === ed.before) return;
+  const nm = SPN.sndName[k] && sndList(k).some(x => x.name === SPN.sndName[k]) ? SPN.sndName[k] : null;
+  const what = nm ? nm.toUpperCase() : { lead: "THE LEAD", bass: "THE BASS", pad: "THE CHORDS" }[k];
+  spnListOpen("YOU CHANGED " + what, ls => {
+    ls.innerHTML = `<div class="empty" style="padding:0">It's already playing in this jam. Want it in your sounds too?</div><div class="keep" style="display:flex;flex-direction:column;gap:8px">
+      <button class="a" data-k="jam">Just this jam</button>${nm ? `<button class="b" data-k="upd">Update “${escH(nm)}” in my sounds</button>` : ""}<button class="c" data-k="new">Save as a new sound…</button></div>
+      <div class="empty" style="padding:0">Other jams that use it keep their own copy.</div>`;
+    ls.onclick = e => {
+      const b = e.target.closest("[data-k]"); if (!b) return;
+      if (b.dataset.k === "upd") { const L = sndList(k), i = L.findIndex(x => x.name === nm); if (i >= 0) { L[i] = { name: nm, data: sndGrab(k) }; sndStore(k, L); toast(`Updated "${nm}"`); } }
+      if (b.dataset.k === "new") {
+        spnListClose();
+        spnEdOpen("NAME THIS SOUND", "", name => { const L = sndList(k); const i = L.findIndex(x => x.name === name); const e2 = { name, data: sndGrab(k) }; if (i >= 0) L[i] = e2; else L.push(e2); sndStore(k, L); SPN.sndName[k] = name; spnSndKeep(); toast(`Saved "${name}"`); jamSync(); }, null);
+        return;
+      }
+      spnListClose(); jamSync();
+    };
+  });
+}
+{
+  // the rename sheet without a Delete button (for saving)
+  const e0 = spnEdOpen;
+  spnEdOpen = function (title, name, onSave, onDel) { const r = e0.apply(this, arguments); $("spnEd").querySelector(".del").hidden = !onDel; return r; };
+}
+{
+  const o561 = spOpen, c561 = spClose;
+  spOpen = function (p) {
+    $("sp").classList.toggle("jamnew", jamOn());
+    if (!jamOn()) return o561.apply(this, arguments);
+    // a page opened from another page (Mix from the pedals, Song from Key changes…) comes back to it
+    if (!JAM.popping && !$("sp").hidden && JAM.cur && JAM.cur !== p) JAM.stack.push(JAM.cur);
+    JAM.cur = p;
+    const ret = JAM.stack[JAM.stack.length - 1];
+    JAM.edit = JAM_K[p] && ret === "jam" && !(JAM.edit && JAM.edit.p === p && JAM.popping) ? { p, before: JSON.stringify(sndGrab(JAM_K[p])) } : (JAM.edit && JAM.edit.p === p ? JAM.edit : null);
+    if (p === "jamhome" || p === "jam" || p === "mysounds") {
+      const r = o561.apply(this, arguments);
+      if (p === "jamhome") buildJamHome(); else if (p === "jam") buildJam(); else buildMySounds();
+      $("sp").scrollTop = 0;
+      clearInterval(JAM.t); JAM.t = setInterval(() => { jamSync(); jamEdSync(); }, 600);
+      return r;
+    }
+    return o561.apply(this, arguments);
+  };
+  spClose = function () { document.querySelectorAll("#sp .jam-save").forEach(x => x.remove()); JAM.saveBtn = null; clearInterval(JAM.t); return c561.apply(this, arguments); };
+  // the page's ‹ goes back the way you came
+  const old = $("spBack"), nb = old.cloneNode(true); old.replaceWith(nb);
+  nb.addEventListener("click", () => { if (jamOn() && JAM.cur) jamBack(); else spClose(false); });
+  // Studio opens on your jams
+  const st0 = stOpen;
+  stOpen = function () {
+    if (!jamOn() && !(studioNew() && game.on)) return st0.apply(this, arguments);
+    if (!studioNew()) return st0.apply(this, arguments);
+    ensureAudio(); spClose(true);
+    if (!proMode) setPro(true, true);
+    homeClose(); stClose();
+    if (!bass.on) setModule("bassOn", true);
+    JAM.stack = []; JAM.cur = null; JAM.edit = null;
+    JAM.popping = true; spOpen("jamhome"); JAM.popping = false;
+  };
+  // the Studio pad's ‹ comes back to the jam
+  const sb = $("stProBtn"); if (sb) { const c2 = sb.cloneNode(true); sb.replaceWith(c2); c2.addEventListener("click", () => { if (studioNew() && !game.on) { stOpen(); JAM.stack = ["jamhome"]; JAM.popping = true; spOpen("jam"); JAM.popping = false; } else stOpen(); }); }
+  // Rename / delete from the jams row: show the change
+  for (const id of ["suEdOk", "suEdDel"]) $(id).addEventListener("click", () => setTimeout(() => { if (SPN.part === "jamhome" && !$("sp").hidden) buildJamHome(); }, 50));
+}
+// a recording made from the jam Studio stays out of the old lead/bass tags (it's picked, not tagged)
+{
+  const sp0 = syncSamplerParts;
+  syncSamplerParts = function () { if (jamOn() && !$("sp").hidden && SPN.part === "mysounds") return; return sp0.apply(this, arguments); };
+}
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }
 

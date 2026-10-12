@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.62 TEST · game mode · 12 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.63 TEST · game mode · 12 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1527,7 +1527,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.62 TEST · game mode · 12 Oct 2026</p>
+      <p class="ver">GlassPad 5.63 TEST · game mode · 12 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10197,7 +10197,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.62 TEST</p>
+    <p class="hm-ver">GlassPad 5.63 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -10583,7 +10583,7 @@ async function vsStart() {
   catch (e) { $("vsMsg").textContent = e && e.name === "NotAllowedError" ? "GlassPad needs the mic. Allow it in your browser's site settings, then try again." : "Couldn't open the mic."; return; }
   const ctx = audio.ctx, node = ctx.createMediaStreamSource(stream), proc = ctx.createScriptProcessor(4096, 1, 1), mute = ctx.createGain(); mute.gain.value = 0;
   node.connect(proc); proc.connect(mute).connect(ctx.destination);
-  const R = vs.rec = { stream, node, proc, chunks: [], t0: performance.now(), k, replace: cur ? samples.indexOf(cur) : -1 };
+  const R = vs.rec = { stream, node, proc, chunks: [], t0: performance.now(), k, replace: vs.redo && cur ? samples.indexOf(cur) : -1 };   // 5.63: only Redo replaces
   proc.onaudioprocess = e => R.chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
   $("vsRec").classList.add("going"); $("vsRecTxt").textContent = "Listening… tap to stop (up to 4 seconds)"; $("vsMsg").textContent = "";
   R.timer = setTimeout(() => vsStop(), 4000);
@@ -10600,6 +10600,7 @@ function vsStop(cancel) {
   const ab = new AudioBuffer({ length: len, sampleRate: audio.ctx.sampleRate, numberOfChannels: 1 }), all = new Float32Array(len);
   let o = 0; for (const c of R.chunks) { all.set(c, o); o += c.length; }
   ab.copyToChannel(all, 0);
+  if (R.replace < 0 && samples.length >= MAX_SAMPLES) { $("vsMsg").textContent = `All ${MAX_SAMPLES} sounds are used. Remove one in My sounds first.`; vsRender(); return; }   // 5.63: never drops another sound
   try {
     const pre = R.k === "lead" ? "Lead" : "Bass", nm = pre + " " + (samples.filter(c => c.name.startsWith(pre)).length + 1);
     const clip = processClip(ab, nm); clip.tune = clip.root != null; clip.buf = clipBuf(clip); clip.part = "off";
@@ -14090,12 +14091,17 @@ function jamKeepAsk(ed) {
   const sp0 = syncSamplerParts;
   syncSamplerParts = function () { if (jamOn() && !$("sp").hidden && SPN.part === "mysounds") return; return sp0.apply(this, arguments); };
 }
-/* ---------- 5.62: feels in Make your own + creator mode (slice 1 of the 11-12 Oct direction) ----------
+/* ---------- 5.62-5.63: feels in Make your own, My sounds page, creator mode (slice 1 of the 11-12 Oct direction) ----------
    Users don't build bands: they pick a FEEL (made by us; the first 7 are the theme bands, t.band keeps the id).
    Make your own = 7 numbered steps: Photo · Colours · Lead (1st + 2nd finger) · Bass · Feel · Chord sound (optional) · Speed.
-   Lead: each finger gets a built-in sound or My sounds recordings; pick 2+ and they take turns per press (Shuffle option).
-   One finger at a time uses recordings. Theme fields: lead / lead2 ("sampler" = recordings), recs [names], shuffle,
-   myBass, chord (PAD key or null = the feel's own), speed (slow / asis / fast). Old themes' myLead moves into recs.
+   A new theme starts empty: no photo (plain strips), "Pick a feel", Save & play waits for a feel.
+   Each finger: a built-in sound or its own list of My sounds recordings (2+ take turns per press, Shuffle per finger).
+   Effects per finger and for the bass: Clean (pedals off, the room stays) · Feel's · Big. Default: synths Feel's, recordings Clean.
+   Theme fields: lead / lead2 ("sampler" = recordings), recs / recs2 [names], shuffle / shuffle2, bass, bassRec, fx1 / fx2 / fxB,
+   chord (PAD key or null = the feel's own), speed (slow / asis / fast). In game mode recordings play from per-finger pools
+   (GP), not from each recording's part, so recordings are never switched off or replaced behind your back.
+   My sounds page (#msx): Record (always a new sound), Add a file, rename, tune, trim, record again, remove; opened from the
+   Lead/Bass sheets and back to them with the new sound picked.
    Creator mode (Full Studio): off by default, GP Test included. ⚙ Test → Creator mode, or 7 taps on the version. */
 const FEELS = [
   { id: "epic", name: "Heroic", line: "big slow chords, half-time drums" },
@@ -14117,18 +14123,50 @@ function feelMeta(id) {
 }
 const feelBase = id => (QSTYLES_SYNTH[id] || QSTYLES_SYNTH.tokyo).p;
 const feelWave = id => { const w = feelBase(id).wave; return w && w !== "sampler" ? w : "supersaw"; };
-const feelWave2 = id => { const w = (feelBase(id).lead || {}).snd2; return w && w !== "sampler" ? w : "off"; };
-// old themes: the one recorded lead sound becomes a list of recordings on the 1st finger
+// older themes: one recorded lead/bass sound (myLead/myBass), or 5.62's single recordings list, move to the 5.63 fields
 function myNorm(t) {
   if (!t) return t;
+  if (!t.v63) {
+    t.recs = Array.isArray(t.recs) ? t.recs : [];
+    if (t.myLead) { if (!t.recs.includes(t.myLead)) t.recs.push(t.myLead); t.lead = "sampler"; }
+    if (t.lead2 === "sampler" && t.lead !== "sampler") { t.recs2 = t.recs; t.recs = []; t.shuffle2 = !!t.shuffle; t.shuffle = false; }
+    if (t.myBass) t.bassRec = t.myBass;
+    t.myLead = null; t.myBass = null; t.v63 = 1;
+  }
   if (!Array.isArray(t.recs)) t.recs = [];
-  if (t.myLead) { if (!t.recs.includes(t.myLead)) t.recs.push(t.myLead); t.lead = "sampler"; t.myLead = null; }
+  if (!Array.isArray(t.recs2)) t.recs2 = [];
   if (!t.speed) t.speed = "asis";
   if (t.chord === undefined) t.chord = null;
-  t.shuffle = !!t.shuffle;
+  if (t.bassRec === undefined) t.bassRec = null;
+  t.shuffle = !!t.shuffle; t.shuffle2 = !!t.shuffle2;
+  if (t.id && t.feelSet === undefined) t.feelSet = true;
   return t;
 }
-// a theme becomes a style: the feel's band + your sounds, chord sound and speed
+// effects for a sound: Clean = its pedals off (the room stays) · Feel's = as the feel has them · Big = chorus + more echo and room
+const fxAuto = (t, k) => t[k] || (k === "fx1" ? (t.lead === "sampler" ? "clean" : "feel") : k === "fx2" ? (t.lead2 === "sampler" ? "clean" : "feel") : (t.bassRec ? "clean" : "feel"));
+function fxApply(p, t) {
+  const m1 = fxAuto(t, "fx1"), m2 = fxAuto(t, "fx2"), mb = fxAuto(t, "fxB");
+  p.fx = p.fx || {}; p.pfx = p.pfx || {};
+  if (m1 !== "feel") {
+    for (const id of ["octave", "drive", "chorus", "flanger", "phaser", "trem"]) p.fx[id] = { ...(p.fx[id] || {}), on: false };
+    if (m1 === "big") {
+      p.fx.chorus = { ...p.fx.chorus, on: true, rate: .25, depth: .55 };
+      p.fx.echo = { ...(p.fx.echo || {}), on: true, send: Math.max(.55, (p.fx.echo || {}).send || 0) };
+      p.fx.reverb = { ...(p.fx.reverb || {}), on: true, mix: Math.max(.55, (p.fx.reverb || {}).mix || 0) };
+    }
+  }
+  if (m2 !== "feel") {
+    const l2 = p.pfx.lead2 = { ...(p.pfx.lead2 || {}) };
+    for (const id of ["octave", "drive", "chorus", "phaser", "trem"]) l2[id] = { ...(l2[id] || {}), on: false };
+    if (m2 === "big") { l2.chorus = { on: true, rate: .25, depth: .6 }; l2.echo = { on: true, send: .6 }; l2.reverb = { on: true, send: .55 }; }
+  }
+  if (mb !== "feel") {
+    const b = p.pfx.bass = { ...(p.pfx.bass || {}) };
+    for (const id of ["octave", "drive", "comp", "filter", "chorus"]) b[id] = { ...(b[id] || {}), on: false };
+    if (mb === "big") { b.chorus = { on: true, rate: .2, depth: .45 }; b.reverb = { on: true, send: .3 }; }
+  }
+}
+// a theme becomes a style: the feel's band + your sounds and their effects, chord sound and speed
 {
   const reg0 = myRegister;
   myRegister = function (t) {
@@ -14139,27 +14177,43 @@ function myNorm(t) {
       const s = set[t.id]; if (!s) continue; const p = s.p, base = (set[band] || QSTYLES_SYNTH[band]).p;
       p.wave = t.lead === "sampler" ? (base.wave && base.wave !== "sampler" ? base.wave : "supersaw") : (t.lead || p.wave);   // recordings go on when the theme loads
       p.lead = p.lead || {}; p.lead.snd2 = t.lead2 || "off";
+      p.bass = p.bass || {}; if (t.bass && t.bass !== "sampler") { p.bass.sound = t.bass; p.bass.on = true; }
       if (t.chord && PAD[t.chord]) { p.pad = p.pad || {}; p.pad.sound = t.chord; }
       if (base.bpm) p.bpm = Math.round(base.bpm * (FEEL_SPEED[t.speed] || 1));
+      fxApply(p, t);
     }
   };
   MY.list.forEach(t => { myNorm(t); myRegister(t); });
+  try { localStorage.setItem("glasspad.mythemes", JSON.stringify(MY.list)); } catch (_) {}
 }
-// loading a theme you made: its recordings go on the finger that uses them, and on the bass
+/* ----- recordings per finger: in game mode a theme you made plays from its own lists ----- */
+const GP = { l1: null, l2: null, b: null, sh1: false, sh2: false, rr: { l1: 0, l2: 0, b: 0 } };
+const gpKey = kind => kind === "bass" ? "b" : buildingSecond ? "l2" : "l1";
+const gpClips = names => { const c = (names || []).map(n => samples.find(s => s.name === n)).filter(Boolean); return c.length ? c : null; };
+{
+  const mp0 = mysPool;
+  mysPool = function (kind) {
+    const r = mp0.apply(this, arguments); if (r) return r;
+    if (!game.on) return null;
+    return gpClips(GP[gpKey(kind)]);
+  };
+  const ps0 = pickSample;
+  pickSample = function (frac, pool, kind) {
+    if (game.on && kind && pool && pool.length && GP[gpKey(kind)]) {
+      const k = gpKey(kind), sh = k === "l1" ? GP.sh1 : k === "l2" ? GP.sh2 : false;
+      return sh ? pool[Math.floor(Math.random() * pool.length)] : pool[GP.rr[k]++ % pool.length];
+    }
+    return ps0.apply(this, arguments);
+  };
+}
 function myApplyRecs(t) {
-  const recs = (t.recs || []).filter(n => samples.some(s => s.name === n));
-  const useLead = recs.length > 0 && (t.lead === "sampler" || t.lead2 === "sampler");
-  const bc = t.myBass && samples.find(s => s.name === t.myBass);
-  if (!useLead && !bc) return;
-  for (const c of samples) {
-    const L = useLead && recs.includes(c.name), B = bc === c;
-    c.part = L && B ? "both" : L ? "lead" : B ? "bass" : "off";
-    if ((L || B) && !c.buf) try { c.buf = clipBuf(c); } catch (_) {}
-  }
-  storeSamples(); try { renderSlots(); } catch (_) {}
-  samp.mode = t.shuffle ? "shuffle" : "cycle";
-  if (useLead && t.lead2 === "sampler") { lead.snd2 = "sampler"; $("wave2").value = "sampler"; }
-  msApply({ lead: useLead && t.lead === "sampler", bass: !!bc });
+  const L1 = t.lead === "sampler" && gpClips(t.recs), L2 = t.lead2 === "sampler" && gpClips(t.recs2), B = t.bassRec && gpClips([t.bassRec]);
+  GP.l1 = L1 ? t.recs.slice() : null; GP.l2 = L2 ? t.recs2.slice() : null; GP.b = B ? [t.bassRec] : null;
+  GP.sh1 = t.shuffle; GP.sh2 = t.shuffle2; GP.rr = { l1: 0, l2: 0, b: 0 };
+  for (const c of [...(L1 || []), ...(L2 || []), ...(B || [])]) if (!c.buf) try { c.buf = clipBuf(c); } catch (_) {}
+  if (L2) { lead.snd2 = "sampler"; $("wave2").value = "sampler"; }
+  if (L1 || B) msApply({ lead: !!L1, bass: !!B });
+  else { if ($("wave").value === "sampler" && t.lead !== "sampler") $("wave").value = t.lead || feelWave(t.band); try { vsRepeatOn(); } catch (_) {} }
   try { vsMicSync(); } catch (_) {}
 }
 {
@@ -14167,28 +14221,33 @@ function myApplyRecs(t) {
   loadStyle = function (st) {
     const r = ls0.apply(this, arguments);
     const id = st && st.id, t = id === "__mkpv" ? mk.t : (isMine(id) && MY.list.find(x => x.id === id));
+    GP.l1 = GP.l2 = GP.b = null;
     if (t) try { myApplyRecs(myNorm(t)); } catch (_) {}
     return r;
   };
 }
+// a new theme starts empty: no photo, no feel, plain sounds
 {
   const fr0 = mkFresh;
   mkFresh = function (from) {
     const t = fr0.apply(this, arguments);
-    t.lead2 = t.lead2 === "sampler" ? "off" : t.lead2;
-    return Object.assign(t, { recs: [], shuffle: false, chord: null, speed: "asis" });
+    return Object.assign(t, { lead: "supersaw", lead2: "off", vol2: 1, bass: "finger", cols: ["Violet", "Cyan", "Neon pink"], recs: [], recs2: [], shuffle: false, shuffle2: false,
+      bassRec: null, chord: null, speed: "asis", fx1: null, fx2: null, fxB: null, feelSet: false, v63: 1 });
   };
   const op0 = mkOpen;
-  mkOpen = function (t) { const r = op0.apply(this, arguments); myNorm(mk.t); mk.fing = 1; mkRender(); return r; };
+  mkOpen = function (t) { const r = op0.apply(this, arguments); myNorm(mk.t); if (t) mk.t.feelSet = true; mk.fing = 1; mkRender(); return r; };
 }
 
-/* ----- the page: 7 numbered steps ----- */
+/* ----- styles ----- */
 {
   const st = document.createElement("style");
   st.textContent = `
   #mk .mk-rows { gap: 8px; }
+  #mk.nopic .mk-prev .top img, #mk.nopic .mk-prev .bot img { visibility: hidden; }
+  #mk.nopic .mk-prev { background: radial-gradient(ellipse at 50% 120%, color-mix(in srgb, var(--mkc) 30%, transparent), #05060b 70%); }
   .mk-step { width: 100%; box-sizing: border-box; min-height: 56px; border-radius: 14px; background: rgba(8,4,18,.82); border: 1.5px solid color-mix(in srgb, var(--mkc) 45%, transparent); color: #fff; display: flex; align-items: center; gap: 10px; padding: 6px 12px 6px 8px; text-align: left; font-family: "IBM Plex Sans", var(--body); }
   .mk-step.hl { border-color: var(--mkc); box-shadow: 0 0 14px color-mix(in srgb, var(--mkc) 55%, transparent); }
+  .mk-step.todo .tx b { color: var(--mkc); }
   .mk-step .n { width: 24px; height: 24px; flex: none; border-radius: 50%; border: 1.5px solid var(--mkc); box-shadow: 0 0 8px color-mix(in srgb, var(--mkc) 60%, transparent); display: grid; place-items: center; font: 700 11px var(--display); color: #fff; }
   .mk-step .ic { width: 34px; height: 34px; flex: none; border-radius: 9px; background: rgba(255,255,255,.05); display: flex; align-items: center; justify-content: center; overflow: hidden; }
   .mk-step .ic img { width: 100%; height: 100%; object-fit: cover; }
@@ -14204,6 +14263,7 @@ function myApplyRecs(t) {
   .mk-speed { flex: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-radius: 12px; overflow: hidden; border: 1.5px solid color-mix(in srgb, var(--mkc) 45%, transparent); }
   .mk-speed button { height: 38px; border: 0; background: transparent; color: #c9bfff; font: 400 13px "IBM Plex Sans", var(--body); padding: 0; }
   .mk-speed button.on { background: var(--mkc); color: #05060b; font-weight: 600; box-shadow: 0 0 12px color-mix(in srgb, var(--mkc) 55%, transparent); }
+  #mkSave.wait { opacity: .45; box-shadow: none; }
   .mkf-list { display: flex; flex-direction: column; gap: 8px; }
   .mkf { min-height: 58px; border-radius: 14px; background: rgba(6,3,14,.85); border: 1.5px solid color-mix(in srgb, var(--mkc) 40%, transparent); color: #fff; display: flex; align-items: center; gap: 12px; padding: 6px 12px; text-align: left; }
   .mkf.on { background: color-mix(in srgb, var(--mkc) 18%, transparent); border-color: var(--mkc); box-shadow: 0 0 14px color-mix(in srgb, var(--mkc) 55%, transparent); }
@@ -14229,48 +14289,116 @@ function myApplyRecs(t) {
   .mks-grid3 button { min-height: 42px; border-radius: 12px; background: rgba(16,18,28,.9); border: 1.5px solid rgba(255,255,255,.2); color: #eef1f7; font: 400 13px "IBM Plex Sans", var(--body); padding: 0 4px; }
   .mks-grid3 button.on { background: color-mix(in srgb, var(--mkc) 15%, transparent); border-color: var(--mkc); box-shadow: 0 0 14px color-mix(in srgb, var(--mkc) 45%, transparent); font-weight: 600; }
   .mks-recs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
-  .mks-recs button { min-height: 42px; border-radius: 12px; background: rgba(16,18,28,.9); border: 1.5px solid rgba(255,255,255,.2); color: #eef1f7; font: 400 13.5px "IBM Plex Sans", var(--body); display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 8px; }
+  .mks-recs button { min-height: 42px; border-radius: 12px; background: rgba(16,18,28,.9); border: 1.5px solid rgba(255,255,255,.2); color: #eef1f7; font: 400 13.5px "IBM Plex Sans", var(--body); display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 8px; min-width: 0; }
+  .mks-recs button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .mks-recs button svg { width: 14px; height: 14px; color: #ff6b78; flex: none; }
   .mks-recs button sup { font: 500 9px var(--mono); color: #05060b; background: var(--mkc); border-radius: 6px; padding: 1px 5px; }
   .mks-recs button.on { background: color-mix(in srgb, var(--mkc) 15%, transparent); border-color: var(--mkc); box-shadow: 0 0 12px color-mix(in srgb, var(--mkc) 45%, transparent); font-weight: 600; }
   .mks-recs .mks-rec { height: auto; min-height: 42px; }
-  .mkl-turns { border-radius: 14px; background: rgba(8,4,18,.82); border: 1.5px solid color-mix(in srgb, var(--mkc) 40%, transparent); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; font: 400 13px "IBM Plex Sans", var(--body); color: #e6e0ff; }
-  .mkl-turns b { color: #fff; } .mkl-turns q { color: var(--mkc); quotes: none; }
-  .mkl-sw { display: flex; align-items: center; gap: 10px; min-height: 36px; background: transparent; border: 0; color: #c9bfff; padding: 0; font: 400 13px "IBM Plex Sans", var(--body); text-align: left; }
-  .mkl-sw span { flex: 1; }
+  .mks-recs .mk-edit { background: transparent; border-style: dashed; color: #c9bfff; }
+  .mkl-turns { border-radius: 14px; background: rgba(8,4,18,.82); border: 1.5px solid color-mix(in srgb, var(--mkc) 40%, transparent); padding: 8px 12px; display: flex; align-items: center; gap: 10px; font: 400 12.5px "IBM Plex Sans", var(--body); color: #e6e0ff; }
+  .mkl-turns > span { flex: 1; } .mkl-turns b { color: #fff; } .mkl-turns q { color: var(--mkc); quotes: none; }
+  .mkl-sw { display: flex; align-items: center; gap: 10px; min-height: 36px; background: transparent; border: 0; color: #c9bfff; padding: 0; font: 400 13px "IBM Plex Sans", var(--body); text-align: left; flex: none; }
   .mkl-sw i { width: 44px; height: 26px; border-radius: 13px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); position: relative; flex: none; }
   .mkl-sw i::after { content: ""; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; border-radius: 50%; background: #c9bfff; transition: left .15s; }
   .mkl-sw[aria-pressed="true"] i { background: var(--mkc); border-color: var(--mkc); }
   .mkl-sw[aria-pressed="true"] i::after { left: 21px; background: #05060b; }
   .mks .tiny { font: 500 9.5px var(--mono); letter-spacing: .06em; color: #a99fd0; }
+  .mk-fxl { display: flex; justify-content: space-between; font: 500 11px var(--mono); letter-spacing: .12em; color: #a3abbb; }
+  .mk-fxl span { letter-spacing: .06em; color: #a99fd0; }
+  .mk-fx { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-radius: 13px; overflow: hidden; border: 1.5px solid color-mix(in srgb, var(--mkc) 45%, transparent); flex: none; }
+  .mk-fx button { min-height: 52px; border: 0; background: transparent; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px; }
+  .mk-fx button b { font: 500 14px "IBM Plex Sans", var(--body); }
+  .mk-fx button small { font: 500 8.5px var(--mono); letter-spacing: .04em; opacity: .8; text-transform: uppercase; text-align: center; }
+  .mk-fx button.on { background: var(--mkc); color: #05060b; box-shadow: 0 0 14px color-mix(in srgb, var(--mkc) 55%, transparent); }
+  .mk-fx button.on b { font-weight: 600; }
   #home.nocre .hm-two { grid-template-columns: minmax(0, 1fr); }
   #hmStudio[hidden] { display: none !important; }
-  .g-ver { margin: 14px 0 4px; text-align: center; font: 400 11px var(--mono); color: rgba(220,230,255,.45); -webkit-user-select: none; user-select: none; }`;
+  #vsBothRow { display: none !important; }
+  .g-ver { margin: 14px 0 4px; text-align: center; font: 400 11px var(--mono); color: rgba(220,230,255,.45); -webkit-user-select: none; user-select: none; }
+  /* My sounds page */
+  #msx { position: fixed; inset: 0; z-index: 59; background: #05060b; color: #eef1f7; overflow-y: auto; overflow-x: hidden; isolation: isolate; --mkc: #ff3fa4; }
+  #msx[hidden] { display: none; }
+  #msx::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background-image: repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 39px); }
+  .msx { box-sizing: border-box; max-width: 560px; margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; }
+  .msx-top { display: flex; align-items: center; gap: 12px; min-height: 48px; }
+  .msx-top div { display: flex; flex-direction: column; }
+  .msx-top small { font: 500 10px var(--mono); letter-spacing: .14em; color: #c9bfff; }
+  .msx-top h2 { margin: 0; font: 900 24px var(--display); color: #fff; text-shadow: 0 0 10px var(--mkc), 0 0 26px color-mix(in srgb, var(--mkc) 55%, transparent); }
+  .msx-rec { border-radius: 18px; background: rgba(8,4,18,.8); border: 1.5px solid color-mix(in srgb, var(--mkc) 45%, transparent); padding: 16px 14px 14px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  #msxRec { width: 112px; height: 112px; border-radius: 50%; border: 0; background: radial-gradient(circle at 50% 40%, #ff6b78, #c41d33); box-shadow: 0 0 0 6px rgba(255,77,94,.18), 0 0 30px rgba(255,77,94,.6); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font: 700 12px var(--display); letter-spacing: .08em; }
+  #msxRec svg { width: 34px; height: 34px; }
+  #msxRec.going { animation: msxp 1s ease-in-out infinite; }
+  #msxRec:disabled { opacity: .45; }
+  @keyframes msxp { 0%, 100% { box-shadow: 0 0 0 6px rgba(255,77,94,.25), 0 0 30px rgba(255,77,94,.6); } 50% { box-shadow: 0 0 0 16px rgba(255,77,94,.12), 0 0 44px rgba(255,77,94,.9); } }
+  #msxMsg { font: 400 13px "IBM Plex Sans", var(--body); color: #cfc7f0; text-align: center; min-height: 18px; }
+  #msxFileBtn { height: 42px; padding: 0 18px; border-radius: 14px; background: transparent; border: 1.5px solid color-mix(in srgb, var(--mkc) 45%, transparent); color: #fff; font: 400 13.5px "IBM Plex Sans", var(--body); }
+  .msx-h { display: flex; align-items: center; gap: 8px; font: 700 13px var(--display); letter-spacing: .08em; color: #fff; }
+  .msx-h::after { content: ""; flex: 1; height: 1.5px; background: linear-gradient(90deg, var(--mkc), transparent); opacity: .7; order: 1; }
+  .msx-h span { order: 2; font: 500 10px var(--mono); color: #a99fd0; }
+  .msx-row { border-radius: 15px; background: rgba(6,3,14,.88); border: 1.5px solid color-mix(in srgb, var(--mkc) 35%, transparent); padding: 0 10px 0 9px; display: flex; flex-direction: column; }
+  .msx-row.open { border-color: #ff6b78; box-shadow: 0 0 14px rgba(255,77,94,.35); }
+  .msx-row.new { border-color: var(--mkc); }
+  .msx-hd { display: flex; align-items: center; gap: 10px; min-height: 58px; }
+  .msx-hd .pl { width: 38px; height: 38px; flex: none; border-radius: 50%; border: 1.5px solid #ff6b78; background: transparent; color: #fff; display: grid; place-items: center; padding: 0; }
+  .msx-hd .pl svg { width: 12px; height: 12px; }
+  .msx-hd .tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; background: transparent; border: 0; color: #fff; text-align: left; padding: 0; }
+  .msx-hd .tx b { font: 600 15px "IBM Plex Sans", var(--body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .msx-hd .tx small { font: 400 9.5px var(--mono); letter-spacing: .06em; color: #a99fd0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .msx-hd .mo { width: 36px; height: 36px; flex: none; border-radius: 50%; background: rgba(255,255,255,.06); border: 1px solid color-mix(in srgb, var(--mkc) 45%, transparent); color: #c9bfff; display: grid; place-items: center; padding: 0; }
+  .msx-hd .mo svg { width: 13px; height: 13px; }
+  .msx-bd { border-top: 1px solid rgba(255,255,255,.1); padding: 8px 0 12px; display: flex; flex-direction: column; gap: 10px; }
+  .msx-ln { display: flex; align-items: center; gap: 10px; min-height: 40px; }
+  .msx-ln > label, .msx-ln > span:first-child { width: 74px; flex: none; font: 500 11px var(--mono); letter-spacing: .1em; color: #b8aee6; }
+  .msx-ln input[type=text] { flex: 1; min-width: 0; height: 38px; box-sizing: border-box; border-radius: 11px; background: rgba(16,18,28,.9); border: 1.5px solid rgba(255,255,255,.2); color: #fff; padding: 0 10px; font: 400 15px "IBM Plex Sans", var(--body); -webkit-user-select: text; user-select: text; }
+  .msx-seg { flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-radius: 11px; overflow: hidden; border: 1.5px solid color-mix(in srgb, var(--mkc) 45%, transparent); }
+  .msx-seg button { height: 36px; border: 0; background: transparent; color: #c9bfff; font: 400 13px "IBM Plex Sans", var(--body); }
+  .msx-seg button.on { background: var(--mkc); color: #05060b; font-weight: 600; }
+  .msx-seg button:disabled { opacity: .4; }
+  .msx-st { display: flex; align-items: center; gap: 6px; flex: 1; justify-content: flex-end; }
+  .msx-st button { width: 38px; height: 34px; border-radius: 10px; background: rgba(16,18,28,.9); border: 1px solid rgba(255,255,255,.2); color: #fff; padding: 0; }
+  .msx-st output { min-width: 62px; text-align: center; font: 400 12px var(--mono); }
+  .msx-ac { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .msx-ac button { height: 42px; border-radius: 12px; background: transparent; border: 1px solid color-mix(in srgb, var(--mkc) 45%, transparent); color: #fff; font: 400 13px "IBM Plex Sans", var(--body); }
+  .msx-ac button.del { border-color: rgba(255,107,120,.5); color: #ffb3bb; }
+  .msx-ac button.del.sure { background: #ff4d5e; border-color: #ff4d5e; color: #fff; font-weight: 600; }
+  .msx-note { font: 400 12px "IBM Plex Sans", var(--body); color: #a99fd0; }
+  .msx-empty { font: 400 13px "IBM Plex Sans", var(--body); color: #a99fd0; text-align: center; padding: 10px 0; }`;
   document.head.appendChild(st);
 }
 const CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>';
+const CHEVD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+const CHEVU = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>';
 SV.feel = c => `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="1.8" stroke-linecap="round"><path d="M3 12h3l3-7 4 14 3-7h5"/></svg>`;
 SV.chords = c => `<svg viewBox="0 0 20 18" fill="${c}"><rect x="2" y="2" width="4" height="14" rx="2"/><rect x="8" y="5" width="4" height="11" rx="2"/><rect x="14" y="8" width="4" height="8" rx="2"/></svg>`;
 const leadName = v => v === "off" ? "Off" : nameOf(LEAD_CHOICES, v);
-const recsTxt = t => (t.recs || []).length ? "My sounds · " + t.recs.join(" + ") : "My sounds";
-const fingerTxt = (t, f) => { const v = f === 1 ? t.lead : t.lead2; return v === "sampler" ? recsTxt(t) : leadName(v || (f === 1 ? "supersaw" : "off")); };
+const FX_NAMES = { clean: "Clean", feel: "Feel's", big: "Big" };
+const fingerTxt = (t, f) => {
+  const v = f === 1 ? t.lead : t.lead2, r = f === 1 ? t.recs : t.recs2;
+  return v === "sampler" ? "My sounds · " + (r || []).join(" + ") : leadName(v || (f === 1 ? "supersaw" : "off"));
+};
+
+/* ----- the page: 7 numbered steps ----- */
 {
   const r0 = mkRender;
   mkRender = function () {
     r0.apply(this, arguments);
     const t = mk.t; if (!t) return; myNorm(t);
-    const lead = mkCol(0), bassC = mkCol(1), hi = mkCol(2), f = feelOf(t.band), pb = feelBase(t.band);
+    const lead = mkCol(0), bassC = mkCol(1), hi = mkCol(2), f = feelOf(t.band), pb = feelBase(t.band), got = t.feelSet !== false;
+    $("mk").classList.toggle("nopic", !t.pic && !got);
+    $("mkSave").classList.toggle("wait", !got);
     const padNm = k => (PAD[k] || {}).name || k;
-    const step = (n, k, ic, lbl, val, sub, o = {}) => `<button class="mk-step${o.hl ? " hl" : ""}" data-k="${k}"><span class="n">${n}</span><span class="ic">${ic}</span>
+    const step = (n, k, ic, lbl, val, sub, o = {}) => `<button class="mk-step${o.hl ? " hl" : ""}${o.todo ? " todo" : ""}" data-k="${k}"><span class="n">${n}</span><span class="ic">${ic}</span>
       <span class="tx"><small>${lbl}${o.opt ? "<em>OPTIONAL</em>" : ""}</small><b>${escH(val)}</b>${sub ? `<i>${escH(sub)}</i>` : ""}</span><span class="cv">${CHEV}</span></button>`;
-    const sp = t.speed || "asis";
+    const sp = t.speed || "asis", fxs = (k, on) => on ? " · " + FX_NAMES[fxAuto(t, k)] + " effects" : "";
     $("mkRows").innerHTML = [
-      step(1, "photo", t.pic ? `<img src="${t.pic}" alt="">` : SV.photo, "PHOTO", t.pic ? "Your photo" : "The feel's picture", ""),
+      step(1, "photo", t.pic ? `<img src="${t.pic}" alt="">` : SV.photo, "PHOTO", t.pic ? "Your photo" : got ? "The feel's picture" : "No photo yet", ""),
       step(2, "cols", `<i style="background:${lead};box-shadow:0 0 6px ${lead}"></i><i style="background:${bassC};box-shadow:0 0 6px ${bassC}"></i><i style="background:${hi};box-shadow:0 0 6px ${hi}"></i>`, "COLOURS", t.cols.join(" · "), ""),
-      step(3, "lead", SV.wave(lead), "LEAD", fingerTxt(t, 1), "2nd finger: " + fingerTxt(t, 2)),
-      step(4, "bass", SV.wave(bassC), "BASS", t.myBass ? "My sounds · " + t.myBass : nameOf(BASS_CHOICES, t.bass), ""),
-      step(5, "feel", SV.feel(lead), "FEEL", f.name, `${f.line} · ${Math.round(pb.bpm * (FEEL_SPEED[sp] || 1))} bpm`, { hl: true }),
-      step(6, "chord", SV.chords(hi), "CHORD SOUND", t.chord ? padNm(t.chord) : "The feel's own · " + padNm(pb.pad && pb.pad.sound), "", { opt: true }),
+      step(3, "lead", SV.wave(lead), "LEAD", fingerTxt(t, 1) + fxs("fx1", true), "2nd finger: " + fingerTxt(t, 2) + fxs("fx2", t.lead2 && t.lead2 !== "off")),
+      step(4, "bass", SV.wave(bassC), "BASS", (t.bassRec ? "My sounds · " + t.bassRec : nameOf(BASS_CHOICES, t.bass)) + fxs("fxB", true), ""),
+      got ? step(5, "feel", SV.feel(lead), "FEEL", f.name, `${f.line} · ${Math.round(pb.bpm * (FEEL_SPEED[sp] || 1))} bpm`, { hl: true })
+          : step(5, "feel", SV.feel(lead), "FEEL", "Pick a feel", "chords, drums and bass line come with it", { hl: true, todo: true }),
+      step(6, "chord", SV.chords(hi), "CHORD SOUND", t.chord ? padNm(t.chord) : got ? "The feel's own · " + padNm(pb.pad && pb.pad.sound) : "The feel's own", "", { opt: true }),
       `<div class="mk-step sp"><span class="n">7</span><span class="tx"><small>SPEED</small><small><em>OPTIONAL</em></small></span>
         <div class="mk-speed" role="group" aria-label="Speed">${[["slow", "Slower"], ["asis", "As is"], ["fast", "Faster"]].map(([v, n]) => `<button data-speed="${v}" class="${sp === v ? "on" : ""}" aria-pressed="${sp === v}">${n}</button>`).join("")}</div></div>`,
     ].join("");
@@ -14280,109 +14408,249 @@ $("mkRows").addEventListener("click", e => { const r = e.target.closest(".mk-ste
 $("mkRows").addEventListener("click", e => {
   const b = e.target.closest("[data-speed]"); if (!b) return;
   e.stopPropagation(); mk.t.speed = b.dataset.speed; mkRender();
-  if (T.playing && !$("mk").hidden) mkPreviewPlay();
+  if (T.playing && !$("mk").hidden && mk.t.feelSet !== false) mkPreviewPlay();
+}, true);
+// no feel yet: ▶ and Save & play open the Feel sheet instead
+document.addEventListener("click", e => {
+  if (!mk.t || mk.t.feelSet !== false || $("mk").hidden) return;
+  const b = e.target.closest("#mkHear, #mkSave"); if (!b) return;
+  e.stopImmediatePropagation(); e.preventDefault();
+  if (b.id === "mkSave") toast("Pick a feel first");
+  mkSheet("feel");
 }, true);
 
-/* ----- the new sheets: Feel, Lead (two fingers), Chord sound ----- */
+/* ----- the sheets: Feel, Lead (two fingers), Bass, Chord sound ----- */
+const fxHTML = (k, note) => `<div class="mk-fxl">EFFECTS<span>${note || ""}</span></div><div class="mk-fx" role="group" aria-label="Effects">${[["clean", "Clean", "dry, just the room"], ["feel", "Feel's", "the feel's own"], ["big", "Big", "echo + chorus"]].map(([v, n, d]) => `<button data-fx="${k}:${v}" class="${fxAuto(mk.t, k) === v ? "on" : ""}" aria-pressed="${fxAuto(mk.t, k) === v}"><b>${n}</b><small>${d}</small></button>`).join("")}</div>`;
 function mkFeelHTML() {
   const t = mk.t, go = T.playing && hpv.on;
   return `<p>Chords, drums, bass line and speed come together. Tap one to hear it with your sounds.</p><div class="mkf-list">${FEELS.map(f => {
-    const on = t.band === f.id, play = on && go;
+    const on = t.feelSet !== false && t.band === f.id, play = on && go;
     return `<button class="mkf${on ? " on" : ""}${play ? " go" : ""}" data-feel="${f.id}" aria-pressed="${on}"><span class="pl" aria-label="${play ? "Playing" : "Hear " + f.name}">${play ? "<i></i><i></i><i></i>" : SV.play}</span>
       <span class="tx"><span><b>${f.name}</b><small>${feelMeta(f.id)}</small></span><em>${f.line}</em></span></button>`;
   }).join("")}</div><div class="more">MORE FEELS ADDED OVER TIME</div>`;
 }
+const recChip = (c, i, many) => `<button data-lr="${escH(c.name)}" class="${i >= 0 ? "on" : ""}" aria-pressed="${i >= 0}">${SV.mic}<span>${escH(c.name)}</span>${i >= 0 && many ? `<sup>${i + 1}</sup>` : ""}</button>`;
 function mkLeadHTML() {
-  const t = mk.t, f = mk.fing || 1, cur = f === 1 ? t.lead : t.lead2, other = f === 1 ? t.lead2 : t.lead;
+  const t = mk.t, f = mk.fing || 1, cur = f === 1 ? t.lead : t.lead2, picked = cur === "sampler" ? (f === 1 ? t.recs : t.recs2) : [], sh = f === 1 ? t.shuffle : t.shuffle2;
   const tabs = `<div class="mkl-tabs" role="tablist">${[1, 2].map(n => `<button role="tab" data-fing="${n}" class="${f === n ? "on" : ""}" aria-selected="${f === n}"><small>${n === 1 ? "1ST FINGER" : "2ND FINGER"}</small><span>${escH(fingerTxt(t, n))}</span></button>`).join("")}</div>`;
   const built = (f === 2 ? [["off", "Off"]] : []).concat(LEAD_CHOICES.map(([v, n]) => [v, n === "Electric piano" ? "E. piano" : n]));
-  let h = `<p>${f === 1 ? "The sound under your first finger." : "Plays when a second finger joins in. A synth on one finger and your voice on the other works well."}</p>${tabs}`;
-  h += `<div class="lbl">BUILT-IN SOUNDS</div><div class="mks-grid3">${built.map(([v, n]) => `<button data-ls="${v}" class="${cur === v ? "on" : ""}">${n}</button>`).join("")}</div>`;
-  const picked = cur === "sampler" ? t.recs : [];
-  h += `<div class="lbl">MY SOUNDS (RECORDINGS)${picked.length ? " · PICKED " + picked.length : ""}</div><div class="mks-recs">${samples.map(c => {
-    const i = picked.indexOf(c.name);
-    return `<button data-lr="${escH(c.name)}" class="${i >= 0 ? "on" : ""}" aria-pressed="${i >= 0}">${SV.mic}${escH(c.name)}${i >= 0 && picked.length > 1 ? `<sup>${i + 1}</sup>` : ""}</button>`;
-  }).join("")}<button class="mks-rec" data-a="rec2"><i></i>Record</button></div>`;
-  if (other === "sampler" && cur !== "sampler" && (t.recs || []).length) h += `<span class="tiny">YOUR RECORDINGS ARE ON THE ${f === 1 ? "2ND" : "1ST"} FINGER. PICKING THEM HERE MOVES THEM.</span>`;
-  if (picked.length > 1) h += `<div class="mkl-turns"><span>They <b>take turns</b>, one per press: <q>${picked.slice(0, 3).map(escH).join(" → ")}${picked.length > 2 ? "" : " → " + escH(picked[0])}…</q></span>
-    <button class="mkl-sw" data-shuf="1" aria-pressed="${!!t.shuffle}"><span>Shuffle</span><i></i></button></div>`;
+  let h = `<p>Each finger has its own sound and its own effects.</p>${tabs}`;
+  h += `<div class="lbl">SOUND</div><div class="mks-grid3">${built.map(([v, n]) => `<button data-ls="${v}" class="${cur === v ? "on" : ""}">${n}</button>`).join("")}</div>`;
+  h += `<div class="lbl">MY SOUNDS (RECORDINGS)${picked.length ? " · PICKED " + picked.length : ""}</div><div class="mks-recs">${samples.map(c => recChip(c, picked.indexOf(c.name), picked.length > 1)).join("")}
+    <button class="mks-rec" data-a="msx"><i></i>${samples.length ? "Record / edit" : "Record"}</button></div>`;
+  if (picked.length > 1) h += `<div class="mkl-turns"><span>They <b>take turns</b>: <q>${picked.slice(0, 3).map(escH).join(" → ")}${picked.length > 2 ? "" : " → " + escH(picked[0])}…</q></span><button class="mkl-sw" data-shuf="1" aria-pressed="${!!sh}">Shuffle<i></i></button></div>`;
   if (picked.length) h += `<span class="tiny">RECORDINGS REPEAT WHILE YOU HOLD</span>`;
+  if (cur && cur !== "off") h += fxHTML(f === 1 ? "fx1" : "fx2", "FOR THIS FINGER");
   if (f === 2 && t.lead2 && t.lead2 !== "off") h += `<div class="mks-line"><label for="mksVol2">Level</label><input type="range" id="mksVol2" min="0.4" max="1.6" step="0.05" value="${t.vol2 ?? 1}"></div>`;
   return h;
+}
+function mkBassHTML() {
+  const t = mk.t;
+  let h = `<p>Pick a bass sound or one of your recordings.</p><div class="lbl">SOUND</div><div class="mks-grid3">${BASS_CHOICES.map(([v, n]) => `<button data-bs="${v}" class="${!t.bassRec && t.bass === v ? "on" : ""}">${n.replace(" (headphones)", "")}</button>`).join("")}</div>`;
+  h += `<div class="lbl">MY SOUNDS (RECORDINGS)</div><div class="mks-recs">${samples.map(c => `<button data-br="${escH(c.name)}" class="${t.bassRec === c.name ? "on" : ""}" aria-pressed="${t.bassRec === c.name}">${SV.mic}<span>${escH(c.name)}</span></button>`).join("")}
+    <button class="mks-rec" data-a="msx"><i></i>${samples.length ? "Record / edit" : "Record"}</button></div>`;
+  if (t.bassRec) h += `<span class="tiny">A RECORDING ON THE BASS DROPS AN OCTAVE BY ITSELF</span>`;
+  return h + fxHTML("fxB", "");
 }
 function mkChordHTML() {
   const t = mk.t, own = (feelBase(t.band).pad || {}).sound;
   return `<p>The feel comes with its own chord sound. Swap it if you like: the chords and rhythm stay the same.</p>
-    <div class="mks-grid"><button data-ch="" class="${!t.chord ? "on" : ""}" style="grid-column:1/-1">The feel's own · ${(PAD[own] || {}).name || own}</button>${Object.entries(PAD).filter(([k]) => k !== own).map(([k, p]) => `<button data-ch="${k}" class="${t.chord === k ? "on" : ""}">${p.name}</button>`).join("")}</div>
-    <span class="tiny">TAP ONE TO HEAR IT WITH THE BAND</span>`;
+    <div class="mks-grid"><button data-ch="" class="${!t.chord ? "on" : ""}" style="grid-column:1/-1">The feel's own${t.feelSet !== false ? " · " + ((PAD[own] || {}).name || own) : ""}</button>${Object.entries(PAD).filter(([k]) => k !== own || t.feelSet === false).map(([k, p]) => `<button data-ch="${k}" class="${t.chord === k ? "on" : ""}">${p.name}</button>`).join("")}</div>
+    <span class="tiny">${t.feelSet !== false ? "TAP ONE TO HEAR IT WITH THE BAND" : "PICK A FEEL TO HEAR IT WITH THE BAND"}</span>`;
 }
+const MK_SHEETS = { feel: ["FEEL", () => mkFeelHTML()], lead2f: ["LEAD SOUND", () => mkLeadHTML()], bass2f: ["BASS SOUND", () => mkBassHTML()], chord: ["CHORD SOUND", () => mkChordHTML()] };
 {
   const sh0 = mkSheet;
   mkSheet = function (k) {
-    if (k === "feel") { mk.sheet = "feel"; mkSheetOpen("FEEL", mkFeelHTML()); return; }
-    if (k === "lead") { mk.sheet = "lead2f"; mkSheetOpen("LEAD SOUND", mkLeadHTML()); return; }
-    if (k === "chord") { mk.sheet = "chord"; mkSheetOpen("CHORD SOUND", mkChordHTML()); return; }
-    if (k === "band") return mkSheet("feel");
+    const m = { feel: "feel", band: "feel", lead: "lead2f", bass: "bass2f", chord: "chord" }[k];
+    if (m) { mk.sheet = m; mkSheetOpen(MK_SHEETS[m][0], MK_SHEETS[m][1]()); return; }
     mk.sheet = k;
     return sh0.apply(this, arguments);
   };
   const close0 = mkSheetClose;
   mkSheetClose = function () { mk.sheet = null; return close0.apply(this, arguments); };
 }
-const MK_TITLES = { feel: ["FEEL", () => mkFeelHTML()], lead2f: ["LEAD SOUND", () => mkLeadHTML()], chord: ["CHORD SOUND", () => mkChordHTML()] };
-function mkRedraw() { const s = MK_TITLES[mk.sheet]; if (!s || $("mkSheet").hidden) return; const b = $("mksBox"), y = b.scrollTop; mkSheetOpen(s[0], s[1]()); b.scrollTop = y; }
+function mkRedraw() { const s = MK_SHEETS[mk.sheet]; if (!s || $("mkSheet").hidden) return; const b = $("mksBox"), y = b.scrollTop; mkSheetOpen(s[0], s[1]()); b.scrollTop = y; }
 function mkSetFingerRec(f, name, on) {
-  const t = mk.t, key = f === 1 ? "lead" : "lead2", oth = f === 1 ? "lead2" : "lead";
-  if (t[key] !== "sampler") t.recs = [];
-  if (t[oth] === "sampler") t[oth] = oth === "lead" ? feelWave(t.band) : "off";   // one finger at a time uses recordings
-  if (on) { if (!t.recs.includes(name)) t.recs.push(name); } else t.recs = t.recs.filter(n => n !== name);
-  t[key] = t.recs.length ? "sampler" : (f === 1 ? feelWave(t.band) : "off");
+  const t = mk.t, key = f === 1 ? "lead" : "lead2", rk = f === 1 ? "recs" : "recs2";
+  let a = t[key] === "sampler" ? (t[rk] || []) : [];
+  a = on ? (a.includes(name) ? a : [...a, name]) : a.filter(n => n !== name);
+  t[rk] = a; t[key] = a.length ? "sampler" : (f === 1 ? feelWave(t.band) : "off");
 }
+const mkHearClip = name => { const c = samples.find(s => s.name === name); if (!c) return; if (!c.buf) try { c.buf = clipBuf(c); } catch (_) {} try { playClipOnce(c); } catch (_) {} };
 $("mksBox").addEventListener("click", e => {
-  const t = mk.t, b = e.target.closest("button"); if (!b || !t) return;
-  if (b.dataset.feel) { t.band = b.dataset.feel; mkRender(); mkPreviewPlay(); mkRedraw(); setTimeout(() => { if (mk.sheet === "feel") mkRedraw(); }, 450); return; }
-  if (b.dataset.fing) { mk.fing = +b.dataset.fing; mkRedraw(); return; }
-  if (b.dataset.ls) {
-    const f = mk.fing || 1;
-    if (f === 1) t.lead = b.dataset.ls; else t.lead2 = b.dataset.ls;
-    if (t.lead !== "sampler" && t.lead2 !== "sampler") t.recs = [];
-    if (b.dataset.ls !== "off") mkTaste("lead", b.dataset.ls, [0, 3, 7, 12]);
+  const t = mk.t, b = e.target.closest("button"); if (!b || !t || !MK_SHEETS[mk.sheet]) return;
+  const d = b.dataset;
+  if (d.feel) { t.band = d.feel; t.feelSet = true; mkRender(); mkPreviewPlay(); mkRedraw(); setTimeout(() => { if (mk.sheet === "feel") mkRedraw(); }, 450); return; }
+  if (d.fing) { mk.fing = +d.fing; mkRedraw(); return; }
+  if (d.ls) {
+    if ((mk.fing || 1) === 1) { t.lead = d.ls; t.recs = []; } else { t.lead2 = d.ls; t.recs2 = []; }
+    if (d.ls !== "off") mkTaste("lead", d.ls, [0, 3, 7, 12]);
     mkRedraw(); mkRender(); return;
   }
-  if (b.dataset.lr) {
-    const f = mk.fing || 1, cur = f === 1 ? t.lead : t.lead2, on = !(cur === "sampler" && t.recs.includes(b.dataset.lr));
-    mkSetFingerRec(f, b.dataset.lr, on);
-    const c = samples.find(s => s.name === b.dataset.lr); if (on && c) { if (!c.buf) try { c.buf = clipBuf(c); } catch (_) {} try { playClipOnce(c); } catch (_) {} }
+  if (d.lr) {
+    const f = mk.fing || 1, cur = f === 1 ? t.lead : t.lead2, list = f === 1 ? t.recs : t.recs2, on = !(cur === "sampler" && list.includes(d.lr));
+    mkSetFingerRec(f, d.lr, on); if (on) mkHearClip(d.lr);
     mkRedraw(); mkRender(); return;
   }
-  if (b.dataset.shuf) { t.shuffle = !t.shuffle; mkRedraw(); return; }
-  if (b.dataset.ch !== undefined && mk.sheet === "chord") { t.chord = b.dataset.ch || null; mkRedraw(); mkRender(); mkPreviewPlay(); return; }
-  if (b.dataset.a === "rec2") {
-    mk.recBefore = samples.map(s => s.name); mk.recFor = "lead"; mk.bassBefore = t.myBass; mk.reopen = "lead";
-    mkSheetClose(); vs.part = "lead"; vs.fromMk = true; vsOpen(); return;
-  }
+  if (d.shuf) { if ((mk.fing || 1) === 1) t.shuffle = !t.shuffle; else t.shuffle2 = !t.shuffle2; mkRedraw(); return; }
+  if (d.bs) { t.bass = d.bs; t.bassRec = null; mkTaste("bass", d.bs, [0, 0, 7]); mkRedraw(); mkRender(); return; }
+  if (d.br) { t.bassRec = t.bassRec === d.br ? null : d.br; if (t.bassRec) mkHearClip(d.br); mkRedraw(); mkRender(); return; }
+  if (d.fx) { const [k, v] = d.fx.split(":"); t[k] = v; mkRedraw(); mkRender(); if (T.playing && hpv.on && t.feelSet !== false) mkPreviewPlay(); return; }
+  if (d.ch !== undefined && mk.sheet === "chord") { t.chord = d.ch || null; mkRedraw(); mkRender(); if (t.feelSet !== false) mkPreviewPlay(); return; }
+  if (d.a === "msx") { const from = mk.sheet === "bass2f" ? "bass" : "lead"; mkSheetClose(); msxOpen({ from, fing: mk.fing || 1 }); return; }
 });
-// back from recording: the new recording joins the finger you were on; nothing else changes
-{
-  const vc0 = vsClose;
-  vsClose = function () {
-    const from = vs.fromMk, before = mk.recBefore, t = mk.t;
-    const r = vc0.apply(this, arguments);
-    if (from && t) {
-      t.myLead = null;
-      if (before) {
-        t.myBass = mk.bassBefore || null;
-        const neu = samples.filter(s => !before.includes(s.name));
-        if (neu.length) mkSetFingerRec(mk.fing || 1, neu[neu.length - 1].name, true);
-      }
-      mk.recBefore = null; mkRender();
-      if (mk.reopen) { const k = mk.reopen; mk.reopen = null; setTimeout(() => mkSheet(k), 60); }
-    }
-    return r;
-  };
-}
 // the Feel sheet shows which feel is playing
 setInterval(() => { if (mk.sheet === "feel" && !$("mkSheet").hidden) { const go = T.playing && hpv.on, el = $("mksBox").querySelector(".mkf.on"); if (el && el.classList.contains("go") !== go) mkRedraw(); } }, 600);
+
+/* ----- My sounds page: the one place to record and look after your recordings ----- */
+{
+  const d = document.createElement("div"); d.id = "msx"; d.hidden = true; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", "My sounds");
+  d.innerHTML = `<div class="msx">
+    <div class="msx-top"><button class="hm-x" id="msxBack" aria-label="Back">${SV.back}</button><div><small id="msxKick">MAKE YOUR OWN</small><h2>MY SOUNDS</h2></div></div>
+    <div class="msx-rec"><button id="msxRec" aria-label="Record">${SV.mic}<span id="msxRecTxt">RECORD</span></button>
+      <div id="msxMsg">Sing, hum, say a word or play a note. Up to 4 seconds.</div>
+      <button id="msxFileBtn">+ Add a sound file</button><input type="file" id="msxFile" accept="audio/*" hidden></div>
+    <div class="msx-h">YOUR RECORDINGS<span id="msxCount"></span></div>
+    <div id="msxList" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>`;
+  document.body.appendChild(d);
+}
+const msx = { from: null, open: -1, rec: null, again: -1, newName: null, sure: -1 };
+const msxUsed = name => MY.list.filter(t => (t.recs || []).includes(name) || (t.recs2 || []).includes(name) || t.bassRec === name).length;
+const msxLen = c => { try { const [a, b] = clipRange(c); return ((b - a) / c.sr).toFixed(1) + "s"; } catch (_) { return ""; } };
+const msxNote = c => c.root == null ? "noise" : noteName(Math.round(c.root));
+function msxOpen(from) {
+  ensureAudio(); msx.from = from || null; msx.open = -1; msx.newName = null; msx.sure = -1;
+  const col = mk.t ? (isReddish(mkCol(2)) ? mkCol(0) : mkCol(2)) : "#ff3fa4";
+  $("msx").style.setProperty("--mkc", col);
+  $("msxKick").textContent = from ? (from.from === "bass" ? "MAKE YOUR OWN · BASS" : "MAKE YOUR OWN · LEAD") : "MY SOUNDS";
+  $("msxMsg").textContent = "Sing, hum, say a word or play a note. Up to 4 seconds.";
+  msxRender(); $("msx").hidden = false; $("msx").scrollTop = 0;
+}
+function msxClose() {
+  msxStop(true); $("msx").hidden = true;
+  const f = msx.from, nn = msx.newName; msx.from = null;
+  if (!f || !mk.t) return;
+  if (nn && samples.some(s => s.name === nn)) { if (f.from === "bass") mk.t.bassRec = nn; else mkSetFingerRec(f.fing || 1, nn, true); }
+  mk.fing = f.fing || 1; mkRender(); mkSheet(f.from === "bass" ? "bass" : "lead");
+}
+function msxRender() {
+  const full = samples.length >= MAX_SAMPLES;
+  $("msxCount").textContent = `${samples.length} OF ${MAX_SAMPLES}`;
+  $("msxRec").disabled = full && !msx.rec && msx.again < 0;
+  if (full && !msx.rec) $("msxMsg").textContent = `All ${MAX_SAMPLES} are used. Remove one to record a new sound.`;
+  $("msxList").innerHTML = samples.length ? samples.map((c, i) => {
+    const open = msx.open === i, used = msxUsed(c.name), noise = c.root == null;
+    const ms = v => (v > 0 ? "+" : "") + (v || 0) + " ms";
+    return `<div class="msx-row${open ? " open" : ""}${c.name === msx.newName ? " new" : ""}" data-i="${i}">
+      <div class="msx-hd"><button class="pl" data-a="play" aria-label="Hear ${escH(c.name)}">${SV.play}</button>
+        <button class="tx" data-a="tog"><b>${escH(c.name)}</b><small>${msxLen(c)} · ${msxNote(c)} · ${used ? "IN " + used + " THEME" + (used > 1 ? "S" : "") : "NOT USED"}</small></button>
+        <button class="mo" data-a="tog" aria-label="${open ? "Close" : "More"}" aria-expanded="${open}">${open ? CHEVU : CHEVD}</button></div>
+      ${open ? `<div class="msx-bd">
+        <div class="msx-ln"><label for="msxName">NAME</label><input type="text" id="msxName" maxlength="24" value="${escH(c.name)}" autocomplete="off" spellcheck="false"></div>
+        <div class="msx-ln"><span>TUNE</span><div class="msx-seg"><button data-a="tune1" class="${c.tune && !noise ? "on" : ""}" ${noise ? "disabled" : ""}>To the key</button><button data-a="tune0" class="${!c.tune || noise ? "on" : ""}">As recorded</button></div></div>
+        <div class="msx-ln"><span>START</span><div class="msx-st"><button data-a="s-" aria-label="Start earlier">◂</button><output id="msxS">${ms(c.nudge)}</output><button data-a="s+" aria-label="Start later">▸</button></div></div>
+        <div class="msx-ln"><span>END</span><div class="msx-st"><button data-a="e+" aria-label="Shorter">◂</button><output id="msxE">${c.trimEnd ? "−" + c.trimEnd + " ms" : "full"}</output><button data-a="e-" aria-label="Longer">▸</button></div></div>
+        <div class="msx-note">${noise ? "A noise: it plays on every note without a pitch." : "Lead or bass is picked in Make your own. As bass it drops an octave by itself."}</div>
+        <div class="msx-ac"><button data-a="again">Record again</button><button data-a="del" class="del${msx.sure === i ? " sure" : ""}">${msx.sure === i ? "Sure? Remove" : "Remove"}</button></div>
+      </div>` : ""}</div>`;
+  }).join("") : `<div class="msx-empty">Nothing yet. Tap Record and say a word.</div>`;
+}
+function msxRename(oldN, newN) {
+  if (!newN || newN === oldN) return false;
+  if (samples.some(s => s.name === newN)) { toast("You already have a sound called " + newN); return false; }
+  const c = samples.find(s => s.name === oldN); if (!c) return false;
+  c.name = newN; storeSamples();
+  const fix = t => { if (!t) return; t.recs = (t.recs || []).map(n => n === oldN ? newN : n); t.recs2 = (t.recs2 || []).map(n => n === oldN ? newN : n); if (t.bassRec === oldN) t.bassRec = newN; };
+  MY.list.forEach(t => { fix(t); myRegister(t); }); mySave(); fix(mk.t);
+  for (const k of ["l1", "l2", "b"]) if (GP[k]) GP[k] = GP[k].map(n => n === oldN ? newN : n);
+  if (msx.newName === oldN) msx.newName = newN;
+  try { renderSlots(); updateSummaries(); } catch (_) {}
+  return true;
+}
+function msxRemove(i) {
+  const c = samples[i]; if (!c) return; const n = c.name;
+  samples.splice(i, 1); storeSamples();
+  const fix = t => { if (!t) return; t.recs = (t.recs || []).filter(x => x !== n); t.recs2 = (t.recs2 || []).filter(x => x !== n); if (t.bassRec === n) t.bassRec = null;
+    if (t.lead === "sampler" && !t.recs.length) t.lead = feelWave(t.band); if (t.lead2 === "sampler" && !t.recs2.length) t.lead2 = "off"; };
+  MY.list.forEach(t => { fix(t); myRegister(t); }); mySave(); fix(mk.t);
+  if (msx.newName === n) msx.newName = null;
+  try { renderSlots(); syncSamplerParts(); updateSummaries(); } catch (_) {}
+}
+$("msxList").addEventListener("click", e => {
+  const b = e.target.closest("[data-a]"), row = e.target.closest(".msx-row"); if (!b || !row) return;
+  const i = +row.dataset.i, c = samples[i]; if (!c) return; const a = b.dataset.a;
+  if (a !== "del") msx.sure = -1;
+  const redo = () => { c.sb = null; c.buf = clipBuf(c); storeSamples(); playClipOnce(c); };
+  if (a === "play") { if (!c.buf) try { c.buf = clipBuf(c); } catch (_) {} playClipOnce(c); return; }
+  if (a === "tog") { const inp = $("msxName"); if (inp) msxRename(samples[msx.open] && samples[msx.open].name, inp.value.trim().slice(0, 24)); msx.open = msx.open === i ? -1 : i; msxRender(); return; }
+  if (a === "tune1" || a === "tune0") { c.tune = a === "tune1" && c.root != null; c.buf = clipBuf(c); storeSamples(); playClipOnce(c); msxRender(); return; }
+  if (a === "s-" || a === "s+") { c.nudge = Math.max(-30, Math.min(300, (c.nudge || 0) + (a === "s+" ? 10 : -10))); redo(); msxRender(); return; }
+  if (a === "e+" || a === "e-") { const max = Math.max(0, Math.round(((c.sb || soundBounds(c.data, c.sr)).end / c.sr) * 1000) - 150); c.trimEnd = Math.max(0, Math.min(max, (c.trimEnd || 0) + (a === "e+" ? 20 : -20))); redo(); msxRender(); return; }
+  if (a === "again") { msx.again = i; msxStart(); return; }
+  if (a === "del") { if (msx.sure !== i) { msx.sure = i; msxRender(); return; } msx.sure = -1; msx.open = -1; msxRemove(i); msxRender(); }
+});
+$("msxList").addEventListener("change", e => { if (e.target.id === "msxName") { const c = samples[msx.open]; if (c && msxRename(c.name, e.target.value.trim().slice(0, 24))) msxRender(); } });
+$("msxList").addEventListener("keydown", e => { if (e.target.id === "msxName" && e.key === "Enter") { e.preventDefault(); e.target.blur(); } });
+$("msxBack").addEventListener("click", () => { const inp = $("msxName"); if (inp && samples[msx.open]) msxRename(samples[msx.open].name, inp.value.trim().slice(0, 24)); msxClose(); });
+$("msxFileBtn").addEventListener("click", () => { if (samples.length >= MAX_SAMPLES) { msxRender(); return; } $("msxFile").click(); });
+$("msxFile").addEventListener("change", async () => {
+  const f = $("msxFile").files && $("msxFile").files[0]; $("msxFile").value = ""; if (!f) return;
+  $("msxMsg").textContent = "Reading the sound…";
+  try {
+    let nm = (f.name || "Sound").replace(/\.[^.]+$/, "").slice(0, 24) || "Sound"; while (samples.some(s => s.name === nm)) nm = nm.slice(0, 21) + " " + (Math.random() * 90 + 10 | 0);
+    const c = await decodeClip(f, nm); c.tune = c.root != null; c.buf = clipBuf(c); c.part = "off";
+    samples.push(c); storeSamples(); msx.newName = nm; msx.open = samples.length - 1;
+    $("msxMsg").textContent = "Added. Tap Back to use it."; playClipOnce(c);
+  } catch (err) { $("msxMsg").textContent = "Couldn't open that file. Try an .m4a, .mp3 or .wav."; }
+  msxRender();
+});
+$("msxRec").addEventListener("click", () => { if (msx.rec) msxStop(); else { msx.again = -1; msxStart(); } });
+async function msxStart() {
+  ensureAudio();
+  if (msx.again < 0 && samples.length >= MAX_SAMPLES) { msxRender(); return; }
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
+  catch (e) { $("msxMsg").textContent = e && e.name === "NotAllowedError" ? "GlassPad needs the mic. Allow it in your browser's site settings, then try again." : "Couldn't open the mic."; msx.again = -1; return; }
+  const ctx = audio.ctx, node = ctx.createMediaStreamSource(stream), proc = ctx.createScriptProcessor(4096, 1, 1), mute = ctx.createGain(); mute.gain.value = 0;
+  node.connect(proc); proc.connect(mute).connect(ctx.destination);
+  const R = msx.rec = { stream, node, proc, chunks: [], t0: performance.now() };
+  proc.onaudioprocess = e => R.chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+  $("msxRec").classList.add("going"); $("msxRec").disabled = false;
+  R.tick = setInterval(() => { $("msxRecTxt").textContent = "STOP · " + ((performance.now() - R.t0) / 1000).toFixed(1) + "s"; }, 100);
+  $("msxMsg").textContent = msx.again >= 0 ? `Recording "${samples[msx.again].name}" again… tap to stop` : "Listening… tap to stop (up to 4 seconds)";
+  R.timer = setTimeout(() => msxStop(), 4000);
+}
+function msxStop(cancel) {
+  const R = msx.rec; if (!R) return; msx.rec = null;
+  clearTimeout(R.timer); clearInterval(R.tick);
+  try { R.proc.disconnect(); R.node.disconnect(); } catch (_) {}
+  R.stream.getTracks().forEach(t => t.stop());
+  $("msxRec").classList.remove("going"); $("msxRecTxt").textContent = "RECORD";
+  const again = msx.again; msx.again = -1;
+  if (cancel) { msxRender(); return; }
+  const len = R.chunks.reduce((n, c) => n + c.length, 0);
+  if (!len) { $("msxMsg").textContent = "Nothing was recorded. Try again."; msxRender(); return; }
+  const ab = new AudioBuffer({ length: len, sampleRate: audio.ctx.sampleRate, numberOfChannels: 1 }), all = new Float32Array(len);
+  let o = 0; for (const c of R.chunks) { all.set(c, o); o += c.length; }
+  ab.copyToChannel(all, 0);
+  try {
+    const old = again >= 0 ? samples[again] : null;
+    let nm = old ? old.name : "Sound " + (samples.length + 1); let k = samples.length + 1; while (!old && samples.some(s => s.name === nm)) nm = "Sound " + (++k);
+    const clip = processClip(ab, nm); clip.tune = clip.root != null; clip.buf = clipBuf(clip);
+    if (old) { clip.id = old.id; clip.part = old.part; samples[again] = clip; msx.open = again; $("msxMsg").textContent = `"${nm}" recorded again.`; }
+    else { clip.part = "off"; samples.push(clip); msx.newName = nm; msx.open = samples.length - 1; $("msxMsg").textContent = msx.from ? `"${nm}" is ready. Rename it below, or tap Back to use it.` : `"${nm}" is ready.`; }
+    storeSamples(); playClipOnce(clip);
+    try { renderSlots(); } catch (_) {}
+  } catch (e) { $("msxMsg").textContent = "That came through silent. Check nothing is covering the mic and try again, a little louder."; }
+  msxRender();
+}
+// the pad's Your voice sheet: a new word never replaces another one (only Redo does), and a full list doesn't drop one
+{
+  const redo = $("vsRedo"); if (redo) redo.addEventListener("click", () => { vs.redo = true; }, true);
+  const rec = $("vsRec"); if (rec) rec.addEventListener("click", () => { if (!vs.rec) vs.redo = false; }, true);
+}
 
 /* ----- creator mode: the Full Studio is hidden unless you switch it on ----- */
 const CRE = { on: false, taps: 0, t: 0 };
@@ -14400,7 +14668,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.62 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.63 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {

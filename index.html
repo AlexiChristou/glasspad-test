@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.65 TEST · game mode · 12 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.66 TEST · game mode · 12 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1527,7 +1527,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.65 TEST · game mode · 12 Oct 2026</p>
+      <p class="ver">GlassPad 5.66 TEST · game mode · 12 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10197,7 +10197,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.65 TEST</p>
+    <p class="hm-ver">GlassPad 5.66 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14660,7 +14660,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.65 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.66 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -15044,6 +15044,184 @@ function msxLiveTick() {
     $("msxRing").style.setProperty("--p", 0); msxRender();
   };
 }
+
+/* ---------- 5.66: Solo · Mix on the pad (slice 2) ----------
+   SOLO · MIX button: standing up in the middle of the 2nd row (‹ Home · SOLO · MIX · ✎ EDIT); on its side by ‹ Home.
+   The sheet (bottom sheet standing up, side panel on its side; the band keeps playing):
+   Soloing = leadFollow.mode: Steady (fixed), Smooth (scale), Follow (chords), Home first (root), Safe notes (tones);
+   a dot marks the feel's pick (the theme preset's lead.follow). Bass strips: Follow chords (same) / Fuller (all).
+   Mix: Lead, 2nd finger, Chords, Bass, Drums = the level sliders lvol/lvol2/pvol/bvol/dvol, M = mix.mute, S = solo
+   (mutes the others until you tap it again). Space scales the shared echo and reverb inputs (audio.echoIn/revIn).
+   Reset = the theme's own levels, no mutes, its soloing pick, Space as the feel. Saved per theme (glasspad.solomix). */
+const SM = { open: false, solo: null, pre: null, space: 1, base: {}, store: {} };
+try { SM.store = JSON.parse(localStorage.getItem("glasspad.solomix") || "{}"); } catch (_) {}
+const SM_STYLES = [["fixed", "Steady", "The strips never move: home is always in the same place."], ["scale", "Smooth", "Your scale. A strip only nudges when it clashes with the chord."],
+  ["chords", "Follow", "The strips change with every chord."], ["root", "Home first", "Each chord's home note starts the strips, on the left."], ["tones", "Safe notes", "Only the chord's own notes. You can't hit a wrong one."]];
+const SM_CH = [["lead", "Lead", "lvol"], ["lead2", "2nd finger", "lvol2"], ["pad", "Chords", "pvol"], ["bass", "Bass", "bvol"], ["drums", "Drums", "dvol"]];
+const smKey = () => gameKey();
+const smPick = () => { const s = QSTYLES()[smKey()], f = s && s.p && s.p.lead && s.p.lead.follow; return ({ move: "chords", parts: "scale" })[f] || (["fixed", "scale", "chords", "root", "tones"].includes(f) ? f : "scale"); };
+const smBasePick = () => { const s = QSTYLES()[smKey()], l = s && s.p && s.p.bass && s.p.bass.layout; return l === "all" ? "all" : "same"; };
+function smSave() {
+  const k = smKey(); if (!k || k === "__mkpv") return;
+  SM.store[k] = { follow: leadFollow.mode, layout: bass.layout, lv: Object.fromEntries(SM_CH.map(([, , id]) => [id, +$(id).value])), mute: { ...(SM.pre || mix.mute) }, space: SM.space };
+  try { localStorage.setItem("glasspad.solomix", JSON.stringify(SM.store)); } catch (_) {}
+}
+function smSpace(v) {
+  SM.space = v;
+  if (audio) { const t = audio.ctx.currentTime; audio.echoIn.gain.setTargetAtTime(v, t, .05); audio.revIn.gain.setTargetAtTime(v, t, .05); }
+}
+const smSet = (id, v) => { const el = $(id); if (!el) return; el.value = v; el.dispatchEvent(new Event("input", { bubbles: true })); };
+function smSetLayout(v) { if (bass.layout === v) return; bass.layout = v; $("bassLayout").value = v; try { buildBassLanes(); retuneBass(); } catch (_) {} }
+function smUnsolo() { if (SM.pre) { for (const p of Object.keys(SM.pre)) if (mix.mute[p] !== SM.pre[p]) { mix.mute[p] = SM.pre[p]; applyMute(p); } } SM.solo = null; SM.pre = null; }
+// a theme comes in: its own levels are the "feel's" ones; then what you saved for it goes on top
+function smOnLoad() {
+  SM.solo = null; SM.pre = null;
+  SM.base = Object.fromEntries(SM_CH.map(([, , id]) => [id, +$(id).value]));
+  const s = SM.store[smKey()];
+  for (const p of Object.keys(mix.mute)) if (mix.mute[p]) { mix.mute[p] = false; applyMute(p); }
+  smSpace(1);
+  if (s) {
+    if (s.follow && s.follow !== leadFollow.mode) setLeadFollow(s.follow);
+    if (s.layout) smSetLayout(s.layout);
+    if (s.lv) for (const [id, v] of Object.entries(s.lv)) smSet(id, v);
+    if (s.mute) for (const p of Object.keys(s.mute)) if (mix.mute[p] !== !!s.mute[p]) { mix.mute[p] = !!s.mute[p]; applyMute(p); }
+    if (s.space != null) smSpace(s.space);
+  }
+  if (SM.open) smRender();
+}
+{
+  const ls0 = loadStyle;
+  loadStyle = function (st) { const r = ls0.apply(this, arguments); if (game.on) try { smOnLoad(); } catch (_) {} return r; };
+}
+function smReset() {
+  smUnsolo();
+  for (const [id, v] of Object.entries(SM.base)) smSet(id, v);
+  for (const p of Object.keys(mix.mute)) if (mix.mute[p]) { mix.mute[p] = false; applyMute(p); }
+  if (leadFollow.mode !== smPick()) setLeadFollow(smPick());
+  smSetLayout(smBasePick()); smSpace(1);
+  delete SM.store[smKey()]; try { localStorage.setItem("glasspad.solomix", JSON.stringify(SM.store)); } catch (_) {}
+  smRender();
+}
+
+/* ----- the button and the sheet ----- */
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  #gSM { display: none; }
+  body.game:not(.studio) #gSM { display: flex; flex: none; align-items: center; gap: 6px; height: 38px; padding: 0 12px; margin: 0 auto; border-radius: 19px; background: rgba(10,8,22,.6);
+    border: 1.5px solid rgba(255,255,255,.22); color: #fff; font: 500 12px var(--mono); letter-spacing: .06em; position: relative; z-index: 5; white-space: nowrap; }
+  body.game:not(.studio) #gSM[aria-expanded="true"] { background: var(--smc, #ff3fd8); color: #0a0412; border-color: transparent; box-shadow: 0 0 16px var(--smc, #ff3fd8); }
+  #gSM svg { width: 16px; height: 16px; }
+  body.game:not(.studio) #styleRow #gEdit { margin-left: 0 !important; }
+  header.bar #gSM { margin: 0 0 0 auto !important; height: 36px; }
+  body.game:not(.studio) header.bar #gSM ~ #styleChip { margin-left: 8px !important; }
+  #smSheet { position: fixed; inset: 0; z-index: 60; }
+  #smSheet[hidden] { display: none; }
+  #smSheet .bk { position: absolute; inset: 0; background: rgba(3,3,10,.25); }
+  .sm { position: absolute; left: 0; right: 0; bottom: 0; max-height: 72vh; overflow-y: auto; box-sizing: border-box; color: #eef1f7; border-radius: 24px 24px 0 0; background: rgba(10,6,22,.97);
+    border-top: 2px solid var(--smc); box-shadow: 0 -4px 24px color-mix(in srgb, var(--smc) 55%, transparent); padding: 10px 14px max(16px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 9px; }
+  @media (orientation: landscape) { .sm { left: auto; top: 0; width: min(380px, 48vw); max-height: none; border-radius: 22px 0 0 22px; border-top: 0; border-left: 2px solid var(--smc); box-shadow: -4px 0 24px color-mix(in srgb, var(--smc) 55%, transparent); padding-top: max(10px, env(safe-area-inset-top)); } .sm .h { display: none; } }
+  .sm .h { width: 40px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.25); align-self: center; flex: none; }
+  .sm-top { display: flex; align-items: center; gap: 10px; flex: none; }
+  .sm-top b { font: 900 19px var(--display); color: #fff; text-shadow: 0 0 10px var(--smc), 0 0 22px color-mix(in srgb, var(--smc) 55%, transparent); }
+  .sm-top small { font: 500 10px var(--mono); color: #a99fd0; }
+  .sm-top button { margin-left: auto; height: 36px; padding: 0 16px; border-radius: 18px; border: 0; background: var(--smc); color: #0a0412; font: 700 12.5px var(--display); }
+  .sm-sec { display: flex; align-items: center; gap: 8px; flex: none; margin-top: 2px; }
+  .sm-sec b { font: 700 12px var(--display); letter-spacing: .1em; color: #fff; }
+  .sm-sec i { flex: 1; height: 1.5px; background: linear-gradient(90deg, var(--smc), transparent); opacity: .6; }
+  .sm-sec button { height: 28px; padding: 0 10px; border-radius: 14px; background: transparent; border: 1px solid rgba(255,255,255,.25); color: #c9bfff; font: 500 10px var(--mono); letter-spacing: .08em; }
+  .sm-solo { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; flex: none; }
+  .sm-solo button { position: relative; height: 44px; border-radius: 12px; background: rgba(6,3,14,.85); border: 1.5px solid rgba(255,255,255,.2); color: #fff; font: 600 14px "IBM Plex Sans", var(--body); padding: 0 4px; }
+  .sm-solo button.on { background: color-mix(in srgb, var(--smc) 18%, transparent); border-color: var(--smc); box-shadow: 0 0 12px color-mix(in srgb, var(--smc) 55%, transparent); }
+  .sm-solo button .dot { position: absolute; right: 6px; top: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--smc); box-shadow: 0 0 6px var(--smc); }
+  .sm-desc { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 22px; font: 400 13px "IBM Plex Sans", var(--body); color: #e6e0ff; flex: none; }
+  .sm-desc b { color: #fff; } .sm-desc span:last-child { display: flex; align-items: center; gap: 5px; font: 500 9.5px var(--mono); color: #a99fd0; white-space: nowrap; }
+  .sm-desc span:last-child::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--smc); box-shadow: 0 0 6px var(--smc); }
+  .sm-bs { display: flex; align-items: center; gap: 8px; flex: none; }
+  .sm-bs > span { width: 76px; flex: none; font: 500 10px var(--mono); letter-spacing: .1em; color: #b8aee6; }
+  .sm-seg { flex: 1; display: grid; grid-template-columns: 1fr 1fr; border-radius: 11px; overflow: hidden; border: 1.5px solid rgba(255,255,255,.22); }
+  .sm-seg button { height: 34px; border: 0; background: transparent; color: #c9bfff; font: 400 12.5px "IBM Plex Sans", var(--body); }
+  .sm-seg button.on { background: var(--smb); color: #04121a; font-weight: 600; }
+  .sm-row { display: flex; align-items: center; gap: 10px; min-height: 36px; flex: none; }
+  .sm-row[hidden] { display: none; }
+  .sm-row > label { width: 78px; flex: none; font: 400 13.5px "IBM Plex Sans", var(--body); color: #e6e0ff; }
+  .sm-row > label small { display: block; font: 400 9px var(--mono); color: #a99fd0; }
+  .sm-row input[type=range] { flex: 1; min-width: 0; accent-color: var(--rc, var(--smc)); }
+  .sm-row.off input[type=range] { opacity: .35; }
+  .sm-row .ms { display: grid; place-items: center; line-height: 1; width: 34px; height: 32px; flex: none; border-radius: 9px; background: transparent; border: 1.5px solid rgba(255,255,255,.22); color: #c9bfff; font: 500 11px var(--mono); padding: 0; }
+  .sm-row .ms[aria-pressed="true"] { background: #ff4d5e; border-color: #ff4d5e; color: #fff; }
+  .sm-row .ms.s[aria-pressed="true"] { background: #ffd25a; border-color: #ffd25a; color: #1a1200; }
+  .sm-row .sp { width: 70px; flex: none; text-align: center; font: 500 9.5px var(--mono); color: #a99fd0; }
+  .sm-hr { height: 1px; background: rgba(255,255,255,.1); flex: none; margin: 2px 0; }`;
+  document.head.appendChild(st);
+  const ic = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 4v16M12 4v16M18 4v16"/><rect x="3.5" y="13" width="5" height="3" rx="1.2" fill="currentColor"/><rect x="9.5" y="7" width="5" height="3" rx="1.2" fill="currentColor"/><rect x="15.5" y="11" width="5" height="3" rx="1.2" fill="currentColor"/></svg>';
+  const b = document.createElement("button"); b.id = "gSM"; b.className = "g-only"; b.setAttribute("aria-label", "Soloing and mix"); b.setAttribute("aria-expanded", "false");
+  b.innerHTML = `${ic}SOLO · MIX`;
+  const place = () => {
+    const land = window.innerWidth > window.innerHeight, chip = $("styleChip");
+    if (!chip) return;
+    if (land) { if (b.nextElementSibling !== chip) chip.before(b); } else if (b.previousElementSibling !== chip) chip.after(b);
+    try { b.style.setProperty("--smc", styleColour() || "#ff3fd8"); } catch (_) {}
+  };
+  place(); setInterval(place, 700); window.addEventListener("resize", () => setTimeout(place, 60));
+  b.addEventListener("click", () => SM.open ? smClose() : smOpen());
+  const s = document.createElement("div"); s.id = "smSheet"; s.hidden = true;
+  s.innerHTML = `<div class="bk" id="smBk"></div><div class="sm" role="dialog" aria-label="Soloing and mix" id="smBox"></div>`;
+  document.body.appendChild(s);
+  $("smBk").addEventListener("click", () => smClose());
+}
+function smOpen() {
+  const lc = styleColour() || "#ff3fd8", bc = (TH && (TH.bline || TH.acc2)) || "#2fd6ff";
+  $("smSheet").style.setProperty("--smc", isReddish(lc) ? (TH.acc || "#ff3fd8") : lc); $("smSheet").style.setProperty("--smb", bc);
+  SM.open = true; $("gSM").setAttribute("aria-expanded", "true"); smRender(); $("smSheet").hidden = false;
+}
+function smClose() { SM.open = false; $("gSM").setAttribute("aria-expanded", "false"); $("smSheet").hidden = true; smSave(); }
+function smRender() {
+  const mode = leadFollow.mode, pick = smPick(), cur = SM_STYLES.find(s => s[0] === mode) || SM_STYLES[1];
+  const eff = p => mix.mute[p], mixRows = SM_CH.map(([p, name, id]) => {
+    const el = $(id), col = p === "bass" ? "var(--smb)" : p === "drums" ? "#ffd25a" : p === "pad" ? "#a77bff" : "var(--smc)";
+    return `<div class="sm-row${eff(p) ? " off" : ""}" data-p="${p}" ${p === "lead2" && lead.snd2 === "off" ? "hidden" : ""} style="--rc:${col}"><label for="sm-${id}">${name}</label>
+      <input type="range" id="sm-${id}" data-id="${id}" min="${el.min}" max="${el.max}" step="0.01" value="${el.value}">
+      <button class="ms" data-m="${p}" aria-pressed="${!!mix.mute[p] && !SM.solo}" aria-label="Mute ${name}">M</button><button class="ms s" data-s="${p}" aria-pressed="${SM.solo === p}" aria-label="Solo ${name}">S</button></div>`;
+  }).join("");
+  const sp = Math.round(SM.space * 50);
+  $("smBox").innerHTML = `<div class="h"></div><div class="sm-top"><b>SOLO · MIX</b><small>BAND KEEPS PLAYING</small><button id="smDone">Done</button></div>
+    <div class="sm-sec"><b>SOLOING</b><i></i></div>
+    <div class="sm-solo">${SM_STYLES.map(([v, n]) => `<button data-st="${v}" class="${mode === v ? "on" : ""}" aria-pressed="${mode === v}">${n}${v === pick ? '<span class="dot" aria-label="The feel’s pick"></span>' : ""}</button>`).join("")}</div>
+    <div class="sm-desc"><span><b>${cur[1]}:</b> ${cur[2]}</span><span>FEEL'S PICK</span></div>
+    <div class="sm-bs"><span>BASS STRIPS</span><div class="sm-seg" role="group" aria-label="Bass strips"><button data-bl="same" class="${bass.layout !== "all" ? "on" : ""}">Follow chords</button><button data-bl="all" class="${bass.layout === "all" ? "on" : ""}">Fuller</button></div></div>
+    <div class="sm-sec"><b>MIX</b><i></i><button id="smReset">RESET</button></div>
+    ${mixRows}
+    <div class="sm-hr"></div>
+    <div class="sm-row"><label for="smSpace">Space<small>ECHO + REVERB</small></label><input type="range" id="smSpace" min="0" max="100" step="1" value="${sp}"><span class="sp" id="smSpaceTxt">${sp === 50 ? "AS THE FEEL" : sp < 50 ? "DRIER" : "BIGGER"}</span></div>`;
+}
+$("smBox").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.id === "smDone") return smClose();
+  if (b.id === "smReset") { smReset(); toast("Back to the feel's mix"); return; }
+  if (b.dataset.st) { setLeadFollow(b.dataset.st); smRender(); smSave(); return; }
+  if (b.dataset.bl) { smSetLayout(b.dataset.bl); smRender(); smSave(); return; }
+  if (b.dataset.m) {
+    const p = b.dataset.m; if (SM.solo) smUnsolo();
+    mix.mute[p] = !mix.mute[p]; applyMute(p); smRender(); smSave(); return;
+  }
+  if (b.dataset.s) {
+    const p = b.dataset.s;
+    if (SM.solo === p) smUnsolo();
+    else { if (SM.solo) smUnsolo(); SM.pre = { ...mix.mute }; SM.solo = p; for (const q of Object.keys(mix.mute)) { const want = q !== p; if (mix.mute[q] !== want) { mix.mute[q] = want; applyMute(q); } } }
+    smRender(); return;
+  }
+});
+$("smBox").addEventListener("input", e => {
+  const r = e.target;
+  if (r.id === "smSpace") { const v = +r.value; smSpace(v / 50); $("smSpaceTxt").textContent = v === 50 ? "AS THE FEEL" : v < 50 ? "DRIER" : "BIGGER"; return; }
+  if (r.dataset.id) smSet(r.dataset.id, +r.value);
+});
+$("smBox").addEventListener("change", () => smSave());
+// Space stays as you set it when the sound engine restarts
+{ const t = setInterval(() => { if (audio) { clearInterval(t); smSpace(SM.space); } }, 500); }
+// leaving game mode (Studio) puts solo back and the room at its normal size
+{ const sg0 = setGame; setGame = function (on) { if (!on) { try { smUnsolo(); smSpace(1); if (SM.open) smClose(); } catch (_) {} } return sg0.apply(this, arguments); }; }
 
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }

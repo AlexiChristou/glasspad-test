@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.66 TEST · game mode · 12 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.66.1 TEST · game mode · 12 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1527,7 +1527,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.66 TEST · game mode · 12 Oct 2026</p>
+      <p class="ver">GlassPad 5.66.1 TEST · game mode · 12 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10197,7 +10197,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.66 TEST</p>
+    <p class="hm-ver">GlassPad 5.66.1 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14660,7 +14660,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.66 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.66.1 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -15113,8 +15113,11 @@ function smReset() {
   body.game:not(.studio) #gSM[aria-expanded="true"] { background: var(--smc, #ff3fd8); color: #0a0412; border-color: transparent; box-shadow: 0 0 16px var(--smc, #ff3fd8); }
   #gSM svg { width: 16px; height: 16px; }
   body.game:not(.studio) #styleRow #gEdit { margin-left: 0 !important; }
-  header.bar #gSM { margin: 0 0 0 auto !important; height: 36px; }
-  body.game:not(.studio) header.bar #gSM ~ #styleChip { margin-left: 8px !important; }
+  header.bar #gSM { margin: 0 0 0 8px !important; height: 36px; }
+  /* 5.66.1: ‹ HOME looks like ✎ EDIT (same height, font and outline) */
+  body.game:not(.studio) #styleChip { height: 38px !important; padding: 0 13px 0 10px !important; border-radius: 19px !important; font: 500 12px var(--mono) !important; letter-spacing: .06em; gap: 6px !important; }
+  body.game:not(.studio) header.bar #styleChip { height: 36px !important; }
+  body.game:not(.studio) #styleName::after { content: "HOME" !important; font: 500 12px var(--mono); letter-spacing: .06em; }
   #smSheet { position: fixed; inset: 0; z-index: 60; }
   #smSheet[hidden] { display: none; }
   #smSheet .bk { position: absolute; inset: 0; background: rgba(3,3,10,.25); }
@@ -15160,7 +15163,7 @@ function smReset() {
   const place = () => {
     const land = window.innerWidth > window.innerHeight, chip = $("styleChip");
     if (!chip) return;
-    if (land) { if (b.nextElementSibling !== chip) chip.before(b); } else if (b.previousElementSibling !== chip) chip.after(b);
+    if (b.previousElementSibling !== chip) chip.after(b);   // 5.66.1: Home · SOLO · MIX · EDIT both ways up
     try { b.style.setProperty("--smc", styleColour() || "#ff3fd8"); } catch (_) {}
   };
   place(); setInterval(place, 700); window.addEventListener("resize", () => setTimeout(place, 60));

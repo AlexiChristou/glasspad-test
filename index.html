@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.61 TEST · game mode · 11 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.62 TEST · game mode · 12 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1527,7 +1527,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.61 TEST · game mode · 11 Oct 2026</p>
+      <p class="ver">GlassPad 5.62 TEST · game mode · 12 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10197,7 +10197,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.61 TEST</p>
+    <p class="hm-ver">GlassPad 5.62 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14090,6 +14090,328 @@ function jamKeepAsk(ed) {
   const sp0 = syncSamplerParts;
   syncSamplerParts = function () { if (jamOn() && !$("sp").hidden && SPN.part === "mysounds") return; return sp0.apply(this, arguments); };
 }
+/* ---------- 5.62: feels in Make your own + creator mode (slice 1 of the 11-12 Oct direction) ----------
+   Users don't build bands: they pick a FEEL (made by us; the first 7 are the theme bands, t.band keeps the id).
+   Make your own = 7 numbered steps: Photo · Colours · Lead (1st + 2nd finger) · Bass · Feel · Chord sound (optional) · Speed.
+   Lead: each finger gets a built-in sound or My sounds recordings; pick 2+ and they take turns per press (Shuffle option).
+   One finger at a time uses recordings. Theme fields: lead / lead2 ("sampler" = recordings), recs [names], shuffle,
+   myBass, chord (PAD key or null = the feel's own), speed (slow / asis / fast). Old themes' myLead moves into recs.
+   Creator mode (Full Studio): off by default, GP Test included. ⚙ Test → Creator mode, or 7 taps on the version. */
+const FEELS = [
+  { id: "epic", name: "Heroic", line: "big slow chords, half-time drums" },
+  { id: "arabic", name: "Mystic", line: "two hypnotic chords, desert drums" },
+  { id: "blues", name: "Smoky", line: "12-bar shuffle, walking bass" },
+  { id: "sunset", name: "Dreamy", line: "warm pop chords, chill beat" },
+  { id: "spanish", name: "Passionate", line: "plucked Andalusian chords" },
+  { id: "tokyo", name: "Neon", line: "Japanese drone, synthwave, bass arp" },
+  { id: "hunter", name: "Menacing", line: "dark 80s chords, machine drums" },
+];
+const FEEL_SPEED = { slow: .85, asis: 1, fast: 1.15 };
+const KEY_NAMES = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"];
+const SCALE_SHORT = { minpent: "minor pent", majpent: "major pent", hijaz: "hijaz", blues: "blues", minor: "minor", major: "major", hirajoshi: "hirajoshi", dorian: "dorian", mixolydian: "mixolydian", harmminor: "harmonic minor" };
+const feelOf = id => FEELS.find(f => f.id === id) || FEELS.find(f => f.id === "tokyo");
+function feelMeta(id) {
+  const s = QSTYLES_SYNTH[id], p = s && s.p; if (!p) return "";
+  const sc = SCALE_SHORT[p.scale] || (([...scaleSel.options].find(o => o.value === p.scale) || {}).text || p.scale || "").replace(/\s*\(.*$/, "");
+  return `${KEY_NAMES[((p.root || 0) % 12 + 12) % 12]} ${sc} · ${p.bpm} bpm`.toUpperCase();
+}
+const feelBase = id => (QSTYLES_SYNTH[id] || QSTYLES_SYNTH.tokyo).p;
+const feelWave = id => { const w = feelBase(id).wave; return w && w !== "sampler" ? w : "supersaw"; };
+const feelWave2 = id => { const w = (feelBase(id).lead || {}).snd2; return w && w !== "sampler" ? w : "off"; };
+// old themes: the one recorded lead sound becomes a list of recordings on the 1st finger
+function myNorm(t) {
+  if (!t) return t;
+  if (!Array.isArray(t.recs)) t.recs = [];
+  if (t.myLead) { if (!t.recs.includes(t.myLead)) t.recs.push(t.myLead); t.lead = "sampler"; t.myLead = null; }
+  if (!t.speed) t.speed = "asis";
+  if (t.chord === undefined) t.chord = null;
+  t.shuffle = !!t.shuffle;
+  return t;
+}
+// a theme becomes a style: the feel's band + your sounds, chord sound and speed
+{
+  const reg0 = myRegister;
+  myRegister = function (t) {
+    myNorm(t);
+    reg0.apply(this, arguments);
+    const band = QSTYLES_SYNTH[t.band] ? t.band : "tokyo";
+    for (const set of [QSTYLES_SYNTH, QSTYLES_ORIGINAL]) {
+      const s = set[t.id]; if (!s) continue; const p = s.p, base = (set[band] || QSTYLES_SYNTH[band]).p;
+      p.wave = t.lead === "sampler" ? (base.wave && base.wave !== "sampler" ? base.wave : "supersaw") : (t.lead || p.wave);   // recordings go on when the theme loads
+      p.lead = p.lead || {}; p.lead.snd2 = t.lead2 || "off";
+      if (t.chord && PAD[t.chord]) { p.pad = p.pad || {}; p.pad.sound = t.chord; }
+      if (base.bpm) p.bpm = Math.round(base.bpm * (FEEL_SPEED[t.speed] || 1));
+    }
+  };
+  MY.list.forEach(t => { myNorm(t); myRegister(t); });
+}
+// loading a theme you made: its recordings go on the finger that uses them, and on the bass
+function myApplyRecs(t) {
+  const recs = (t.recs || []).filter(n => samples.some(s => s.name === n));
+  const useLead = recs.length > 0 && (t.lead === "sampler" || t.lead2 === "sampler");
+  const bc = t.myBass && samples.find(s => s.name === t.myBass);
+  if (!useLead && !bc) return;
+  for (const c of samples) {
+    const L = useLead && recs.includes(c.name), B = bc === c;
+    c.part = L && B ? "both" : L ? "lead" : B ? "bass" : "off";
+    if ((L || B) && !c.buf) try { c.buf = clipBuf(c); } catch (_) {}
+  }
+  storeSamples(); try { renderSlots(); } catch (_) {}
+  samp.mode = t.shuffle ? "shuffle" : "cycle";
+  if (useLead && t.lead2 === "sampler") { lead.snd2 = "sampler"; $("wave2").value = "sampler"; }
+  msApply({ lead: useLead && t.lead === "sampler", bass: !!bc });
+  try { vsMicSync(); } catch (_) {}
+}
+{
+  const ls0 = loadStyle;
+  loadStyle = function (st) {
+    const r = ls0.apply(this, arguments);
+    const id = st && st.id, t = id === "__mkpv" ? mk.t : (isMine(id) && MY.list.find(x => x.id === id));
+    if (t) try { myApplyRecs(myNorm(t)); } catch (_) {}
+    return r;
+  };
+}
+{
+  const fr0 = mkFresh;
+  mkFresh = function (from) {
+    const t = fr0.apply(this, arguments);
+    t.lead2 = t.lead2 === "sampler" ? "off" : t.lead2;
+    return Object.assign(t, { recs: [], shuffle: false, chord: null, speed: "asis" });
+  };
+  const op0 = mkOpen;
+  mkOpen = function (t) { const r = op0.apply(this, arguments); myNorm(mk.t); mk.fing = 1; mkRender(); return r; };
+}
+
+/* ----- the page: 7 numbered steps ----- */
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  #mk .mk-rows { gap: 8px; }
+  .mk-step { width: 100%; box-sizing: border-box; min-height: 56px; border-radius: 14px; background: rgba(8,4,18,.82); border: 1.5px solid color-mix(in srgb, var(--mkc) 45%, transparent); color: #fff; display: flex; align-items: center; gap: 10px; padding: 6px 12px 6px 8px; text-align: left; font-family: "IBM Plex Sans", var(--body); }
+  .mk-step.hl { border-color: var(--mkc); box-shadow: 0 0 14px color-mix(in srgb, var(--mkc) 55%, transparent); }
+  .mk-step .n { width: 24px; height: 24px; flex: none; border-radius: 50%; border: 1.5px solid var(--mkc); box-shadow: 0 0 8px color-mix(in srgb, var(--mkc) 60%, transparent); display: grid; place-items: center; font: 700 11px var(--display); color: #fff; }
+  .mk-step .ic { width: 34px; height: 34px; flex: none; border-radius: 9px; background: rgba(255,255,255,.05); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .mk-step .ic img { width: 100%; height: 100%; object-fit: cover; }
+  .mk-step .ic svg { width: 20px; height: 20px; }
+  .mk-step .ic i { width: 7px; height: 20px; border-radius: 3px; margin: 0 1px; display: inline-block; }
+  .mk-step .tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .mk-step .tx small { display: flex; align-items: center; gap: 6px; font: 500 10px var(--mono); letter-spacing: .12em; color: #b8aee6; }
+  .mk-step .tx small em { font-style: normal; font-size: 8.5px; letter-spacing: .1em; color: #a99fd0; border: 1px solid rgba(169,159,208,.5); border-radius: 5px; padding: 0 4px; }
+  .mk-step .tx b { font-weight: 500; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mk-step .tx i { font: normal 400 10px var(--mono); color: #a99fd0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mk-step .cv { color: #c9bfff; display: flex; } .mk-step .cv svg { width: 13px; height: 13px; }
+  .mk-step.sp { cursor: default; } .mk-step.sp .tx { flex: 0 0 62px; }
+  .mk-speed { flex: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-radius: 12px; overflow: hidden; border: 1.5px solid color-mix(in srgb, var(--mkc) 45%, transparent); }
+  .mk-speed button { height: 38px; border: 0; background: transparent; color: #c9bfff; font: 400 13px "IBM Plex Sans", var(--body); padding: 0; }
+  .mk-speed button.on { background: var(--mkc); color: #05060b; font-weight: 600; box-shadow: 0 0 12px color-mix(in srgb, var(--mkc) 55%, transparent); }
+  .mkf-list { display: flex; flex-direction: column; gap: 8px; }
+  .mkf { min-height: 58px; border-radius: 14px; background: rgba(6,3,14,.85); border: 1.5px solid color-mix(in srgb, var(--mkc) 40%, transparent); color: #fff; display: flex; align-items: center; gap: 12px; padding: 6px 12px; text-align: left; }
+  .mkf.on { background: color-mix(in srgb, var(--mkc) 18%, transparent); border-color: var(--mkc); box-shadow: 0 0 14px color-mix(in srgb, var(--mkc) 55%, transparent); }
+  .mkf .pl { width: 36px; height: 36px; flex: none; border-radius: 50%; border: 1.5px solid var(--mkc); display: flex; align-items: center; justify-content: center; gap: 2px; }
+  .mkf .pl svg { width: 11px; height: 11px; }
+  .mkf.go .pl { background: var(--mkc); color: #05060b; box-shadow: 0 0 12px color-mix(in srgb, var(--mkc) 60%, transparent); }
+  .mkf .pl i { width: 3px; border-radius: 2px; background: #05060b; display: block; animation: mkfb .9s ease-in-out infinite; }
+  .mkf .pl i:nth-child(2) { animation-delay: .2s; } .mkf .pl i:nth-child(3) { animation-delay: .4s; }
+  @keyframes mkfb { 0%, 100% { height: 6px; } 50% { height: 15px; } }
+  .mkf .tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .mkf .tx span { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .mkf .tx b { font: 700 14.5px var(--display); }
+  .mkf .tx small { font: 500 9px var(--mono); letter-spacing: .1em; color: #a99fd0; }
+  .mkf .tx em { font: normal 400 12.5px "IBM Plex Sans", var(--body); color: #cfc7f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mks .more { font: 500 10px var(--mono); letter-spacing: .08em; color: #a99fd0; text-align: center; }
+  .mkl-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-radius: 13px; overflow: hidden; border: 1.5px solid color-mix(in srgb, var(--mkc) 45%, transparent); flex: none; }
+  .mkl-tabs button { height: 48px; border: 0; background: transparent; color: #c9bfff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0 6px; min-width: 0; }
+  .mkl-tabs button small { font: 500 9.5px var(--mono); letter-spacing: .12em; }
+  .mkl-tabs button span { font: 400 13.5px "IBM Plex Sans", var(--body); color: #fff; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mkl-tabs button.on { background: var(--mkc); color: #05060b; box-shadow: 0 0 14px color-mix(in srgb, var(--mkc) 55%, transparent); }
+  .mkl-tabs button.on span { color: #05060b; font-weight: 600; }
+  .mks-grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+  .mks-grid3 button { min-height: 42px; border-radius: 12px; background: rgba(16,18,28,.9); border: 1.5px solid rgba(255,255,255,.2); color: #eef1f7; font: 400 13px "IBM Plex Sans", var(--body); padding: 0 4px; }
+  .mks-grid3 button.on { background: color-mix(in srgb, var(--mkc) 15%, transparent); border-color: var(--mkc); box-shadow: 0 0 14px color-mix(in srgb, var(--mkc) 45%, transparent); font-weight: 600; }
+  .mks-recs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+  .mks-recs button { min-height: 42px; border-radius: 12px; background: rgba(16,18,28,.9); border: 1.5px solid rgba(255,255,255,.2); color: #eef1f7; font: 400 13.5px "IBM Plex Sans", var(--body); display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 8px; }
+  .mks-recs button svg { width: 14px; height: 14px; color: #ff6b78; flex: none; }
+  .mks-recs button sup { font: 500 9px var(--mono); color: #05060b; background: var(--mkc); border-radius: 6px; padding: 1px 5px; }
+  .mks-recs button.on { background: color-mix(in srgb, var(--mkc) 15%, transparent); border-color: var(--mkc); box-shadow: 0 0 12px color-mix(in srgb, var(--mkc) 45%, transparent); font-weight: 600; }
+  .mks-recs .mks-rec { height: auto; min-height: 42px; }
+  .mkl-turns { border-radius: 14px; background: rgba(8,4,18,.82); border: 1.5px solid color-mix(in srgb, var(--mkc) 40%, transparent); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; font: 400 13px "IBM Plex Sans", var(--body); color: #e6e0ff; }
+  .mkl-turns b { color: #fff; } .mkl-turns q { color: var(--mkc); quotes: none; }
+  .mkl-sw { display: flex; align-items: center; gap: 10px; min-height: 36px; background: transparent; border: 0; color: #c9bfff; padding: 0; font: 400 13px "IBM Plex Sans", var(--body); text-align: left; }
+  .mkl-sw span { flex: 1; }
+  .mkl-sw i { width: 44px; height: 26px; border-radius: 13px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); position: relative; flex: none; }
+  .mkl-sw i::after { content: ""; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; border-radius: 50%; background: #c9bfff; transition: left .15s; }
+  .mkl-sw[aria-pressed="true"] i { background: var(--mkc); border-color: var(--mkc); }
+  .mkl-sw[aria-pressed="true"] i::after { left: 21px; background: #05060b; }
+  .mks .tiny { font: 500 9.5px var(--mono); letter-spacing: .06em; color: #a99fd0; }
+  #home.nocre .hm-two { grid-template-columns: minmax(0, 1fr); }
+  #hmStudio[hidden] { display: none !important; }
+  .g-ver { margin: 14px 0 4px; text-align: center; font: 400 11px var(--mono); color: rgba(220,230,255,.45); -webkit-user-select: none; user-select: none; }`;
+  document.head.appendChild(st);
+}
+const CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>';
+SV.feel = c => `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="1.8" stroke-linecap="round"><path d="M3 12h3l3-7 4 14 3-7h5"/></svg>`;
+SV.chords = c => `<svg viewBox="0 0 20 18" fill="${c}"><rect x="2" y="2" width="4" height="14" rx="2"/><rect x="8" y="5" width="4" height="11" rx="2"/><rect x="14" y="8" width="4" height="8" rx="2"/></svg>`;
+const leadName = v => v === "off" ? "Off" : nameOf(LEAD_CHOICES, v);
+const recsTxt = t => (t.recs || []).length ? "My sounds · " + t.recs.join(" + ") : "My sounds";
+const fingerTxt = (t, f) => { const v = f === 1 ? t.lead : t.lead2; return v === "sampler" ? recsTxt(t) : leadName(v || (f === 1 ? "supersaw" : "off")); };
+{
+  const r0 = mkRender;
+  mkRender = function () {
+    r0.apply(this, arguments);
+    const t = mk.t; if (!t) return; myNorm(t);
+    const lead = mkCol(0), bassC = mkCol(1), hi = mkCol(2), f = feelOf(t.band), pb = feelBase(t.band);
+    const padNm = k => (PAD[k] || {}).name || k;
+    const step = (n, k, ic, lbl, val, sub, o = {}) => `<button class="mk-step${o.hl ? " hl" : ""}" data-k="${k}"><span class="n">${n}</span><span class="ic">${ic}</span>
+      <span class="tx"><small>${lbl}${o.opt ? "<em>OPTIONAL</em>" : ""}</small><b>${escH(val)}</b>${sub ? `<i>${escH(sub)}</i>` : ""}</span><span class="cv">${CHEV}</span></button>`;
+    const sp = t.speed || "asis";
+    $("mkRows").innerHTML = [
+      step(1, "photo", t.pic ? `<img src="${t.pic}" alt="">` : SV.photo, "PHOTO", t.pic ? "Your photo" : "The feel's picture", ""),
+      step(2, "cols", `<i style="background:${lead};box-shadow:0 0 6px ${lead}"></i><i style="background:${bassC};box-shadow:0 0 6px ${bassC}"></i><i style="background:${hi};box-shadow:0 0 6px ${hi}"></i>`, "COLOURS", t.cols.join(" · "), ""),
+      step(3, "lead", SV.wave(lead), "LEAD", fingerTxt(t, 1), "2nd finger: " + fingerTxt(t, 2)),
+      step(4, "bass", SV.wave(bassC), "BASS", t.myBass ? "My sounds · " + t.myBass : nameOf(BASS_CHOICES, t.bass), ""),
+      step(5, "feel", SV.feel(lead), "FEEL", f.name, `${f.line} · ${Math.round(pb.bpm * (FEEL_SPEED[sp] || 1))} bpm`, { hl: true }),
+      step(6, "chord", SV.chords(hi), "CHORD SOUND", t.chord ? padNm(t.chord) : "The feel's own · " + padNm(pb.pad && pb.pad.sound), "", { opt: true }),
+      `<div class="mk-step sp"><span class="n">7</span><span class="tx"><small>SPEED</small><small><em>OPTIONAL</em></small></span>
+        <div class="mk-speed" role="group" aria-label="Speed">${[["slow", "Slower"], ["asis", "As is"], ["fast", "Faster"]].map(([v, n]) => `<button data-speed="${v}" class="${sp === v ? "on" : ""}" aria-pressed="${sp === v}">${n}</button>`).join("")}</div></div>`,
+    ].join("");
+  };
+}
+$("mkRows").addEventListener("click", e => { const r = e.target.closest(".mk-step[data-k]"); if (r) mkSheet(r.dataset.k); });
+$("mkRows").addEventListener("click", e => {
+  const b = e.target.closest("[data-speed]"); if (!b) return;
+  e.stopPropagation(); mk.t.speed = b.dataset.speed; mkRender();
+  if (T.playing && !$("mk").hidden) mkPreviewPlay();
+}, true);
+
+/* ----- the new sheets: Feel, Lead (two fingers), Chord sound ----- */
+function mkFeelHTML() {
+  const t = mk.t, go = T.playing && hpv.on;
+  return `<p>Chords, drums, bass line and speed come together. Tap one to hear it with your sounds.</p><div class="mkf-list">${FEELS.map(f => {
+    const on = t.band === f.id, play = on && go;
+    return `<button class="mkf${on ? " on" : ""}${play ? " go" : ""}" data-feel="${f.id}" aria-pressed="${on}"><span class="pl" aria-label="${play ? "Playing" : "Hear " + f.name}">${play ? "<i></i><i></i><i></i>" : SV.play}</span>
+      <span class="tx"><span><b>${f.name}</b><small>${feelMeta(f.id)}</small></span><em>${f.line}</em></span></button>`;
+  }).join("")}</div><div class="more">MORE FEELS ADDED OVER TIME</div>`;
+}
+function mkLeadHTML() {
+  const t = mk.t, f = mk.fing || 1, cur = f === 1 ? t.lead : t.lead2, other = f === 1 ? t.lead2 : t.lead;
+  const tabs = `<div class="mkl-tabs" role="tablist">${[1, 2].map(n => `<button role="tab" data-fing="${n}" class="${f === n ? "on" : ""}" aria-selected="${f === n}"><small>${n === 1 ? "1ST FINGER" : "2ND FINGER"}</small><span>${escH(fingerTxt(t, n))}</span></button>`).join("")}</div>`;
+  const built = (f === 2 ? [["off", "Off"]] : []).concat(LEAD_CHOICES.map(([v, n]) => [v, n === "Electric piano" ? "E. piano" : n]));
+  let h = `<p>${f === 1 ? "The sound under your first finger." : "Plays when a second finger joins in. A synth on one finger and your voice on the other works well."}</p>${tabs}`;
+  h += `<div class="lbl">BUILT-IN SOUNDS</div><div class="mks-grid3">${built.map(([v, n]) => `<button data-ls="${v}" class="${cur === v ? "on" : ""}">${n}</button>`).join("")}</div>`;
+  const picked = cur === "sampler" ? t.recs : [];
+  h += `<div class="lbl">MY SOUNDS (RECORDINGS)${picked.length ? " · PICKED " + picked.length : ""}</div><div class="mks-recs">${samples.map(c => {
+    const i = picked.indexOf(c.name);
+    return `<button data-lr="${escH(c.name)}" class="${i >= 0 ? "on" : ""}" aria-pressed="${i >= 0}">${SV.mic}${escH(c.name)}${i >= 0 && picked.length > 1 ? `<sup>${i + 1}</sup>` : ""}</button>`;
+  }).join("")}<button class="mks-rec" data-a="rec2"><i></i>Record</button></div>`;
+  if (other === "sampler" && cur !== "sampler" && (t.recs || []).length) h += `<span class="tiny">YOUR RECORDINGS ARE ON THE ${f === 1 ? "2ND" : "1ST"} FINGER. PICKING THEM HERE MOVES THEM.</span>`;
+  if (picked.length > 1) h += `<div class="mkl-turns"><span>They <b>take turns</b>, one per press: <q>${picked.slice(0, 3).map(escH).join(" → ")}${picked.length > 2 ? "" : " → " + escH(picked[0])}…</q></span>
+    <button class="mkl-sw" data-shuf="1" aria-pressed="${!!t.shuffle}"><span>Shuffle</span><i></i></button></div>`;
+  if (picked.length) h += `<span class="tiny">RECORDINGS REPEAT WHILE YOU HOLD</span>`;
+  if (f === 2 && t.lead2 && t.lead2 !== "off") h += `<div class="mks-line"><label for="mksVol2">Level</label><input type="range" id="mksVol2" min="0.4" max="1.6" step="0.05" value="${t.vol2 ?? 1}"></div>`;
+  return h;
+}
+function mkChordHTML() {
+  const t = mk.t, own = (feelBase(t.band).pad || {}).sound;
+  return `<p>The feel comes with its own chord sound. Swap it if you like: the chords and rhythm stay the same.</p>
+    <div class="mks-grid"><button data-ch="" class="${!t.chord ? "on" : ""}" style="grid-column:1/-1">The feel's own · ${(PAD[own] || {}).name || own}</button>${Object.entries(PAD).filter(([k]) => k !== own).map(([k, p]) => `<button data-ch="${k}" class="${t.chord === k ? "on" : ""}">${p.name}</button>`).join("")}</div>
+    <span class="tiny">TAP ONE TO HEAR IT WITH THE BAND</span>`;
+}
+{
+  const sh0 = mkSheet;
+  mkSheet = function (k) {
+    if (k === "feel") { mk.sheet = "feel"; mkSheetOpen("FEEL", mkFeelHTML()); return; }
+    if (k === "lead") { mk.sheet = "lead2f"; mkSheetOpen("LEAD SOUND", mkLeadHTML()); return; }
+    if (k === "chord") { mk.sheet = "chord"; mkSheetOpen("CHORD SOUND", mkChordHTML()); return; }
+    if (k === "band") return mkSheet("feel");
+    mk.sheet = k;
+    return sh0.apply(this, arguments);
+  };
+  const close0 = mkSheetClose;
+  mkSheetClose = function () { mk.sheet = null; return close0.apply(this, arguments); };
+}
+const MK_TITLES = { feel: ["FEEL", () => mkFeelHTML()], lead2f: ["LEAD SOUND", () => mkLeadHTML()], chord: ["CHORD SOUND", () => mkChordHTML()] };
+function mkRedraw() { const s = MK_TITLES[mk.sheet]; if (!s || $("mkSheet").hidden) return; const b = $("mksBox"), y = b.scrollTop; mkSheetOpen(s[0], s[1]()); b.scrollTop = y; }
+function mkSetFingerRec(f, name, on) {
+  const t = mk.t, key = f === 1 ? "lead" : "lead2", oth = f === 1 ? "lead2" : "lead";
+  if (t[key] !== "sampler") t.recs = [];
+  if (t[oth] === "sampler") t[oth] = oth === "lead" ? feelWave(t.band) : "off";   // one finger at a time uses recordings
+  if (on) { if (!t.recs.includes(name)) t.recs.push(name); } else t.recs = t.recs.filter(n => n !== name);
+  t[key] = t.recs.length ? "sampler" : (f === 1 ? feelWave(t.band) : "off");
+}
+$("mksBox").addEventListener("click", e => {
+  const t = mk.t, b = e.target.closest("button"); if (!b || !t) return;
+  if (b.dataset.feel) { t.band = b.dataset.feel; mkRender(); mkPreviewPlay(); mkRedraw(); setTimeout(() => { if (mk.sheet === "feel") mkRedraw(); }, 450); return; }
+  if (b.dataset.fing) { mk.fing = +b.dataset.fing; mkRedraw(); return; }
+  if (b.dataset.ls) {
+    const f = mk.fing || 1;
+    if (f === 1) t.lead = b.dataset.ls; else t.lead2 = b.dataset.ls;
+    if (t.lead !== "sampler" && t.lead2 !== "sampler") t.recs = [];
+    if (b.dataset.ls !== "off") mkTaste("lead", b.dataset.ls, [0, 3, 7, 12]);
+    mkRedraw(); mkRender(); return;
+  }
+  if (b.dataset.lr) {
+    const f = mk.fing || 1, cur = f === 1 ? t.lead : t.lead2, on = !(cur === "sampler" && t.recs.includes(b.dataset.lr));
+    mkSetFingerRec(f, b.dataset.lr, on);
+    const c = samples.find(s => s.name === b.dataset.lr); if (on && c) { if (!c.buf) try { c.buf = clipBuf(c); } catch (_) {} try { playClipOnce(c); } catch (_) {} }
+    mkRedraw(); mkRender(); return;
+  }
+  if (b.dataset.shuf) { t.shuffle = !t.shuffle; mkRedraw(); return; }
+  if (b.dataset.ch !== undefined && mk.sheet === "chord") { t.chord = b.dataset.ch || null; mkRedraw(); mkRender(); mkPreviewPlay(); return; }
+  if (b.dataset.a === "rec2") {
+    mk.recBefore = samples.map(s => s.name); mk.recFor = "lead"; mk.bassBefore = t.myBass; mk.reopen = "lead";
+    mkSheetClose(); vs.part = "lead"; vs.fromMk = true; vsOpen(); return;
+  }
+});
+// back from recording: the new recording joins the finger you were on; nothing else changes
+{
+  const vc0 = vsClose;
+  vsClose = function () {
+    const from = vs.fromMk, before = mk.recBefore, t = mk.t;
+    const r = vc0.apply(this, arguments);
+    if (from && t) {
+      t.myLead = null;
+      if (before) {
+        t.myBass = mk.bassBefore || null;
+        const neu = samples.filter(s => !before.includes(s.name));
+        if (neu.length) mkSetFingerRec(mk.fing || 1, neu[neu.length - 1].name, true);
+      }
+      mk.recBefore = null; mkRender();
+      if (mk.reopen) { const k = mk.reopen; mk.reopen = null; setTimeout(() => mkSheet(k), 60); }
+    }
+    return r;
+  };
+}
+// the Feel sheet shows which feel is playing
+setInterval(() => { if (mk.sheet === "feel" && !$("mkSheet").hidden) { const go = T.playing && hpv.on, el = $("mksBox").querySelector(".mkf.on"); if (el && el.classList.contains("go") !== go) mkRedraw(); } }, 600);
+
+/* ----- creator mode: the Full Studio is hidden unless you switch it on ----- */
+const CRE = { on: false, taps: 0, t: 0 };
+try { CRE.on = localStorage.getItem("glasspad.creator") === "1"; } catch (_) {}
+function creSync() {
+  const b = $("hmStudio"); if (b) b.hidden = !CRE.on;
+  $("home").classList.toggle("nocre", !CRE.on);
+  const s = $("gCreator"); if (s) s.setAttribute("aria-pressed", CRE.on);
+}
+function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator", CRE.on ? "1" : "0"); } catch (_) {} creSync(); }
+{
+  const g = document.querySelector(".gtest");
+  if (g) {
+    const r = document.createElement("div"); r.className = "gr";
+    r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
+    g.querySelector("h3").after(r);
+    $("gCreator").addEventListener("click", () => creSet(!CRE.on));
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.62 TEST";
+    g.after(v);
+  }
+  document.addEventListener("click", e => {
+    if (!e.target.closest(".hm-ver, #gVer")) return;
+    const now = Date.now(); CRE.taps = now - CRE.t < 1500 ? CRE.taps + 1 : 1; CRE.t = now;
+    if (CRE.taps >= 7) { CRE.taps = 0; creSet(!CRE.on); toast(CRE.on ? "Creator mode on: Studio is on Home" : "Creator mode off"); }
+  }, true);
+  creSync();
+  const ho = homeOpen; homeOpen = function () { const r = ho.apply(this, arguments); creSync(); return r; };
+}
+
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }
 

@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.66.1 TEST · game mode · 12 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.67 TEST · game mode · 13 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1527,7 +1527,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.66.1 TEST · game mode · 12 Oct 2026</p>
+      <p class="ver">GlassPad 5.67 TEST · game mode · 13 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10197,7 +10197,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.66.1 TEST</p>
+    <p class="hm-ver">GlassPad 5.67 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14373,7 +14373,7 @@ SV.feel = c => `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width=
 SV.chords = c => `<svg viewBox="0 0 20 18" fill="${c}"><rect x="2" y="2" width="4" height="14" rx="2"/><rect x="8" y="5" width="4" height="11" rx="2"/><rect x="14" y="8" width="4" height="8" rx="2"/></svg>`;
 const leadName = v => v === "off" ? "Off" : nameOf(LEAD_CHOICES, v);
 const FX_NAMES = { clean: "Clean", feel: "Feel's", big: "Big" };
-const fingerTxt = (t, f) => {
+let fingerTxt = (t, f) => {
   const v = f === 1 ? t.lead : t.lead2, r = f === 1 ? t.recs : t.recs2;
   return v === "sampler" ? "My sounds · " + (r || []).join(" + ") : leadName(v || (f === 1 ? "supersaw" : "off"));
 };
@@ -14390,12 +14390,12 @@ const fingerTxt = (t, f) => {
     const padNm = k => (PAD[k] || {}).name || k;
     const step = (n, k, ic, lbl, val, sub, o = {}) => `<button class="mk-step${o.hl ? " hl" : ""}${o.todo ? " todo" : ""}" data-k="${k}"><span class="n">${n}</span><span class="ic">${ic}</span>
       <span class="tx"><small>${lbl}${o.opt ? "<em>OPTIONAL</em>" : ""}</small><b>${escH(val)}</b>${sub ? `<i>${escH(sub)}</i>` : ""}</span><span class="cv">${CHEV}</span></button>`;
-    const sp = t.speed || "asis", fxs = (k, on) => on ? " · " + FX_NAMES[fxAuto(t, k)] + " effects" : "";
+    const sp = t.speed || "asis", fxs = (k, on) => { if (!on) return ""; if (labRef(k === "fx1" ? t.lead : k === "fx2" ? t.lead2 : t.bass)) return " · its own effects"; return " · " + FX_NAMES[fxAuto(t, k)] + " effects"; };
     $("mkRows").innerHTML = [
       step(1, "photo", t.pic ? `<img src="${t.pic}" alt="">` : SV.photo, "PHOTO", t.pic ? "Your photo" : got ? "The feel's picture" : "No photo yet", ""),
       step(2, "cols", `<i style="background:${lead};box-shadow:0 0 6px ${lead}"></i><i style="background:${bassC};box-shadow:0 0 6px ${bassC}"></i><i style="background:${hi};box-shadow:0 0 6px ${hi}"></i>`, "COLOURS", t.cols.join(" · "), ""),
       step(3, "lead", SV.wave(lead), "LEAD", fingerTxt(t, 1) + fxs("fx1", true), "2nd finger: " + fingerTxt(t, 2) + fxs("fx2", t.lead2 && t.lead2 !== "off")),
-      step(4, "bass", SV.wave(bassC), "BASS", (t.bassRec ? "My sounds · " + t.bassRec : nameOf(BASS_CHOICES, t.bass)) + fxs("fxB", true), ""),
+      step(4, "bass", SV.wave(bassC), "BASS", (labRef(t.bass) ? labRef(t.bass).name : t.bassRec ? "My sounds · " + t.bassRec : nameOf(BASS_CHOICES, t.bass)) + fxs("fxB", true), ""),
       got ? step(5, "feel", SV.feel(lead), "FEEL", f.name, `${f.line} · ${Math.round(pb.bpm * (FEEL_SPEED[sp] || 1))} bpm`, { hl: true })
           : step(5, "feel", SV.feel(lead), "FEEL", "Pick a feel", "chords, drums and bass line come with it", { hl: true, todo: true }),
       step(6, "chord", SV.chords(hi), "CHORD SOUND", t.chord ? padNm(t.chord) : got ? "The feel's own · " + padNm(pb.pad && pb.pad.sound) : "The feel's own", "", { opt: true }),
@@ -14660,7 +14660,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.66.1 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.67 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -14948,7 +14948,7 @@ $("mksBox").addEventListener("click", e => {
     mkFxLive(true);
     const [k] = b.dataset.fx.split(":"), t = mk.t;
     if (k === "fxB") mkRiff("bass", 1);
-    else if (k === "fx2") mkRiff("lead", 1, { lead: t.lead2, recs: t.lead2 === "sampler" ? t.recs2 : null, second: true });
+    else if (k === "fx2") { const e2 = labExpand(t); mkRiff("lead", 1, { lead: e2.lead2, recs: e2.lead2 === "sampler" ? e2.recs2 : null, second: true }); }
     else mkRiff("lead", 1);
   }, 30);
 });
@@ -15225,6 +15225,589 @@ $("smBox").addEventListener("change", () => smSave());
 { const t = setInterval(() => { if (audio) { clearInterval(t); smSpace(SM.space); } }, 500); }
 // leaving game mode (Studio) puts solo back and the room at its normal size
 { const sg0 = setGame; setGame = function (on) { if (!on) { try { smUnsolo(); smSpace(1); if (SM.open) smClose(); } catch (_) {} } return sg0.apply(this, arguments); }; }
+
+/* ---------- 5.67: the sound lab (slice 3), the shared sound picker, pills, Strips ----------
+   Sound lab (Home → Sound lab): your lead and bass sounds (glasspad.lab = { sounds: [...] }). A sound:
+   { id, name, kind: "lead"|"bass", base: { t: "synth", v: wave } | { t: "rec", v: recording name }, level, tone, fx,
+     glide, autoVib (lead) }. Lead fx = the lead pedals (S format, echo send / reverb mix); bass fx = PFX.bass format.
+   A theme uses one as "lab:<id>" on lead / lead2 / bass; labExpand() turns that into a plain synth or recordings for the
+   engine, and the theme's preset gets the sound's tone, effects, glide/vibrato and level (lead2 gets the effects as its
+   own pedals and the level; tone and glide are shared with the 1st finger: the engine has one set).
+   The picker window (#pk2, tabs Yours · Synths · Recordings) is used by the sound page ("Starts from") and by Make your
+   own's Lead/Bass sheets (one SOUND button per finger). Saving a sound themes use asks: Save for all / Save as new.
+   Pills: ‹ Home · Solo · Mix · Edit in the Stop/Loop/Rec font, outlined in the theme's lead colour (bass colour when the
+   lead is red or yellow). Settings → Strips: All (default) / Fewer (at most 11 standing up, 16 on its side). */
+const LAB = { store: { sounds: [] }, cur: null, orig: null, prev: null, view: "home", pick: null };
+try { const s = JSON.parse(localStorage.getItem("glasspad.lab") || "null"); if (s && Array.isArray(s.sounds)) LAB.store = s; } catch (_) {}
+const labSave = () => { try { localStorage.setItem("glasspad.lab", JSON.stringify(LAB.store)); return true; } catch (_) { toast("Not enough room on the phone to save that sound"); return false; } };
+const labGet = id => LAB.store.sounds.find(s => s.id === id);
+const labRef = v => typeof v === "string" && v.startsWith("lab:") ? labGet(v.slice(4)) : null;
+const labUsedBy = id => MY.list.filter(t => [t.lead, t.lead2, t.bass].includes("lab:" + id));
+const LEAD_FX_IDS = ["octave", "drive", "chorus", "flanger", "phaser", "trem"], BASS_FX_IDS = ["drive", "chorus", "filter", "octave", "comp"];
+const bmc = o => JSON.parse(JSON.stringify(o));
+function labNew(kind) {
+  const D = DEFAULT_PRESET, n = LAB.store.sounds.filter(s => s.kind === kind).length + 1;
+  if (kind === "lead") {
+    const fx = bmc(D.fx || {}); for (const id of LEAD_FX_IDS) fx[id] = { ...(fx[id] || {}), on: false };
+    fx.echo = { on: true, send: .3 }; fx.reverb = { on: true, mix: .3 };
+    return { id: "s" + Date.now().toString(36), name: "Lead sound " + n, kind, base: { t: "synth", v: "supersaw" }, level: 1, tone: { ...(D.tone || tone) }, fx, glide: false, autoVib: false };
+  }
+  const fx = bmc(PFX_DEF.bass); for (const id of BASS_FX_IDS) fx[id] = { ...fx[id], on: id === "comp" };
+  return { id: "s" + Date.now().toString(36), name: "Bass sound " + n, kind, base: { t: "synth", v: "finger" }, level: .9, tone: { ...(D.bassTone || bassTone) }, fx };
+}
+// a theme's sound slots, turned into what the engine plays (a synth or recordings)
+function labExpand(t) {
+  if (!t) return t;
+  const e = { ...t }, a = labRef(t.lead), b = labRef(t.lead2), c = labRef(t.bass);
+  if (a) { if (a.base.t === "rec") { e.lead = "sampler"; e.recs = [a.base.v]; } else { e.lead = a.base.v; e.recs = []; } e.fx1 = "feel"; }
+  if (b) { if (b.base.t === "rec") { e.lead2 = "sampler"; e.recs2 = [b.base.v]; } else { e.lead2 = b.base.v; e.recs2 = []; } e.fx2 = "feel"; }
+  if (c) { if (c.base.t === "rec") { e.bassRec = c.base.v; } else { e.bass = c.base.v; e.bassRec = null; } e.fxB = "feel"; }
+  if (!a && t.lead && String(t.lead).startsWith("lab:")) { e.lead = "supersaw"; }
+  if (!b && t.lead2 && String(t.lead2).startsWith("lab:")) { e.lead2 = "off"; }
+  if (!c && t.bass && String(t.bass).startsWith("lab:")) { e.bass = "finger"; }
+  return e;
+}
+// lab sounds into a preset
+function labIntoPreset(p, t) {
+  const a = labRef(t.lead), b = labRef(t.lead2), c = labRef(t.bass);
+  if (a) {
+    p.fx = p.fx || {}; for (const id of [...LEAD_FX_IDS]) p.fx[id] = { ...(p.fx[id] || {}), ...(a.fx[id] || {}) };
+    p.fx.echo = { ...(p.fx.echo || {}), on: !!(a.fx.echo && a.fx.echo.on), send: (a.fx.echo || {}).send ?? .3 };
+    p.fx.reverb = { ...(p.fx.reverb || {}), on: !!(a.fx.reverb && a.fx.reverb.on), mix: (a.fx.reverb || {}).mix ?? .3 };
+    p.tone = { ...(p.tone || {}), ...a.tone }; p.glide = !!a.glide; p.autoVib = !!a.autoVib;
+    p.lead = p.lead || {}; p.lead.vol = a.level ?? 1;
+  }
+  if (b) {
+    p.pfx = p.pfx || {}; const l2 = {};
+    for (const id of ["octave", "drive", "chorus", "phaser", "trem"]) l2[id] = { ...(PFX_DEF.lead2[id] || {}), ...(b.fx[id] || {}) };
+    l2.echo = { on: !!(b.fx.echo && b.fx.echo.on), send: (b.fx.echo || {}).send ?? .3 };
+    l2.reverb = { on: !!(b.fx.reverb && b.fx.reverb.on), send: (b.fx.reverb || {}).mix ?? .3 };
+    p.pfx.lead2 = l2; p.lead = p.lead || {}; p.lead.vol2 = b.level ?? 1;
+  }
+  if (c) { p.pfx = p.pfx || {}; p.pfx.bass = bmc(c.fx); p.bassTone = { ...(p.bassTone || {}), ...c.tone }; p.bass = p.bass || {}; p.bass.vol = c.level ?? .9; p.bass.on = true; }
+}
+{
+  const reg0 = myRegister;
+  myRegister = function (t) {
+    const has = [t.lead, t.lead2, t.bass].some(v => typeof v === "string" && v.startsWith("lab:"));
+    if (!has) return reg0.apply(this, arguments);
+    const e = labExpand(myNorm(t)); reg0.call(this, e);
+    for (const set of [QSTYLES_SYNTH, QSTYLES_ORIGINAL]) { const s = set[t.id]; if (s) labIntoPreset(s.p, t); }
+  };
+  MY.list.forEach(t => { if ([t.lead, t.lead2, t.bass].some(v => typeof v === "string" && v.startsWith("lab:"))) myRegister(t); });
+  const ap0 = myApplyRecs;
+  myApplyRecs = function (t) { return ap0.call(this, labExpand(t)); };
+}
+
+/* ----- hearing a sound: put it on the engine for a moment ----- */
+function labLive(s) {
+  if (!s) return; ensureAudio();
+  if (s.kind === "lead") {
+    for (const id of [...LEAD_FX_IDS, "echo", "reverb"]) { Object.assign(S[id], s.fx[id] || {}); applyFx(id); }
+    Object.assign(tone, s.tone || {});
+  } else {
+    const pf = bmc(PFX); pf.bass = bmc(s.fx); setPfx(pf); Object.assign(bassTone, s.tone || {});
+  }
+}
+const labOver = s => s.kind === "lead" ? { lead: s.base.t === "rec" ? "sampler" : s.base.v, recs: s.base.t === "rec" ? [s.base.v] : null, neutral: !mk.t || $("mk").hidden }
+                                        : { bass: s.base.t === "rec" ? "sampler" : s.base.v, bassRec: s.base.t === "rec" ? s.base.v : null, neutral: !mk.t || $("mk").hidden };
+function labHear(s, after) {
+  labLive(s); mkRiff(s.kind, 1, labOver(s));
+  clearTimeout(LAB.hearT); LAB.hearT = setTimeout(() => { if (after) after(); }, 3200);
+}
+// the riff: neutral key/tempo outside Make your own, lab sounds expanded
+{
+  const rk0 = riffKey;
+  riffKey = function () { if (RIFF.neutral) return { root: 9, third: 3, bpm: 90 }; return rk0.apply(this, arguments); };
+  const mr0 = mkRiff;
+  mkRiff = function (parts, bars, over) {
+    RIFF.neutral = !!(over && over.neutral);
+    const keep = mk.t; if (mk.t) mk.t = labExpand(mk.t);
+    try { return mr0.apply(this, arguments); } finally { mk.t = keep; RIFF.neutral = false; }
+  };
+  const fl0 = mkFxLive;
+  mkFxLive = function (force) {
+    const r = fl0.apply(this, arguments);
+    try { const t = mk.t; if (!t || $("mk").hidden) return r; const a = labRef(t.lead), c = labRef(t.bass); if (a) Object.assign(tone, a.tone || {}); if (c) Object.assign(bassTone, c.tone || {}); } catch (_) {}
+    return r;
+  };
+}
+
+/* ----- styles ----- */
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  /* pills */
+  body.game:not(.studio) #styleChip, body.game:not(.studio) #gSM, body.game:not(.studio) #gEdit { font: 600 12.5px var(--mono) !important; letter-spacing: 0 !important; border: 1.5px solid var(--pl, #ff3fd8) !important; box-shadow: 0 0 10px color-mix(in srgb, var(--pl, #ff3fd8) 50%, transparent) !important; background: rgba(10,8,22,.6) !important; color: #fff !important; }
+  body.game:not(.studio) #styleName::after { content: "Home" !important; font: 600 12.5px var(--mono) !important; letter-spacing: 0 !important; }
+  body.game:not(.studio) #gSM[aria-expanded="true"] { background: var(--pl, #ff3fd8) !important; color: #0a0412 !important; }
+  /* home */
+  #home .hm-two { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  #hmStudio { display: none !important; }
+  #home #hmLab { --c: var(--nl); }
+  /* lab pages */
+  #lab { position: fixed; inset: 0; z-index: 58; background: #05060b; color: #eef1f7; overflow-y: auto; overflow-x: hidden; isolation: isolate; --lc: #ff3fd8; }
+  #lab[hidden] { display: none; }
+  #lab::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background-image: repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 39px); }
+  .lb { box-sizing: border-box; max-width: 560px; margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) 16px 110px; display: flex; flex-direction: column; gap: 10px; }
+  .lb-top { display: flex; align-items: center; gap: 12px; min-height: 48px; }
+  .lb-top > div { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .lb-top small { font: 500 10px var(--mono); letter-spacing: .14em; color: #c9bfff; }
+  .lb-top h2 { margin: 0; font: 900 22px var(--display); color: #fff; text-shadow: 0 0 10px var(--lc), 0 0 24px color-mix(in srgb, var(--lc) 55%, transparent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lb-chg { height: 34px; padding: 0 12px; border-radius: 17px; background: color-mix(in srgb, var(--lc) 20%, transparent); border: 1.5px solid var(--lc); color: #fff; font: 500 11px var(--mono); white-space: nowrap; }
+  .lb-chg[hidden] { display: none; }
+  .lb p { margin: 0; font: 400 13.5px "IBM Plex Sans", var(--body); color: #cfc7f0; }
+  .lb-h { display: flex; align-items: center; gap: 8px; font: 700 13px var(--display); letter-spacing: .08em; color: #fff; margin-top: 4px; }
+  .lb-h::after { content: ""; flex: 1; height: 1.5px; background: linear-gradient(90deg, var(--hc, var(--lc)), transparent); opacity: .7; order: 1; }
+  .lb-h span { order: 2; font: 500 10px var(--mono); color: #a99fd0; }
+  .lb-row { min-height: 56px; border-radius: 14px; background: rgba(6,3,14,.85); border: 1.5px solid rgba(255,255,255,.16); display: flex; align-items: center; gap: 11px; padding: 0 10px 0 9px; }
+  .lb-row .pl { width: 38px; height: 38px; flex: none; border-radius: 50%; border: 1.5px solid var(--rc, var(--lc)); background: transparent; color: #fff; display: grid; place-items: center; padding: 0; }
+  .lb-row .pl svg { width: 12px; height: 12px; }
+  .lb-row .tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; background: transparent; border: 0; color: #fff; text-align: left; padding: 6px 0; }
+  .lb-row .tx b { font: 600 15px "IBM Plex Sans", var(--body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lb-row .tx small { font: 400 9.5px var(--mono); letter-spacing: .08em; color: #a99fd0; text-transform: uppercase; }
+  .lb-row .cv { color: #c9bfff; } .lb-row .cv svg { width: 13px; height: 13px; }
+  .lb-new { height: 46px; border-radius: 14px; background: transparent; border: 1.5px dashed color-mix(in srgb, var(--rc, var(--lc)) 70%, transparent); color: #fff; font: 400 14px "IBM Plex Sans", var(--body); }
+  .lb-mys { min-height: 72px; border-radius: 16px; background: rgba(40,6,16,.6); border: 1.5px solid rgba(255,107,120,.75); box-shadow: 0 0 14px rgba(255,77,94,.35); color: #fff; display: flex; align-items: center; gap: 12px; padding: 0 12px; text-align: left; }
+  .lb-mys > span:first-child { width: 48px; height: 48px; flex: none; border-radius: 50%; background: rgba(255,77,94,.18); border: 1.5px solid #ff6b78; display: grid; place-items: center; color: #ff6b78; }
+  .lb-mys svg { width: 22px; height: 22px; }
+  .lb-mys b { display: block; font: 700 15px var(--display); } .lb-mys small { font: 400 12.5px "IBM Plex Sans", var(--body); color: #e6c9d0; }
+  .lb-studio { height: 46px; border-radius: 14px; background: transparent; border: 1.5px solid #f2b04a; color: #f2b04a; font: 600 12px var(--mono); letter-spacing: .1em; }
+  .lb-empty { font: 400 13px "IBM Plex Sans", var(--body); color: #a99fd0; padding: 2px 4px; }
+  .lb-sec { border-radius: 18px; background: rgba(8,4,18,.8); border: 1.5px solid color-mix(in srgb, var(--lc) 35%, transparent); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .lb-sh { display: flex; align-items: center; gap: 10px; }
+  .lb-sh i { width: 24px; height: 24px; flex: none; border-radius: 50%; border: 1.5px solid var(--lc); display: grid; place-items: center; font: normal 700 11px var(--display); color: #fff; }
+  .lb-sh b { font: 700 13px var(--display); letter-spacing: .08em; color: #fff; }
+  .lb-sh::after { content: ""; flex: 1; height: 1.5px; background: linear-gradient(90deg, var(--lc), transparent); opacity: .7; }
+  .lb-sl { display: flex; align-items: center; gap: 10px; min-height: 40px; }
+  .lb-sl > span { width: 96px; flex: none; font: 500 11px var(--mono); letter-spacing: .1em; color: #b8aee6; }
+  .lb-sl input { flex: 1; min-width: 0; accent-color: var(--lc); }
+  .lb-sl output { width: 54px; flex: none; text-align: right; font: 400 12px var(--mono); }
+  .lb-sl.dim { opacity: .35; pointer-events: none; }
+  .lb-note { font: 400 12px "IBM Plex Sans", var(--body); color: #a99fd0; }
+  .lb-from { min-height: 62px; border-radius: 14px; background: rgba(6,3,14,.9); border: 1.5px solid var(--lc); box-shadow: 0 0 12px color-mix(in srgb, var(--lc) 45%, transparent); color: #fff; display: flex; align-items: center; gap: 12px; padding: 0 12px; text-align: left; }
+  .lb-from > span:nth-child(1) { width: 38px; height: 38px; flex: none; border-radius: 10px; background: rgba(255,255,255,.06); display: grid; place-items: center; }
+  .lb-from svg { width: 20px; height: 20px; }
+  .lb-from > span:nth-child(2) { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .lb-from small { font: 500 9.5px var(--mono); letter-spacing: .1em; color: #a99fd0; } .lb-from b { font: 600 16px "IBM Plex Sans", var(--body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lb-from em { font-style: normal; height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid rgba(255,255,255,.25); color: #c9bfff; font: 400 12.5px "IBM Plex Sans", var(--body); display: flex; align-items: center; }
+  .lb-peds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .lb-ped { border-radius: 13px; background: rgba(6,3,14,.9); border: 1.5px solid rgba(255,255,255,.2); padding: 9px 10px; display: flex; flex-direction: column; gap: 6px; opacity: .8; }
+  .lb-ped.on { border-color: var(--lc); box-shadow: 0 0 10px color-mix(in srgb, var(--lc) 45%, transparent); opacity: 1; }
+  .lb-ped .pt { display: flex; align-items: center; justify-content: space-between; background: transparent; border: 0; color: #fff; padding: 0; font: 600 13px "IBM Plex Sans", var(--body); min-height: 28px; }
+  .lb-ped .pt span { display: flex; align-items: center; gap: 5px; font: 500 9px var(--mono); color: #8a84a8; }
+  .lb-ped.on .pt span { color: #fff; }
+  .lb-ped .pt span::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: #3a3f4d; }
+  .lb-ped.on .pt span::after { background: var(--lc); box-shadow: 0 0 8px var(--lc); }
+  .lb-ped label { display: flex; justify-content: space-between; font: 500 9.5px var(--mono); color: #b8aee6; }
+  .lb-ped input { width: 100%; accent-color: var(--lc); margin: 0; }
+  .lb-sw { display: flex; align-items: center; gap: 10px; min-height: 44px; background: transparent; border: 0; color: #fff; padding: 0; text-align: left; width: 100%; }
+  .lb-sw span { flex: 1; font: 400 14px "IBM Plex Sans", var(--body); } .lb-sw small { display: block; font-size: 12px; color: #a99fd0; }
+  .lb-sw i { width: 46px; height: 28px; border-radius: 14px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); position: relative; flex: none; }
+  .lb-sw i::after { content: ""; position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: #c9bfff; transition: left .15s; }
+  .lb-sw[aria-pressed="true"] i { background: var(--lc); border-color: var(--lc); } .lb-sw[aria-pressed="true"] i::after { left: 21px; background: #0a0412; }
+  .lb-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .lb-acts button { height: 42px; border-radius: 12px; background: transparent; border: 1px solid rgba(255,255,255,.25); color: #fff; font: 400 13px "IBM Plex Sans", var(--body); }
+  .lb-acts button.del { border-color: rgba(255,107,120,.5); color: #ffb3bb; } .lb-acts button.del.sure { background: #ff4d5e; color: #fff; }
+  .lb-name { height: 44px; box-sizing: border-box; border-radius: 12px; background: rgba(16,18,28,.9); border: 1.5px solid rgba(255,255,255,.22); color: #fff; padding: 0 12px; font: 400 15px "IBM Plex Sans", var(--body); width: 100%; -webkit-user-select: text; user-select: text; }
+  .lb-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 2; padding: 12px 16px max(14px, env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgba(5,6,11,0), rgba(5,6,11,.96) 35%); display: flex; gap: 10px; max-width: 560px; margin: 0 auto; box-sizing: border-box; }
+  .lb-dock[hidden] { display: none; }
+  .lb-dock button { height: 56px; border-radius: 18px; font: 700 13px var(--display); letter-spacing: .05em; }
+  #lbTry { flex: 1; background: rgba(8,4,18,.9); border: 1.5px solid var(--lc); color: #fff; box-shadow: 0 0 14px color-mix(in srgb, var(--lc) 50%, transparent); -webkit-user-select: none; user-select: none; touch-action: none; }
+  #lbTry.go { background: var(--lc); color: #0a0412; }
+  #lbSave { width: 120px; border: 0; background: var(--lc); color: #0a0412; font-weight: 900; box-shadow: 0 0 18px color-mix(in srgb, var(--lc) 55%, transparent); }
+  /* picker */
+  #pk2 { position: fixed; inset: 0; z-index: 62; }
+  #pk2[hidden] { display: none; }
+  #pk2 .bk { position: absolute; inset: 0; background: rgba(3,3,10,.55); }
+  .pk2 { position: absolute; left: 0; right: 0; bottom: 0; top: 18vh; box-sizing: border-box; border-radius: 24px 24px 0 0; background: rgba(10,6,22,.98); border-top: 2px solid var(--pc); box-shadow: 0 -4px 24px color-mix(in srgb, var(--pc) 55%, transparent); color: #eef1f7; display: flex; flex-direction: column; gap: 10px; padding: 10px 14px max(16px, env(safe-area-inset-bottom)); }
+  @media (orientation: landscape) { .pk2 { top: 4vh; left: 50%; right: auto; width: min(560px, 94vw); transform: translateX(-50%); } }
+  .pk2-top { display: flex; align-items: center; gap: 10px; flex: none; }
+  .pk2-top b { font: 900 19px var(--display); color: #fff; text-shadow: 0 0 10px var(--pc); }
+  .pk2-top button { margin-left: auto; height: 38px; padding: 0 18px; border-radius: 19px; border: 0; background: var(--pc); color: #05060b; font: 700 13px var(--display); }
+  .pk2-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-radius: 13px; overflow: hidden; border: 1.5px solid color-mix(in srgb, var(--pc) 45%, transparent); flex: none; }
+  .pk2-tabs button { height: 42px; border: 0; background: transparent; color: #c9bfff; font: 400 13px "IBM Plex Sans", var(--body); }
+  .pk2-tabs button small { font: 500 9.5px var(--mono); opacity: .8; margin-left: 4px; }
+  .pk2-tabs button.on { background: var(--pc); color: #05060b; font-weight: 600; }
+  .pk2-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-bottom: 6px; }
+  .pk2-row { min-height: 56px; flex: none; border-radius: 14px; background: rgba(6,3,14,.85); border: 1.5px solid rgba(255,255,255,.16); display: flex; align-items: center; gap: 11px; padding: 0 12px 0 9px; color: #fff; }
+  .pk2-row.on { background: color-mix(in srgb, var(--pc) 16%, transparent); border-color: var(--pc); box-shadow: 0 0 12px color-mix(in srgb, var(--pc) 45%, transparent); }
+  .pk2-row .pl { width: 38px; height: 38px; flex: none; border-radius: 50%; border: 1.5px solid var(--pc); background: transparent; color: #fff; display: grid; place-items: center; padding: 0; }
+  .pk2-row.rec .pl { border-color: #ff6b78; }
+  .pk2-row .pl svg { width: 12px; height: 12px; }
+  .pk2-row .tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; background: transparent; border: 0; color: #fff; text-align: left; padding: 8px 0; }
+  .pk2-row .tx b { font: 600 15px "IBM Plex Sans", var(--body); }
+  .pk2-row .tx small { font: 400 9.5px var(--mono); letter-spacing: .06em; color: #a99fd0; text-transform: uppercase; }
+  .pk2-row .tick { width: 26px; height: 26px; flex: none; border-radius: 50%; background: var(--pc); color: #05060b; display: grid; place-items: center; font: 700 13px var(--mono); }
+  .pk2-row .tick[hidden] { display: none; }
+  .pk2-add { min-height: 48px; flex: none; border-radius: 14px; background: rgba(255,77,94,.1); border: 1.5px dashed rgba(255,107,120,.7); color: #fff; font: 400 14px "IBM Plex Sans", var(--body); }
+  .pk2-note { font: 500 9.5px var(--mono); letter-spacing: .06em; color: #a99fd0; text-align: center; flex: none; }
+  /* Make your own: one SOUND button per finger */
+  .mk-pickbtn { min-height: 60px; border-radius: 14px; background: rgba(6,3,14,.9); border: 1.5px solid var(--mkc); box-shadow: 0 0 12px color-mix(in srgb, var(--mkc) 45%, transparent); color: #fff; display: flex; align-items: center; gap: 12px; padding: 0 12px; text-align: left; width: 100%; box-sizing: border-box; }
+  .mk-pickbtn > span:first-child { width: 38px; height: 38px; flex: none; border-radius: 10px; background: rgba(255,255,255,.06); display: grid; place-items: center; }
+  .mk-pickbtn svg { width: 20px; height: 20px; }
+  .mk-pickbtn > span:nth-child(2) { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .mk-pickbtn small { font: 500 9.5px var(--mono); letter-spacing: .1em; color: #a99fd0; } .mk-pickbtn b { font: 600 15.5px "IBM Plex Sans", var(--body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mk-pickbtn em { font-style: normal; height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid rgba(255,255,255,.25); color: #c9bfff; font: 400 12.5px "IBM Plex Sans", var(--body); display: flex; align-items: center; flex: none; }
+  .mk-editrec { height: 40px; border-radius: 12px; background: transparent; border: 1px dashed rgba(255,107,120,.6); color: #ffb3bb; font: 400 13px "IBM Plex Sans", var(--body); }
+  /* warning */
+  #lbWarn { position: fixed; inset: 0; z-index: 63; display: grid; place-items: center; background: rgba(3,3,10,.6); }
+  #lbWarn[hidden] { display: none; }
+  #lbWarn > div { width: min(360px, 90vw); border-radius: 20px; background: #0d0818; border: 1.5px solid var(--lc, #ff3fd8); box-shadow: 0 0 24px color-mix(in srgb, var(--lc, #ff3fd8) 45%, transparent); padding: 16px; display: flex; flex-direction: column; gap: 12px; color: #eef1f7; }
+  #lbWarn b { font: 700 16px "IBM Plex Sans", var(--body); } #lbWarn p { margin: 0; font: 400 13.5px "IBM Plex Sans", var(--body); color: #cfc7f0; }
+  #lbWarn button { height: 46px; border-radius: 14px; background: transparent; border: 1.5px solid rgba(255,255,255,.25); color: #fff; font: 400 14px "IBM Plex Sans", var(--body); }
+  #lbWarn button.main { background: var(--lc, #ff3fd8); border: 0; color: #0a0412; font-weight: 700; }`;
+  document.head.appendChild(st);
+}
+const LBI = {
+  wave: c => `<svg viewBox="0 0 20 12" fill="none" stroke="${c}" stroke-width="1.8" stroke-linejoin="round"><path d="M1 11 L5 2 L9 11 L13 2 L17 11"/></svg>`,
+  star: c => `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg>`,
+};
+const synthName = (kind, v) => kind === "lead" ? (v === "off" ? "Off" : nameOf(LEAD_CHOICES, v)) : String(nameOf(BASS_CHOICES, v)).replace(" (headphones)", "");
+const labBaseTxt = s => s.base.t === "rec" ? "Recording · " + s.base.v : synthName(s.kind, s.base.v);
+const labColour = kind => { try { const c = neonCols(gameKey()); return kind === "bass" ? c.bass : c.lead; } catch (_) { return kind === "bass" ? "#2fd6ff" : "#ff3fd8"; } };
+
+/* ----- the picker window ----- */
+{
+  const d = document.createElement("div"); d.id = "pk2"; d.hidden = true;
+  d.innerHTML = `<div class="bk" id="pk2Bk"></div><div class="pk2" role="dialog" aria-label="Pick a sound"><div class="pk2-top"><b id="pk2T">SOUND</b><button id="pk2Done">Done</button></div>
+    <div class="pk2-tabs" role="tablist" id="pk2Tabs"></div><div class="pk2-list" id="pk2List"></div><div class="pk2-note">▶ TO HEAR · TAP A ROW TO PICK IT</div></div>`;
+  document.body.appendChild(d);
+}
+// o: { title, kind, cur: { t, v, recs }, multi, off, yours, col, onPick(sel), onRecord(), onClose() }
+function pickOpen(o) {
+  LAB.pick = o; o.tab = o.tab || (o.cur.t === "lab" ? "yours" : o.cur.t === "rec" ? "recs" : (o.yours !== false && o.cur.t === "lab") ? "yours" : "synths");
+  $("pk2").style.setProperty("--pc", o.col || "#ff3fd8"); $("pk2T").textContent = o.title; pickRender(); $("pk2").hidden = false;
+}
+function pickClose() { const o = LAB.pick; $("pk2").hidden = true; LAB.pick = null; mkRiffStop(); if (o && o.onClose) o.onClose(); }
+function pickRender() {
+  const o = LAB.pick; if (!o) return;
+  const yours = LAB.store.sounds.filter(s => s.kind === o.kind && (!o.exclude || s.id !== o.exclude));
+  const tabs = [["yours", "Yours", yours.length], ["synths", "Synths", null], ["recs", "Recordings", samples.length]].filter(([k]) => k !== "yours" || o.yours !== false);
+  $("pk2Tabs").style.gridTemplateColumns = `repeat(${tabs.length}, minmax(0, 1fr))`;
+  $("pk2Tabs").innerHTML = tabs.map(([k, n, c]) => `<button role="tab" data-tab="${k}" class="${o.tab === k ? "on" : ""}" aria-selected="${o.tab === k}">${n}${c != null ? `<small>${c}</small>` : ""}</button>`).join("");
+  const c = o.cur, row = (key, name, sub, on, rec, n) => `<div class="pk2-row${on ? " on" : ""}${rec ? " rec" : ""}" data-k="${escH(key)}"><button class="pl" data-hear="${escH(key)}" aria-label="Hear ${escH(name)}">${SV.play}</button>
+    <button class="tx" data-pick="${escH(key)}"><b>${escH(name)}</b><small>${escH(sub)}</small></button><span class="tick" ${on ? "" : "hidden"}>${n || "✓"}</span></div>`;
+  let h = "";
+  if (o.tab === "yours") h = yours.length ? yours.map(s => row("lab:" + s.id, s.name, labBaseTxt(s) + " · made in the sound lab", c.t === "lab" && c.v === s.id)).join("") : `<div class="lb-empty">Nothing yet. Make sounds in the Sound lab (Home) and they show up here.</div>`;
+  else if (o.tab === "synths") {
+    const list = (o.kind === "lead" ? LEAD_CHOICES : BASS_CHOICES).map(([v]) => v);
+    h = (o.off ? row("off", "Off", "only the 1st finger plays", c.t === "off") : "") + list.map(v => row("syn:" + v, synthName(o.kind, v), "built-in synth", c.t === "synth" && c.v === v)).join("");
+  } else {
+    const picked = c.t === "rec" ? (c.recs || [c.v]) : [];
+    h = samples.map(s => { const i = picked.indexOf(s.name); return row("rec:" + s.name, s.name, (s.root == null ? "noise" : noteName(Math.round(s.root))) + (o.multi && picked.length > 1 && i >= 0 ? " · plays " + ordinal(i + 1) : ""), i >= 0, true, o.multi && picked.length > 1 && i >= 0 ? i + 1 : ""); }).join("")
+      + (o.multi ? `<div class="pk2-note">PICK MORE THAN ONE AND THEY TAKE TURNS</div>` : "")
+      + `<button class="pk2-add" data-rec="1">● Record or edit recordings</button>`;
+  }
+  $("pk2List").innerHTML = h;
+}
+const ordinal = n => n + (n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th");
+$("pk2Bk").addEventListener("click", pickClose);
+$("pk2Done").addEventListener("click", pickClose);
+$("pk2Tabs").addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if (!b || !LAB.pick) return; LAB.pick.tab = b.dataset.tab; pickRender(); });
+function pickHear(key) {
+  const o = LAB.pick; if (!o) return;
+  if (key === "off") return;
+  if (key.startsWith("lab:")) { const s = labGet(key.slice(4)); if (s) labHear(s, o.afterHear); return; }
+  if (key.startsWith("rec:")) { const c = samples.find(s => s.name === key.slice(4)); if (c) { if (!c.buf) try { c.buf = clipBuf(c); } catch (_) {} try { playClipOnce(c); } catch (_) {} } return; }
+  const v = key.slice(4), neutral = !mk.t || $("mk").hidden;
+  if (o.kind === "bass") mkRiff("bass", 1, { bass: v, bassRec: null, neutral }); else mkRiff("lead", 1, { lead: v, recs: null, neutral, second: !!o.second });
+}
+$("pk2List").addEventListener("click", e => {
+  const o = LAB.pick; if (!o) return;
+  const h = e.target.closest("[data-hear]"); if (h) return pickHear(h.dataset.hear);
+  if (e.target.closest("[data-rec]")) { const f = o.onRecord; pickClose(); if (f) f(); return; }
+  const p = e.target.closest("[data-pick]"); if (!p) return;
+  const key = p.dataset.pick;
+  let sel;
+  if (key === "off") sel = { t: "off" };
+  else if (key.startsWith("lab:")) sel = { t: "lab", v: key.slice(4) };
+  else if (key.startsWith("syn:")) sel = { t: "synth", v: key.slice(4) };
+  else {
+    const name = key.slice(4);
+    if (o.multi) { const cur = o.cur.t === "rec" ? [...(o.cur.recs || [])] : []; const i = cur.indexOf(name); if (i >= 0) cur.splice(i, 1); else cur.push(name); sel = cur.length ? { t: "rec", recs: cur } : { t: "none" }; }
+    else sel = { t: "rec", v: name, recs: [name] };
+  }
+  o.cur = sel.t === "none" ? { t: "none" } : sel; o.onPick(sel);
+  if (sel.t !== "none" && !(sel.t === "rec" && o.multi && !(sel.recs || []).includes(key.slice(4)))) pickHear(key);
+  pickRender();
+});
+
+/* ----- Make your own: one SOUND button per finger, through the picker ----- */
+const slotOf = (t, f) => { const v = f === 1 ? t.lead : f === 2 ? t.lead2 : t.bass; const l = labRef(v);
+  if (l) return { t: "lab", v: l.id, s: l };
+  if (f === 3) return t.bassRec ? { t: "rec", v: t.bassRec, recs: [t.bassRec] } : { t: "synth", v: t.bass || "finger" };
+  if (v === "sampler") return { t: "rec", recs: (f === 1 ? t.recs : t.recs2) || [] };
+  if (!v || v === "off") return f === 2 ? { t: "off" } : { t: "synth", v: "supersaw" };
+  return { t: "synth", v }; };
+const slotTxt = (sl, kind) => sl.t === "lab" ? ["YOUR SOUND", sl.s.name] : sl.t === "rec" ? [`RECORDINGS${(sl.recs || []).length > 1 ? " · TAKE TURNS" : ""}`, (sl.recs || [sl.v]).join(" + ")] : sl.t === "off" ? ["OFF", "Only the 1st finger plays"] : ["SYNTH", synthName(kind, sl.v)];
+{
+  const ft0 = fingerTxt;
+  fingerTxt = (t, f) => { const l = labRef(f === 1 ? t.lead : t.lead2); return l ? l.name : ft0(t, f); };
+}
+mkLeadHTML = function () {
+  const t = mk.t, f = mk.fing || 1, sl = slotOf(t, f), [k, nm] = slotTxt(sl, "lead"), sh = f === 1 ? t.shuffle : t.shuffle2, recs = sl.t === "rec" ? sl.recs : [];
+  const tabs = `<div class="mkl-tabs" role="tablist">${[1, 2].map(n => `<button role="tab" data-fing="${n}" class="${f === n ? "on" : ""}" aria-selected="${f === n}"><small>${n === 1 ? "1ST FINGER" : "2ND FINGER"}</small><span>${escH(fingerTxt(t, n))}</span></button>`).join("")}</div>`;
+  const ic = sl.t === "rec" ? SV.mic : sl.t === "lab" ? LBI.star("var(--mkc)") : LBI.wave("var(--mkc)");
+  let h = `<p>Each finger has its own sound and its own effects.</p>${tabs}<div class="lbl">SOUND</div>
+    <button class="mk-pickbtn" data-a="pick"><span>${ic}</span><span><small>${k}</small><b>${escH(nm)}</b></span><em>Change</em></button>`;
+  if (recs.length > 1) h += `<div class="mkl-turns"><span>They <b>take turns</b>: <q>${recs.slice(0, 3).map(escH).join(" → ")}${recs.length > 2 ? "" : " → " + escH(recs[0])}…</q></span><button class="mkl-sw" data-shuf="1" aria-pressed="${!!sh}">Shuffle<i></i></button></div>`;
+  if (recs.length) h += `<span class="tiny">RECORDINGS REPEAT WHILE YOU HOLD</span>`;
+  if (sl.t === "lab") h += `<span class="tiny">EFFECTS COME WITH THIS SOUND (SOUND LAB)</span>`;
+  else if (sl.t !== "off") h += fxHTML(f === 1 ? "fx1" : "fx2", "FOR THIS FINGER");
+  if (f === 2 && sl.t !== "off" && sl.t !== "lab") h += `<div class="mks-line"><label for="mksVol2">Level</label><input type="range" id="mksVol2" min="0.4" max="1.6" step="0.05" value="${t.vol2 ?? 1}"></div>`;
+  return h;
+};
+mkBassHTML = function () {
+  const t = mk.t, sl = slotOf(t, 3), [k, nm] = slotTxt(sl, "bass"), ic = sl.t === "rec" ? SV.mic : sl.t === "lab" ? LBI.star("var(--mkc)") : LBI.wave("var(--mkc)");
+  let h = `<p>Pick a bass sound, one of yours, or a recording.</p><div class="lbl">SOUND</div>
+    <button class="mk-pickbtn" data-a="pick"><span>${ic}</span><span><small>${k}</small><b>${escH(nm)}</b></span><em>Change</em></button>`;
+  if (sl.t === "rec") h += `<span class="tiny">A RECORDING ON THE BASS DROPS AN OCTAVE BY ITSELF</span>`;
+  if (sl.t === "lab") h += `<span class="tiny">EFFECTS COME WITH THIS SOUND (SOUND LAB)</span>`; else h += fxHTML("fxB", "");
+  return h;
+};
+MK_SHEETS.lead2f[1] = () => mkLeadHTML(); MK_SHEETS.bass2f[1] = () => mkBassHTML();
+$("mksBox").addEventListener("click", e => {
+  const b = e.target.closest('[data-a="pick"]'); if (!b || !mk.t) return;
+  const t = mk.t, bassSheet = mk.sheet === "bass2f", f = bassSheet ? 3 : (mk.fing || 1);
+  const done = () => { mkRender(); mkRedraw(); };
+  pickOpen({ title: bassSheet ? "BASS SOUND" : f === 1 ? "LEAD · 1ST FINGER" : "LEAD · 2ND FINGER", kind: bassSheet ? "bass" : "lead", cur: slotOf(t, f), multi: !bassSheet, off: f === 2, second: f === 2,
+    col: getComputedStyle($("mk")).getPropertyValue("--mkc").trim() || "#ff3fd8",
+    afterHear: () => mkFxLive(true),
+    onPick: sel => {
+      if (f === 3) {
+        if (sel.t === "lab") { t.bass = "lab:" + sel.v; t.bassRec = null; }
+        else if (sel.t === "synth") { t.bass = sel.v; t.bassRec = null; }
+        else if (sel.t === "rec") { if (labRef(t.bass)) t.bass = "finger"; t.bassRec = sel.v; }
+      } else {
+        const key = f === 1 ? "lead" : "lead2", rk = f === 1 ? "recs" : "recs2";
+        if (sel.t === "lab") { t[key] = "lab:" + sel.v; t[rk] = []; }
+        else if (sel.t === "synth") { t[key] = sel.v; t[rk] = []; }
+        else if (sel.t === "off") { t[key] = "off"; t[rk] = []; }
+        else if (sel.t === "rec") { t[key] = "sampler"; t[rk] = sel.recs.slice(); }
+        else if (sel.t === "none") { t[key] = f === 1 ? feelWave(t.band) : "off"; t[rk] = []; }
+      }
+      mkFxLive(true); done();
+    },
+    onRecord: () => { const from = bassSheet ? "bass" : "lead"; mkSheetClose(); msxOpen({ from, fing: mk.fing || 1 }); },
+  });
+});
+
+/* ----- the lab pages ----- */
+{
+  const d = document.createElement("div"); d.id = "lab"; d.hidden = true; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", "Sound lab");
+  d.innerHTML = `<div class="lb" id="lbBody"></div><div class="lb-dock" id="lbDock" hidden><button id="lbTry">▶ HOLD TO TRY</button><button id="lbSave">SAVE</button></div>
+    <div id="lbWarn" hidden><div id="lbWarnBox"></div></div>`;
+  document.body.appendChild(d);
+  // Home: Sound lab next to Make your own
+  const mine = $("hmMine"), b = document.createElement("button"); b.id = "hmLab";
+  b.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 3v6l-5 9a2 2 0 0 0 1.8 3h12.4a2 2 0 0 0 1.8-3l-5-9V3M8 3h8M7 14h10"/></svg>Sound lab`;
+  if (mine) mine.after(b);
+  b.addEventListener("click", () => labOpen());
+}
+function labOpen() {
+  ensureAudio(); homeClose();
+  if (!LAB.prev) LAB.prev = { setup: capture(), qs: { id: qs.id, name: qs.name, cols: qs.cols }, theme: TH.id, playing: T.playing };
+  if (T.playing) { try { pvClear(); hpv.on = false; } catch (_) {} setPlaying(false); }
+  $("lab").style.setProperty("--lc", labColour("lead")); LAB.view = "home"; LAB.cur = null; labRender(); $("lab").hidden = false; $("lab").scrollTop = 0;
+}
+function labClose() {
+  mkRiffStop(); $("lab").hidden = true;
+  if (LAB.prev) { try { restoreLast(LAB.prev); } catch (_) {} LAB.prev = null; }
+  homeOpen(false);
+}
+const labChanged = () => LAB.cur && JSON.stringify(LAB.cur) !== JSON.stringify(LAB.orig);
+function labRender() {
+  const B = $("lbBody"), back = `<button class="hm-x" id="lbBack" aria-label="Back">${SV.back}</button>`;
+  $("lbDock").hidden = LAB.view !== "sound";
+  if (LAB.view === "home") {
+    const used = s => { const n = labUsedBy(s.id).length; return n ? `in ${n} theme${n > 1 ? "s" : ""}` : "not used yet"; };
+    const list = kind => { const ss = LAB.store.sounds.filter(s => s.kind === kind), col = labColour(kind);
+      return (ss.length ? ss.map(s => `<div class="lb-row" style="--rc:${col}"><button class="pl" data-hear="${s.id}" aria-label="Hear ${escH(s.name)}">${SV.play}</button>
+        <button class="tx" data-edit="${s.id}"><b>${escH(s.name)}</b><small>${escH(labBaseTxt(s))} · ${used(s)}</small></button><span class="cv">${CHEV}</span></div>`).join("") : "")
+        + `<button class="lb-new" data-new="${kind}" style="--rc:${col}">+ New ${kind} sound</button>`; };
+    B.innerHTML = `<div class="lb-top">${back}<div><small>GLASSPAD</small><h2>SOUND LAB</h2></div></div>
+      <p>Make your own sounds. They show up first when you pick sounds in Make your own.</p>
+      <div class="lb-h" style="--hc:${labColour("lead")}">LEAD SOUNDS<span>${LAB.store.sounds.filter(s => s.kind === "lead").length}</span></div>${list("lead")}
+      <div class="lb-h" style="--hc:${labColour("bass")}">BASS SOUNDS<span>${LAB.store.sounds.filter(s => s.kind === "bass").length}</span></div>${list("bass")}
+      <div class="lb-h" style="--hc:#ff6b78">RECORDINGS</div>
+      <button class="lb-mys" id="lbMys"><span>${SV.mic}</span><span><b>My sounds</b><small>${samples.length} recording${samples.length === 1 ? "" : "s"} · record or add a file</small></span></button>
+      ${CRE.on ? `<div class="lb-h" style="--hc:#f2b04a">CREATOR</div><button class="lb-studio" id="lbStudio">FULL STUDIO</button>` : ""}`;
+    return;
+  }
+  const s = LAB.cur, lead = s.kind === "lead", rec = s.base.t === "rec", n = labUsedBy(s.id).length, isNew = !labGet(s.id);
+  const sl = (key, label, v, fmt, o = {}) => `<div class="lb-sl${o.dim ? " dim" : ""}"><span>${label}</span><input type="range" min="${o.min ?? 0}" max="${o.max ?? 1}" step="0.01" value="${v}" data-${o.attr || "tone"}="${key}"><output>${fmt(v)}</output></div>`;
+  const pct = v => Math.round(v * 100) + "%";
+  const ped = (id, name, params) => { const fx = s.fx[id] || {}, on = !!fx.on;
+    return `<div class="lb-ped${on ? " on" : ""}"><button class="pt" data-fxon="${id}">${name}<span>${on ? "ON" : "OFF"}</span></button>${params.map(([k, l]) => `<label>${l}<span>${pct(fx[k] ?? 0)}</span></label><input type="range" min="0" max="1" step="0.01" value="${fx[k] ?? 0}" data-fx="${id}:${k}">`).join("")}</div>`; };
+  const peds = lead ? [["octave", "Octave", [["level", "LEVEL"]]], ["drive", "Drive", [["amt", "GAIN"], ["tone", "TONE"]]], ["chorus", "Chorus", [["rate", "RATE"], ["depth", "DEPTH"]]],
+    ["flanger", "Flanger", [["rate", "RATE"], ["fb", "REGEN"]]], ["phaser", "Phaser", [["rate", "RATE"], ["depth", "DEPTH"]]], ["trem", "Tremolo", [["rate", "SPEED"], ["depth", "DEPTH"]]]]
+    : [["drive", "Drive", [["amt", "GAIN"], ["tone", "TONE"]]], ["chorus", "Chorus", [["rate", "RATE"], ["depth", "DEPTH"]]], ["filter", "Filter", [["cut", "CUTOFF"], ["depth", "DEPTH"]]],
+       ["octave", "Octave", [["level", "LEVEL"]]], ["comp", "Squeeze", [["amt", "AMOUNT"], ["punch", "PUNCH"]]]];
+  const rv = lead ? (s.fx.reverb || {}).mix ?? 0 : (s.fx.reverb || {}).send ?? 0, ev = (s.fx.echo || {}).send ?? 0;
+  const ic = rec ? SV.mic : LBI.wave("var(--lc)");
+  B.innerHTML = `<div class="lb-top">${back}<div><small>SOUND LAB · ${lead ? "LEAD" : "BASS"}</small><h2>${escH(s.name.toUpperCase())}</h2></div><button class="lb-chg" id="lbChg" ${labChanged() || isNew ? "" : "hidden"}>${isNew ? "NOT SAVED" : "● CHANGED"}</button></div>
+    <input class="lb-name" id="lbName" maxlength="24" value="${escH(s.name)}" aria-label="Name" autocomplete="off" spellcheck="false">
+    <span class="lb-note">${n ? `Used in ${n} theme${n > 1 ? "s" : ""}: ${labUsedBy(s.id).map(t => escH(t.name)).join(", ")}` : isNew ? "New sound" : "Not used in a theme yet"}</span>
+    <div class="lb-sec"><div class="lb-sh"><i>1</i><b>SOUND</b></div><span class="lb-note">STARTS FROM</span>
+      <button class="lb-from" id="lbFrom"><span>${ic}</span><span><small>${rec ? "RECORDING" : "SYNTH"}</small><b>${escH(rec ? s.base.v : synthName(s.kind, s.base.v))}</b></span><em>Change</em></button>
+      ${sl("level", "LEVEL", s.level, pct, { max: 1.5, attr: "lv" })}</div>
+    <div class="lb-sec"><div class="lb-sh"><i>2</i><b>SHAPE</b></div>
+      ${sl("attack", "ATTACK", s.tone.attack ?? .2, v => TONE_FMT.attack(v))}${sl("release", "RELEASE", s.tone.release ?? .4, v => TONE_FMT.release(v))}
+      ${lead ? (rec ? `<span class="lb-note">Resonance and Detune are for synths, so they're hidden for a recording.</span>` : sl("res", "RESONANCE", s.tone.res ?? .5, v => TONE_FMT.res(v)) + sl("detune", "DETUNE", s.tone.detune ?? .2, v => TONE_FMT.detune(v))) : ""}</div>
+    <div class="lb-sec"><div class="lb-sh"><i>3</i><b>EFFECTS</b></div><div class="lb-peds">${peds.map(p => ped(...p)).join("")}</div>
+      <span class="lb-note">HOW MUCH GOES INTO THE ROOM</span>
+      ${sl("echo", "ECHO", ev, pct, { attr: "room" })}${sl("reverb", "REVERB", rv, pct, { attr: "room" })}
+      <span class="lb-note">The room itself (size, echo speed) comes with the feel. Space on the pad turns it up or down.</span></div>
+    ${lead ? `<div class="lb-sec"><div class="lb-sh"><i>4</i><b>PLAYING</b></div>
+      <button class="lb-sw" data-sw="glide" aria-pressed="${!!s.glide}"><span>Glide<small>slides between notes when you move your finger</small></span><i></i></button>
+      <button class="lb-sw" data-sw="autoVib" aria-pressed="${!!s.autoVib}"><span>Auto vibrato<small>wobble comes in when you hold a note</small></span><i></i></button>
+      ${sl("vib", "VIBRATO", s.tone.vib ?? 0, v => TONE_FMT.vib(v))}</div>` : ""}
+    <div class="lb-acts"><button id="lbAsNew">Save as new</button><button class="del" id="lbDel">${isNew ? "Discard" : "Delete this sound"}</button></div>`;
+  $("lab").style.setProperty("--lc", labColour(s.kind));
+}
+function labEdit(s) { LAB.cur = bmc(s); LAB.orig = labGet(s.id) ? bmc(s) : null; LAB.view = "sound"; LAB.sure = false; labLive(LAB.cur); labRender(); $("lab").scrollTop = 0; }
+const labSync = () => { const c = $("lbChg"); if (c) { const nw = !labGet(LAB.cur.id); c.hidden = !(labChanged() || nw); c.textContent = nw ? "NOT SAVED" : "● CHANGED"; } };
+$("lab").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.id === "lbBack") {
+    if (LAB.view === "sound") { if (labChanged() && labGet(LAB.cur.id)) { if (!LAB.leaveOk) { LAB.leaveOk = true; toast("Not saved. Tap back again to leave without saving"); setTimeout(() => LAB.leaveOk = false, 2500); return; } } LAB.leaveOk = false; mkRiffStop(); LAB.view = "home"; LAB.cur = null; labRender(); return; }
+    return labClose();
+  }
+  if (b.dataset.hear) { const s = labGet(b.dataset.hear); if (s) labHear(s); return; }
+  if (b.dataset.edit) { const s = labGet(b.dataset.edit); if (s) labEdit(s); return; }
+  if (b.dataset.new) { labEdit(labNew(b.dataset.new)); return; }
+  if (b.id === "lbMys") { $("lab").hidden = true; msxOpen({ from: "lab" }); return; }
+  if (b.id === "lbStudio") { mkRiffStop(); $("lab").hidden = true; LAB.prev = null; ensureAudio(); homeClose(); setGame(false); try { stOpen(); } catch (_) {} return; }
+  const s = LAB.cur; if (!s) return;
+  if (b.id === "lbFrom") {
+    pickOpen({ title: "STARTS FROM", kind: s.kind, cur: s.base.t === "rec" ? { t: "rec", v: s.base.v, recs: [s.base.v] } : { t: "synth", v: s.base.v }, multi: false, exclude: s.id, col: labColour(s.kind),
+      afterHear: () => labLive(LAB.cur),
+      onPick: sel => {
+        if (sel.t === "lab") { const src = labGet(sel.v); if (src) { const keep = { id: s.id, name: s.name, kind: s.kind }; LAB.cur = Object.assign(bmc(src), keep); } }
+        else if (sel.t === "synth") s.base = { t: "synth", v: sel.v };
+        else if (sel.t === "rec") s.base = { t: "rec", v: sel.v };
+        labLive(LAB.cur); labRender();
+      },
+      onRecord: () => { $("lab").hidden = true; msxOpen({ from: "labsound" }); } });
+    return;
+  }
+  if (b.dataset.fxon) { const id = b.dataset.fxon; s.fx[id] = { ...(s.fx[id] || {}), on: !(s.fx[id] || {}).on }; labLive(s); labRender(); labHearSoon(); return; }
+  if (b.dataset.sw) { s[b.dataset.sw] = !s[b.dataset.sw]; b.setAttribute("aria-pressed", s[b.dataset.sw]); labSync(); return; }
+  if (b.id === "lbAsNew") { const n = bmc(s); n.id = "s" + Date.now().toString(36); n.name = (s.name + " 2").slice(0, 24); labCommit(n, true); return; }
+  if (b.id === "lbDel") {
+    if (!labGet(s.id)) { LAB.view = "home"; LAB.cur = null; labRender(); return; }
+    if (!LAB.sure) { LAB.sure = true; b.classList.add("sure"); const n = labUsedBy(s.id).length; b.textContent = n ? `Sure? ${n} theme${n > 1 ? "s" : ""} go back to plain synths` : "Sure? Delete"; return; }
+    labDelete(s.id); LAB.view = "home"; LAB.cur = null; labRender(); toast("Sound deleted"); return;
+  }
+});
+$("lab").addEventListener("input", e => {
+  const r = e.target, s = LAB.cur; if (!s) return;
+  if (r.id === "lbName") { s.name = r.value.trim().slice(0, 24) || s.name; labSync(); return; }
+  const v = +r.value, out = r.nextElementSibling;
+  if (r.dataset.tone) { s.tone[r.dataset.tone] = v; if (out) out.textContent = r.dataset.tone === "vib" ? TONE_FMT.vib(v) : TONE_FMT[r.dataset.tone](v); }
+  else if (r.dataset.lv) { s.level = v; if (out) out.textContent = Math.round(v * 100) + "%"; }
+  else if (r.dataset.room) { const k = r.dataset.room; if (k === "echo") s.fx.echo = { ...(s.fx.echo || {}), on: v > 0, send: v }; else if (s.kind === "lead") s.fx.reverb = { ...(s.fx.reverb || {}), on: v > 0, mix: v }; else s.fx.reverb = { ...(s.fx.reverb || {}), on: v > 0, send: v }; if (out) out.textContent = Math.round(v * 100) + "%"; }
+  else if (r.dataset.fx) { const [id, k] = r.dataset.fx.split(":"); s.fx[id] = { ...(s.fx[id] || {}), [k]: v }; const lab = r.previousElementSibling && r.previousElementSibling.querySelector("span"); if (lab) lab.textContent = Math.round(v * 100) + "%"; }
+  labLive(s); labSync();
+});
+$("lab").addEventListener("change", e => { if (e.target.matches("input[type=range]") && LAB.cur) labHearSoon(); });
+const labHearSoon = () => { clearTimeout(LAB.hs); LAB.hs = setTimeout(() => { if (LAB.cur && !LAB.trying) mkRiff(LAB.cur.kind, 1, labOver(LAB.cur)); }, 120); };
+// hold to try: the riff loops while held
+{
+  const t = $("lbTry");
+  const go = () => { if (!LAB.cur) return; LAB.trying = true; t.classList.add("go"); labLive(LAB.cur); const loop = () => { if (!LAB.trying) return; mkRiff(LAB.cur.kind, 2, labOver(LAB.cur)); LAB.tryT = setTimeout(loop, (8 * 60 / 90) * 1000); }; loop(); };
+  const stop = () => { LAB.trying = false; t.classList.remove("go"); clearTimeout(LAB.tryT); mkRiffStop(); };
+  t.addEventListener("pointerdown", e => { e.preventDefault(); go(); });
+  for (const ev of ["pointerup", "pointerleave", "pointercancel"]) t.addEventListener(ev, stop);
+  t.addEventListener("contextmenu", e => e.preventDefault());
+}
+$("lbSave").addEventListener("click", () => {
+  const s = LAB.cur; if (!s) return;
+  const n = labGet(s.id) ? labUsedBy(s.id).length : 0;
+  if (!n) return labCommit(s, false);
+  $("lbWarnBox").innerHTML = `<b>${escH(LAB.orig ? LAB.orig.name : s.name)} is in ${n} theme${n > 1 ? "s" : ""}</b><p>${labUsedBy(s.id).map(t => escH(t.name)).join(", ")}. Saving changes how ${n > 1 ? "they sound" : "it sounds"} too.</p>
+    <button class="main" data-w="all">Save for all</button><button data-w="new">Save as new</button><button data-w="x">Cancel</button>`;
+  $("lbWarn").hidden = false;
+});
+$("lbWarn").addEventListener("click", e => {
+  const b = e.target.closest("[data-w]"); if (!b) { if (e.target.id === "lbWarn") $("lbWarn").hidden = true; return; }
+  $("lbWarn").hidden = true; const s = LAB.cur;
+  if (b.dataset.w === "all") labCommit(s, false);
+  else if (b.dataset.w === "new") { const n = bmc(s); n.id = "s" + Date.now().toString(36); if (LAB.orig && n.name === LAB.orig.name) n.name = (n.name + " 2").slice(0, 24); labCommit(n, true); }
+});
+function labCommit(s, asNew) {
+  const i = LAB.store.sounds.findIndex(x => x.id === s.id);
+  if (i >= 0) LAB.store.sounds[i] = bmc(s); else LAB.store.sounds.push(bmc(s));
+  if (!labSave()) return;
+  labUsedBy(s.id).forEach(t => myRegister(t));
+  LAB.cur = bmc(s); LAB.orig = bmc(s); labRender(); toast(asNew ? `Saved as “${s.name}”` : `Saved “${s.name}”`);
+}
+function labDelete(id) {
+  const s = labGet(id); if (!s) return;
+  const plain = s.base.t === "rec" ? null : s.base.v;
+  for (const t of labUsedBy(id)) {
+    if (t.lead === "lab:" + id) { if (plain) { t.lead = plain; t.recs = []; } else { t.lead = "sampler"; t.recs = [s.base.v]; } }
+    if (t.lead2 === "lab:" + id) { if (plain) { t.lead2 = plain; t.recs2 = []; } else { t.lead2 = "sampler"; t.recs2 = [s.base.v]; } }
+    if (t.bass === "lab:" + id) { if (plain) t.bass = plain; else { t.bass = "finger"; t.bassRec = s.base.v; } }
+    myRegister(t);
+  }
+  mySave();
+  LAB.store.sounds = LAB.store.sounds.filter(x => x.id !== id); labSave();
+}
+// back from My sounds to the lab
+{
+  const c0 = msxClose;
+  msxClose = function () {
+    const f = msx.from;
+    if (f && (f.from === "lab" || f.from === "labsound")) {
+      msxStop(true); $("msx").hidden = true; msx.from = null;
+      if (f.from === "labsound" && LAB.cur && msx.newName) { LAB.cur.base = { t: "rec", v: msx.newName }; labLive(LAB.cur); }
+      $("lab").hidden = false; labRender(); return;
+    }
+    return c0.apply(this, arguments);
+  };
+}
+// recordings renamed or removed: lab sounds follow
+{
+  const rn0 = msxRename;
+  msxRename = function (o, n) { const r = rn0.apply(this, arguments); if (r) { for (const s of LAB.store.sounds) if (s.base.t === "rec" && s.base.v === o) s.base.v = n; labSave(); } return r; };
+}
+
+/* ----- the pills follow the theme's lead colour (bass colour if the lead looks like Rec or Loop) ----- */
+function plColour() {
+  try {
+    const c = neonCols(gameKey()), l = c.lead, hex = l.replace("#", ""), r = parseInt(hex.slice(0, 2), 16), g = parseInt(hex.slice(2, 4), 16), b = parseInt(hex.slice(4, 6), 16);
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b); let h = 0; const d = mx - mn;
+    if (d) { h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = (h * 60 + 360) % 360; }
+    const clash = d > 40 && (h < 25 || h > 335 || (h >= 35 && h <= 70));
+    return clash ? c.bass : l;
+  } catch (_) { return "#ff3fd8"; }
+}
+setInterval(() => { if (game.on) document.body.style.setProperty("--pl", plColour()); }, 700);
+try { $("gSM").lastChild.textContent = "Solo · Mix"; $("gEdit").lastChild.textContent = "Edit"; } catch (_) {}
+
+/* ----- Settings → Strips: All / Fewer ----- */
+const STRIPS = { fewer: false };
+try { STRIPS.fewer = localStorage.getItem("glasspad.strips") === "fewer"; } catch (_) {}
+{
+  const ll0 = leadLanesFor;
+  leadLanesFor = function (ch) {
+    const out = ll0.apply(this, arguments);
+    if (!STRIPS.fewer || !game.on) return out;
+    const cap = landscape() ? 16 : 11; if (out.length <= cap) return out;
+    const o2 = out.slice(0, cap); o2.per = out.per; return o2;
+  };
+  const ls = $("gLs") && $("gLs").closest(".gr");
+  if (ls) {
+    const r = document.createElement("div"); r.className = "gr";
+    r.innerHTML = `<div><label>Strips</label><small>Fewer = wider strips (at most 11 standing up, 16 on its side)</small></div><div class="gseg" id="gStrips"><button data-v="all">All</button><button data-v="fewer">Fewer</button></div>`;
+    ls.after(r);
+    const sync = () => $("gStrips").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", (b.dataset.v === "fewer") === STRIPS.fewer));
+    $("gStrips").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; STRIPS.fewer = b.dataset.v === "fewer"; try { localStorage.setItem("glasspad.strips", b.dataset.v); } catch (_) {} sync(); try { lanes = leadLanesFor(liveChord); retuneLead(); } catch (_) {} });
+    sync();
+  }
+}
 
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }

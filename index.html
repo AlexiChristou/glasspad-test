@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.64 TEST · game mode · 12 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.64.1 TEST · game mode · 12 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1527,7 +1527,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.64 TEST · game mode · 12 Oct 2026</p>
+      <p class="ver">GlassPad 5.64.1 TEST · game mode · 12 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10197,7 +10197,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.64 TEST</p>
+    <p class="hm-ver">GlassPad 5.64.1 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14660,7 +14660,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.64 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.64.1 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -14691,7 +14691,8 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
   #gEdit { display: none; }
   body.game:not(.studio) #gEdit { display: flex; flex: none; align-items: center; gap: 6px; height: 38px; padding: 0 13px; margin-left: auto; border-radius: 19px; background: rgba(10,8,22,.6);
     border: 1.5px solid var(--mc, #ff3fd8); box-shadow: 0 0 10px color-mix(in srgb, var(--mc, #ff3fd8) 55%, transparent); color: #fff; font: 500 12px var(--mono); letter-spacing: .06em; position: relative; z-index: 5; }
-  header.bar #gEdit { margin-left: auto !important; margin-right: 8px; height: 36px; }
+  header.bar #gEdit { margin-left: 8px !important; margin-right: 8px; height: 36px; }
+  body.game:not(.studio) header.bar #styleChip { margin-left: auto !important; }
   #gEdit svg { width: 15px; height: 15px; }
   #hmKeep, #pkKeepMe { display: none !important; }
   .mk-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: auto; }
@@ -14845,7 +14846,14 @@ $("mksBox").addEventListener("click", e => {
 }
 
 /* ----- the riff: what a sound will sound like, in the feel's key and tempo ----- */
-const RIFF = { lead: [0, 3, 7, 12, 7, 3, 7, 0], timers: [] };
+const RIFF = { lead: [0, 3, 7, 12, 7, 3, 7, 0], timers: [], voices: [], until: 0 };
+// 5.64.1: stop a riff straight away (its notes, and any recording still repeating)
+function mkRiffStop() {
+  RIFF.timers.forEach(clearTimeout); RIFF.timers = []; RIFF.until = 0; RIFF_OVR.on = false;
+  if (!audio) return; const t = audio.ctx.currentTime;
+  for (const v of RIFF.voices) { try { if (v.stopSched) v.stopSched(t); v.g.gain.cancelScheduledValues(t); v.g.gain.setTargetAtTime(0, t, .03); for (const [o] of v.parts) { try { o.stop(t + .2); } catch (_) {} } if (v.vibOsc) { try { v.vibOsc.stop(t + .2); } catch (_) {} } setTimeout(() => { try { unplugVoice(v); } catch (_) {} }, 400); } catch (_) {} }
+  RIFF.voices = [];
+}
 function riffKey() {
   const t = mk.t, got = t && t.feelSet !== false, p = got ? feelBase(t.band) : null;
   const maj = p && ["major", "majpent", "mixolydian", "lydian"].includes(p.scale);
@@ -14864,7 +14872,7 @@ function riffNote(kind, snd, midi, at, len) {
     try {
       RIFF_OVR.on = true;
       const v = buildVoice(kind, midi, kind === "lead" ? 2600 : 900, audio.ctx.currentTime, .5, snd);
-      RIFF_OVR.on = false;
+      RIFF_OVR.on = false; RIFF.voices.push(v);
       RIFF.timers.push(setTimeout(() => { try { const t = audio.ctx.currentTime, tc = relTcFor(v.kind), end = t + tc * 7 + .1; fadeOut(v.g.gain, t, tc);
         if (v.stopSched) v.stopSched(t + Math.min(.5, tc * 4)); for (const [o] of v.parts) { try { o.stop(end); } catch (_) {} }
         if (v.vibOsc) { try { v.vibOsc.stop(end); } catch (_) {} } setTimeout(() => unplugVoice(v), (end - t + .2) * 1000); } catch (_) {} }, len * 1000));
@@ -14873,23 +14881,35 @@ function riffNote(kind, snd, midi, at, len) {
 }
 // parts: "lead", "bass" or "both"; bars: 1 or 2. Uses the theme's 1st-finger sound/recordings and its bass.
 function mkRiff(parts, bars, over) {
-  ensureAudio(); RIFF.timers.forEach(clearTimeout); RIFF.timers = [];
+  ensureAudio(); mkRiffStop();
   const t = mk.t || {}, k = riffKey(), beat = 60 / k.bpm, e8 = beat / 2;
   const lead = (over && over.lead) || t.lead || "supersaw", bass = (over && over.bass) || (t.bassRec ? "sampler" : t.bass || "finger");
   RIFF_OVR.l1 = (over && over.recs) || (t.lead === "sampler" ? t.recs : null); RIFF_OVR.b = (over && over.bassRec) || (t.bassRec ? [t.bassRec] : null);
   const lb = 60 + k.root, bb = 36 + k.root, iv = RIFF.lead.map(n => n === 3 ? k.third : n);
+  RIFF.until = performance.now() + (bars * 4 * beat + .6) * 1000;
   for (let bar = 0; bar < bars; bar++) {
     if (parts !== "lead") for (let i = 0; i < 4; i++) riffNote("bass", bass, bb, bar * 4 * beat + i * beat, beat * .85);
     if (parts !== "bass") iv.forEach((n, i) => riffNote("lead", lead, lb + n, bar * 4 * beat + i * e8, e8 * .9));
   }
 }
 // ▶ on the picture: no feel = the riff with your sounds; a feel = the band (fades out on its own)
+const riffOn = () => performance.now() < RIFF.until;
+function mkStopAll() {
+  mkRiffStop();
+  try { pvClear(); } catch (_) {} hpv.on = false;
+  if (T.playing) { try { pvGain(0, .2); } catch (_) {} setTimeout(() => { if (T.playing) setPlaying(false); try { pvGain(pvTarget(), .05); } catch (_) {} mkHearSync(); try { pvSync(); } catch (_) {} }, 240); }
+  // belt and braces: whatever happens, nothing is left playing a second later
+  setTimeout(() => { if (T.playing && !$("mk").hidden && !hpv.on) { setPlaying(false); try { pvGain(pvTarget(), .05); } catch (_) {} } mkHearSync(); }, 1000);
+}
 function mkHear() {
   const t = mk.t; if (!t) return;
-  if (t.feelSet === false) { mkRiff("both", 2); return; }
-  if (T.playing) { pvStop(); setTimeout(mkHearSync, 450); return; }
+  if (T.playing || hpv.on || riffOn()) { mkStopAll(); mkHearSync(); return; }
+  if (t.feelSet === false) { mkRiff("both", 2); mkHearSync(); return; }
   mkPreviewPlay(); mkHearSync();
 }
+mkHearSync = function () { const b = $("mkHear"); if (!b) return; const on = (T.playing || riffOn()) && !$("mk").hidden; b.innerHTML = on ? SV.stop : SV.play; b.setAttribute("aria-label", on ? "Stop" : "Hear it"); };
+// leaving Make your own stops a riff too
+{ const c0 = mkClose; mkClose = function () { mkRiffStop(); return c0.apply(this, arguments); }; }
 // sound taps in the Lead and Bass sheets play the riff instead of a quick arpeggio
 mkTaste = function (kind, snd) {
   if (kind === "bass") mkRiff("bass", 1, { bass: snd, bassRec: null });

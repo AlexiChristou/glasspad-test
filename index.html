@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.63 TEST · game mode · 12 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.64 TEST · game mode · 12 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1527,7 +1527,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.63 TEST · game mode · 12 Oct 2026</p>
+      <p class="ver">GlassPad 5.64 TEST · game mode · 12 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10197,7 +10197,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.63 TEST</p>
+    <p class="hm-ver">GlassPad 5.64 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14410,14 +14410,6 @@ $("mkRows").addEventListener("click", e => {
   e.stopPropagation(); mk.t.speed = b.dataset.speed; mkRender();
   if (T.playing && !$("mk").hidden && mk.t.feelSet !== false) mkPreviewPlay();
 }, true);
-// no feel yet: ▶ and Save & play open the Feel sheet instead
-document.addEventListener("click", e => {
-  if (!mk.t || mk.t.feelSet !== false || $("mk").hidden) return;
-  const b = e.target.closest("#mkHear, #mkSave"); if (!b) return;
-  e.stopImmediatePropagation(); e.preventDefault();
-  if (b.id === "mkSave") toast("Pick a feel first");
-  mkSheet("feel");
-}, true);
 
 /* ----- the sheets: Feel, Lead (two fingers), Bass, Chord sound ----- */
 const fxHTML = (k, note) => `<div class="mk-fxl">EFFECTS<span>${note || ""}</span></div><div class="mk-fx" role="group" aria-label="Effects">${[["clean", "Clean", "dry, just the room"], ["feel", "Feel's", "the feel's own"], ["big", "Big", "echo + chorus"]].map(([v, n, d]) => `<button data-fx="${k}:${v}" class="${fxAuto(mk.t, k) === v ? "on" : ""}" aria-pressed="${fxAuto(mk.t, k) === v}"><b>${n}</b><small>${d}</small></button>`).join("")}</div>`;
@@ -14668,7 +14660,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.63 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.64 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -14678,6 +14670,322 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
   }, true);
   creSync();
   const ho = homeOpen; homeOpen = function () { const r = ho.apply(this, arguments); creSync(); return r; };
+}
+
+/* ---------- 5.64: Home + Edit on the pad, Play it / Save…, riffs, recording wave ----------
+   Pad 2nd row: ‹ Home (no theme name) and ✎ EDIT; the mic is gone. EDIT opens Make your own with the playing theme
+   (yours: edit it; built-in: a "<Theme> remix" copy). Make your own: ▶ on the picture plays what you've chosen
+   (no feel yet: a 2-bar riff of your lead and bass in A minor at 90 bpm; with a feel: the band, ~8 s), Play it tries
+   your theme on the pad without saving (temporary style "__mkplay"; EDIT brings it back while you're on it; going to
+   another theme drops it), Save… names and saves it (built-in → "<Theme> remix"; yours → Save over / Save as new).
+   Sound taps in the Lead/Bass sheets play the same riff in the feel's key and tempo. Keep my sounds removed.
+   My sounds: live wave + "1.8 / 4.0 s" under the Record button with a ring, the shape afterwards, small waves on each
+   row, a big wave with the Start/End trims marked in an open row. */
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  body.game #gMic { display: none !important; }
+  body.game:not(.studio) #styleChip em, body.game:not(.studio) #styleChip small { display: none !important; }
+  body.game:not(.studio) #styleName { font-size: 0 !important; }
+  body.game:not(.studio) #styleName::after { content: "Home"; font-size: 13px; }
+  #gEdit { display: none; }
+  body.game:not(.studio) #gEdit { display: flex; flex: none; align-items: center; gap: 6px; height: 38px; padding: 0 13px; margin-left: auto; border-radius: 19px; background: rgba(10,8,22,.6);
+    border: 1.5px solid var(--mc, #ff3fd8); box-shadow: 0 0 10px color-mix(in srgb, var(--mc, #ff3fd8) 55%, transparent); color: #fff; font: 500 12px var(--mono); letter-spacing: .06em; position: relative; z-index: 5; }
+  header.bar #gEdit { margin-left: auto !important; margin-right: 8px; height: 36px; }
+  #gEdit svg { width: 15px; height: 15px; }
+  #hmKeep, #pkKeepMe { display: none !important; }
+  .mk-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: auto; }
+  .mk-two .mk-save { margin-top: 0; }
+  #mkPlayIt { height: 56px; border-radius: 18px; background: rgba(8,4,18,.9); border: 1.5px solid var(--mkc); box-shadow: 0 0 16px color-mix(in srgb, var(--mkc) 50%, transparent); color: #fff; font: 700 13px var(--display); letter-spacing: .05em; display: flex; align-items: center; justify-content: center; gap: 10px; }
+  #mkPlayIt svg { width: 15px; height: 15px; }
+  #mkPlayIt.wait { opacity: .45; box-shadow: none; }
+  .mk-step.pulse { animation: mkpulse .5s ease-in-out 3; }
+  @keyframes mkpulse { 50% { box-shadow: 0 0 26px var(--mkc); transform: scale(1.02); } }
+  .mk-tag { margin-left: auto; height: 30px; padding: 0 10px; border-radius: 15px; border: 1px dashed color-mix(in srgb, var(--mkc) 60%, transparent); color: #c9bfff; font: 500 10px var(--mono); letter-spacing: .08em; display: flex; align-items: center; white-space: nowrap; }
+  .mks-name { height: 50px; box-sizing: border-box; border-radius: 14px; background: rgba(16,18,28,.9); border: 1.5px solid var(--mkc); box-shadow: 0 0 12px color-mix(in srgb, var(--mkc) 45%, transparent); color: #fff; padding: 0 14px; font: 400 17px "IBM Plex Sans", var(--body); width: 100%; -webkit-user-select: text; user-select: text; }
+  .mks-two { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; }
+  .mks-two button { height: 52px; border-radius: 16px; background: transparent; border: 1.5px solid rgba(255,255,255,.25); color: #fff; font: 400 15px "IBM Plex Sans", var(--body); }
+  .mks-two button.main { border: 0; background: var(--mkc); color: #05060b; font: 900 13px var(--display); letter-spacing: .04em; box-shadow: 0 0 20px color-mix(in srgb, var(--mkc) 55%, transparent); }
+  .mks-two.eq { grid-template-columns: 1fr 1fr; }
+  /* recording */
+  .msx-ring { position: relative; width: 124px; height: 124px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(#ff6b78 calc(var(--p, 0) * 1turn), rgba(255,77,94,.16) 0); }
+  .msx-ring::before { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: #0b0611; }
+  .msx-ring.idle { background: none; } .msx-ring.idle::before { display: none; }
+  .msx-ring #msxRec { position: relative; }
+  #msxRec.going { animation: none; background: radial-gradient(circle at 50% 40%, #ff6b78, #b0182c); }
+  #msxCnt { font: 400 15px var(--mono); color: #fff; letter-spacing: .04em; min-height: 20px; }
+  #msxCnt span { color: #a99fd0; }
+  canvas.msx-wv { position: static !important; display: block; width: 100%; height: 64px; border-radius: 12px; }
+  .msx-shape { width: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 10px; border-radius: 12px; background: rgba(255,255,255,.03); border: 1px solid color-mix(in srgb, var(--mkc) 40%, transparent); padding: 8px 10px; }
+  .msx-shape[hidden] { display: none; }
+  .msx-shape .pl { width: 38px; height: 38px; flex: none; border-radius: 50%; border: 1.5px solid #ff6b78; background: transparent; color: #fff; display: grid; place-items: center; padding: 0; }
+  .msx-shape .pl svg { width: 12px; height: 12px; }
+  .msx-shape canvas { position: static !important; display: block; flex: 1; min-width: 0; height: 44px; }
+  #msxLive[hidden] { display: none; }
+  #msxLive { width: 100%; height: 70px; border-radius: 12px; background: rgba(255,77,94,.06); border: 1px solid rgba(255,107,120,.35); box-sizing: border-box; padding: 4px 8px; }
+  #msxLive canvas { position: static !important; display: block; width: 100%; height: 60px; }
+  canvas.msx-mini { position: static !important; display: block; width: 64px; height: 26px; flex: none; }
+  canvas.msx-big { position: static !important; display: block; width: 100%; height: 60px; border-radius: 10px; background: rgba(255,255,255,.03); }`;
+  document.head.appendChild(st);
+}
+
+/* ----- the pad: ✎ EDIT where the mic was ----- */
+{
+  const b = document.createElement("button"); b.id = "gEdit"; b.className = "g-only"; b.setAttribute("aria-label", "Edit this theme");
+  b.innerHTML = `${SV.pencil}EDIT`;
+  const place = () => { const m = $("gMic"); if (m && b.previousElementSibling !== m) m.after(b); try { b.style.setProperty("--mc", styleColour() || "#ff3fd8"); } catch (_) {} };
+  place(); setInterval(place, 700); window.addEventListener("resize", () => setTimeout(place, 50));
+  b.addEventListener("click", () => mkEditPlaying());
+}
+const MKP = { pending: null };   // what Play it put on the pad, not saved
+function mkEditPlaying() {
+  const id = gameKey();
+  if (id === "__mkplay" && MKP.pending) { mkOpen(null); mk.t = JSON.parse(JSON.stringify(MKP.pending.t)); mk.editing = MKP.pending.editing; mkAfterOpen(); return; }
+  const mine = isMine(id) && MY.list.find(x => x.id === id);
+  if (mine) { mkOpen(mine); mkAfterOpen(); return; }
+  const src = QSTYLES_SYNTH[id] && !QSTYLES_SYNTH[id].mine ? id : null;
+  mkOpen(null);
+  if (src) {
+    const s = QSTYLES_SYNTH[src], p = s.p;
+    Object.assign(mk.t, { band: src, feelSet: true, cols: [...(s.cols || mk.t.cols)], lead: p.wave && p.wave !== "sampler" ? p.wave : "supersaw",
+      lead2: (p.lead && p.lead.snd2 && p.lead.snd2 !== "sampler") ? p.lead.snd2 : "off", vol2: (p.lead && p.lead.vol2) ?? 1,
+      bass: (p.bass && p.bass.sound && p.bass.sound !== "sampler") ? p.bass.sound : "finger", fromName: s.name });
+    mk.t.name = s.name + " remix";
+  }
+  mkAfterOpen();
+}
+function mkAfterOpen() {
+  const t = mk.t; myNorm(t);
+  $("mkName").value = t.name || "";
+  $("mkTitle").textContent = mk.editing ? "EDIT THEME" : t.fromName ? t.fromName.toUpperCase() : "NEW THEME";
+  $("mkDel").hidden = !mk.editing; mkRender();
+}
+// a theme you're trying (Play it) shows its own photo and plays its own recordings
+{
+  const g0 = gMirrorOn;
+  gMirrorOn = function () { if (gameKey() === "__mkplay" && MKP.pending) return game.mirror || !!MKP.pending.t.pic; return g0.apply(this, arguments); };
+  const ls0 = loadStyle;
+  loadStyle = function (st) {
+    const r = ls0.apply(this, arguments);
+    if (st && st.id === "__mkplay" && MKP.pending) try { myApplyRecs(myNorm(MKP.pending.t)); } catch (_) {}
+    return r;
+  };
+  // never remember the temporary theme as "last played": remember what it came from
+  const sl0 = saveLast;
+  saveLast = function () {
+    if (qs.id !== "__mkplay") return sl0.apply(this, arguments);
+    const keep = qs.id; qs.id = (MKP.pending && MKP.pending.t.id) || (MKP.pending && MKP.pending.t.band) || "tokyo";
+    try { return sl0.apply(this, arguments); } finally { qs.id = keep; }
+  };
+}
+
+/* ----- Make your own: Play it · Save…, the ▶ on the picture ----- */
+{
+  const save = $("mkSave"), row = document.createElement("div"); row.className = "mk-two";
+  const play = document.createElement("button"); play.id = "mkPlayIt"; play.innerHTML = `${SV.play}PLAY IT`;
+  save.before(row); row.append(play, save); save.textContent = "SAVE…";
+  const tag = document.createElement("span"); tag.className = "mk-tag"; tag.id = "mkTag"; tag.textContent = "NOT SAVED"; $("mkTitle").after(tag);
+  play.addEventListener("click", () => {
+    const t = mk.t; if (!t) return;
+    if (t.feelSet === false) return mkNeedFeel();
+    t.name = $("mkName").value.trim() || $("mkName").placeholder;
+    MKP.pending = { t: JSON.parse(JSON.stringify(t)), editing: mk.editing };
+    const tmp = { ...JSON.parse(JSON.stringify(t)), id: "__mkplay" };
+    myRegister(tmp);
+    try { pvClear(); hpv.on = false; } catch (_) {}
+    mkpv.prev = null;   // stay on what you're trying, don't put the old setup back
+    mkClose(false); hm.fromPad = false; ensureAudio(); keepPend = null; qs.pend = null;
+    game.bgKey = ""; loadStyle(styleOf("__mkplay")); qs.name = t.name;
+    try { pvGain(pvTarget(), .05); } catch (_) {}
+    if (!T.playing) setPlaying(true); setLayout("pad");
+  });
+}
+function mkNeedFeel() {
+  toast("Pick a feel first");
+  const s = $("mkRows").querySelector('[data-k="feel"]'); if (!s) return;
+  s.scrollIntoView({ block: "center", behavior: "smooth" }); s.classList.remove("pulse"); void s.offsetWidth; s.classList.add("pulse");
+}
+{
+  const r0 = mkRender;
+  mkRender = function () {
+    r0.apply(this, arguments);
+    const t = mk.t; if (!t) return;
+    $("mkPlayIt").classList.toggle("wait", t.feelSet === false);
+    $("mkTag").hidden = !!(mk.editing && t.id && !mk.dirty);
+  };
+}
+// Save… : the name, then save (yours: over it or as new)
+document.addEventListener("click", e => {
+  if (!mk.t || $("mk").hidden || mk.saving) return;
+  const b = e.target.closest("#mkSave, #mkHear"); if (!b) return;
+  e.stopImmediatePropagation(); e.preventDefault();
+  if (b.id === "mkHear") return mkHear();
+  if (mk.t.feelSet === false) return mkNeedFeel();
+  const nm = $("mkName").value.trim() || $("mkName").placeholder, own = mk.editing && mk.t.id;
+  mk.sheet = "save";
+  mkSheetOpen("SAVE", `<p>${own ? "Keep your changes." : "Give it a name to keep it."}</p><label class="lbl" for="mksNm">NAME</label><input class="mks-name" id="mksNm" maxlength="24" value="${escH(nm)}" autocomplete="off" spellcheck="false">
+    <p>${mk.t.fromName ? `It goes in <b style="color:#fff">Mine</b> on Home. ${escH(mk.t.fromName)} itself stays as it is.` : `It goes in <b style="color:#fff">Mine</b> on Home.`}</p>
+    ${own ? `<div class="mks-two eq"><button class="main" data-sv="over">Save over “${escH(MY.list.find(x => x.id === mk.t.id)?.name || nm)}”</button><button data-sv="new">Save as new</button></div><div class="mks-two eq"><button data-sv="cancel">Cancel</button></div>`
+          : `<div class="mks-two"><button data-sv="cancel">Cancel</button><button class="main" data-sv="new">SAVE &amp; PLAY</button></div>`}`);
+  $("mksBox").querySelector(".mks-done").hidden = true;
+}, true);
+$("mksBox").addEventListener("click", e => {
+  const b = e.target.closest("[data-sv]"); if (!b || mk.sheet !== "save") return;
+  const v = b.dataset.sv; if (v === "cancel") return mkSheetClose();
+  const nm = ($("mksNm").value || "").trim().slice(0, 24) || $("mkName").placeholder;
+  $("mkName").value = nm; mk.t.name = nm;
+  if (v === "new") { mk.t.id = null; mk.editing = false; }
+  mkSheetClose(); MKP.pending = null;
+  mk.saving = true; try { $("mkSave").click(); } finally { mk.saving = false; }
+});
+// leaving the pad's temporary theme for another one drops it
+{
+  const ls0 = loadStyle;
+  loadStyle = function (st) { if (st && st.id !== "__mkplay" && st.id !== "__mkpv") MKP.pending = null; return ls0.apply(this, arguments); };
+}
+
+/* ----- the riff: what a sound will sound like, in the feel's key and tempo ----- */
+const RIFF = { lead: [0, 3, 7, 12, 7, 3, 7, 0], timers: [] };
+function riffKey() {
+  const t = mk.t, got = t && t.feelSet !== false, p = got ? feelBase(t.band) : null;
+  const maj = p && ["major", "majpent", "mixolydian", "lydian"].includes(p.scale);
+  return { root: got ? ((p.root || 0) % 12 + 12) % 12 : 9, third: maj ? 4 : 3, bpm: got ? Math.round(p.bpm * (FEEL_SPEED[t.speed] || 1)) : 90 };
+}
+const RIFF_OVR = { l1: null, b: null };
+{
+  const mp0 = mysPool;
+  mysPool = function (kind) {
+    if (RIFF_OVR.on) { const n = kind === "bass" ? RIFF_OVR.b : RIFF_OVR.l1; const c = gpClips(n); if (c) return c; }
+    return mp0.apply(this, arguments);
+  };
+}
+function riffNote(kind, snd, midi, at, len) {
+  RIFF.timers.push(setTimeout(() => {
+    try {
+      RIFF_OVR.on = true;
+      const v = buildVoice(kind, midi, kind === "lead" ? 2600 : 900, audio.ctx.currentTime, .5, snd);
+      RIFF_OVR.on = false;
+      RIFF.timers.push(setTimeout(() => { try { const t = audio.ctx.currentTime, tc = relTcFor(v.kind), end = t + tc * 7 + .1; fadeOut(v.g.gain, t, tc);
+        if (v.stopSched) v.stopSched(t + Math.min(.5, tc * 4)); for (const [o] of v.parts) { try { o.stop(end); } catch (_) {} }
+        if (v.vibOsc) { try { v.vibOsc.stop(end); } catch (_) {} } setTimeout(() => unplugVoice(v), (end - t + .2) * 1000); } catch (_) {} }, len * 1000));
+    } catch (_) { RIFF_OVR.on = false; }
+  }, at * 1000));
+}
+// parts: "lead", "bass" or "both"; bars: 1 or 2. Uses the theme's 1st-finger sound/recordings and its bass.
+function mkRiff(parts, bars, over) {
+  ensureAudio(); RIFF.timers.forEach(clearTimeout); RIFF.timers = [];
+  const t = mk.t || {}, k = riffKey(), beat = 60 / k.bpm, e8 = beat / 2;
+  const lead = (over && over.lead) || t.lead || "supersaw", bass = (over && over.bass) || (t.bassRec ? "sampler" : t.bass || "finger");
+  RIFF_OVR.l1 = (over && over.recs) || (t.lead === "sampler" ? t.recs : null); RIFF_OVR.b = (over && over.bassRec) || (t.bassRec ? [t.bassRec] : null);
+  const lb = 60 + k.root, bb = 36 + k.root, iv = RIFF.lead.map(n => n === 3 ? k.third : n);
+  for (let bar = 0; bar < bars; bar++) {
+    if (parts !== "lead") for (let i = 0; i < 4; i++) riffNote("bass", bass, bb, bar * 4 * beat + i * beat, beat * .85);
+    if (parts !== "bass") iv.forEach((n, i) => riffNote("lead", lead, lb + n, bar * 4 * beat + i * e8, e8 * .9));
+  }
+}
+// ▶ on the picture: no feel = the riff with your sounds; a feel = the band (fades out on its own)
+function mkHear() {
+  const t = mk.t; if (!t) return;
+  if (t.feelSet === false) { mkRiff("both", 2); return; }
+  if (T.playing) { pvStop(); setTimeout(mkHearSync, 450); return; }
+  mkPreviewPlay(); mkHearSync();
+}
+// sound taps in the Lead and Bass sheets play the riff instead of a quick arpeggio
+mkTaste = function (kind, snd) {
+  if (kind === "bass") mkRiff("bass", 1, { bass: snd, bassRec: null });
+  else mkRiff("lead", 1, { lead: snd, recs: null });
+};
+
+/* ----- My sounds: the record button with a ring and a counter, the live wave, the shape, waves on the rows ----- */
+{
+  const btn = $("msxRec"), ring = document.createElement("div"); ring.className = "msx-ring idle"; ring.id = "msxRing";
+  btn.before(ring); ring.appendChild(btn);
+  const cnt = document.createElement("div"); cnt.id = "msxCnt"; ring.after(cnt);
+  const live = document.createElement("div"); live.id = "msxLive"; live.hidden = true; live.innerHTML = '<canvas id="msxLiveC"></canvas>'; cnt.after(live);
+  const shape = document.createElement("div"); shape.className = "msx-shape"; shape.id = "msxShape"; shape.hidden = true;
+  shape.innerHTML = `<button class="pl" id="msxShapePl" aria-label="Hear it">${SV.play}</button><canvas id="msxShapeC"></canvas>`;
+  $("msxMsg").after(shape);
+  $("msxShapePl").addEventListener("click", () => { const c = samples.find(s => s.name === msx.lastName); if (c) { if (!c.buf) try { c.buf = clipBuf(c); } catch (_) {} playClipOnce(c); } });
+}
+function wvPeaks(d, n, a = 0, b = d.length) {
+  const out = new Float32Array(n), step = Math.max(1, (b - a) / n);
+  let mx = 1e-6;
+  for (let i = 0; i < n; i++) { let p = 0; const s = Math.floor(a + i * step), e = Math.min(b, Math.floor(a + (i + 1) * step)); for (let j = s; j < e; j += 2) { const v = Math.abs(d[j]); if (v > p) p = v; } out[i] = p; if (p > mx) mx = p; }
+  for (let i = 0; i < n; i++) out[i] /= mx;
+  return out;
+}
+function wvDraw(cv, peaks, col, opt = {}) {
+  const dpr = window.devicePixelRatio || 1, w = cv.clientWidth || 300, h = cv.clientHeight || 50;
+  if (cv.width !== Math.round(w * dpr)) cv.width = Math.round(w * dpr); if (cv.height !== Math.round(h * dpr)) cv.height = Math.round(h * dpr);
+  const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  const n = opt.n || peaks.length, bw = w / n;
+  if (opt.glow) { g.shadowColor = col; g.shadowBlur = 8; }
+  for (let i = 0; i < Math.min(n, peaks.length); i++) {
+    const v = Math.max(.06, peaks[i]), bh = v * (h - 4);
+    const cut = opt.cut && (i < opt.cut[0] * n || i > opt.cut[1] * n);
+    g.fillStyle = cut ? "rgba(255,138,149,.25)" : col;
+    const x = i * bw + bw * .2, y = (h - bh) / 2, r = Math.min(bw * .3, 3);
+    g.beginPath(); g.roundRect ? g.roundRect(x, y, bw * .6, bh, r) : g.rect(x, y, bw * .6, bh); g.fill();
+  }
+  g.shadowBlur = 0;
+  if (opt.cut) { g.fillStyle = "#fff"; for (const f of opt.cut) g.fillRect(Math.round(f * w) - 1, 2, 2, h - 4); }
+}
+const msxCutOf = c => { try { const [a, b] = clipRange(c); return [a / c.data.length, b / c.data.length]; } catch (_) { return [0, 1]; } };
+function msxWaves() {
+  $("msxList").querySelectorAll(".msx-row").forEach(row => {
+    const c = samples[+row.dataset.i]; if (!c || !c.data) return;
+    const hd = row.querySelector(".msx-hd"), tx = hd && hd.querySelector(".tx");
+    if (tx && !hd.querySelector(".msx-mini")) { const cv = document.createElement("canvas"); cv.className = "msx-mini"; tx.before(cv); const [a, b] = clipRange(c); wvDraw(cv, wvPeaks(c.data, 22, a, b), "#ff8a95"); }
+    const bd = row.querySelector(".msx-bd");
+    if (bd && !bd.querySelector(".msx-big")) { const cv = document.createElement("canvas"); cv.className = "msx-big"; bd.prepend(cv); wvDraw(cv, wvPeaks(c.data, 70), "#ff8a95", { cut: msxCutOf(c) }); }
+  });
+}
+{
+  const r0 = msxRender;
+  msxRender = function () {
+    r0.apply(this, arguments); msxWaves();
+    const going = !!msx.rec;
+    $("msxRing").classList.toggle("idle", !going); $("msxLive").hidden = !going;
+    if (!going) { $("msxCnt").textContent = ""; $("msxRecTxt").textContent = "RECORD"; }
+    const c = msx.lastName && samples.find(s => s.name === msx.lastName);
+    $("msxShape").hidden = going || !c;
+    if (c && !going) requestAnimationFrame(() => { const [a, b] = clipRange(c); wvDraw($("msxShapeC"), wvPeaks(c.data, 60, a, b), "#ff8a95"); });
+  };
+  const o0 = msxOpen;
+  msxOpen = function () { msx.lastName = null; return o0.apply(this, arguments); };
+}
+// while recording: the ring fills over 4 s, the counter counts, the wave draws itself
+function msxLiveTick() {
+  const R = msx.rec; if (!R) return;
+  const el = (performance.now() - R.t0) / 1000, p = Math.min(1, el / 4);
+  $("msxRing").style.setProperty("--p", p.toFixed(3));
+  $("msxCnt").innerHTML = `${el.toFixed(1)} <span>/ 4.0 s</span>`;
+  const n = 90, filled = Math.floor(p * n), peaks = new Float32Array(n);
+  if (R.chunks.length) {
+    const sr = audio.ctx.sampleRate, per = (4 * sr) / n; let idx = 0, acc = 0, pk = 0;
+    for (const ch of R.chunks) for (let i = 0; i < ch.length; i += 4) { const v = Math.abs(ch[i]); if (v > pk) pk = v; acc += 4; if (acc >= per) { if (idx < n) peaks[idx++] = Math.min(1, pk * 2.2); acc = 0; pk = 0; } }
+    if (idx < n) peaks[idx] = Math.min(1, pk * 2.2);
+  }
+  wvDraw($("msxLiveC"), peaks.map((v, i) => i <= filled ? v : .02), "#ff6b78", { glow: true });
+  requestAnimationFrame(msxLiveTick);
+}
+{
+  const s0 = msxStart;
+  msxStart = async function () {
+    await s0.apply(this, arguments);
+    const R = msx.rec; if (!R) return;
+    clearInterval(R.tick); $("msxRecTxt").textContent = "STOP";
+    $("msxRing").classList.remove("idle"); $("msxLive").hidden = false; $("msxShape").hidden = true;
+    requestAnimationFrame(msxLiveTick);
+  };
+  const st0 = msxStop;
+  msxStop = function (cancel) {
+    const before = samples.map(s => s.name), again = msx.again >= 0 ? samples[msx.again] : null;
+    st0.apply(this, arguments);
+    const neu = samples.find(s => !before.includes(s.name));
+    msx.lastName = neu ? neu.name : again ? again.name : msx.lastName;
+    $("msxRing").style.setProperty("--p", 0); msxRender();
+  };
 }
 
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)

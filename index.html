@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.69 TEST · game mode · 13 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.69.1 TEST · game mode · 13 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1528,7 +1528,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.69 TEST · game mode · 13 Oct 2026</p>
+      <p class="ver">GlassPad 5.69.1 TEST · game mode · 13 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10198,7 +10198,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.69 TEST</p>
+    <p class="hm-ver">GlassPad 5.69.1 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14661,7 +14661,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.69 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.69.1 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -15901,14 +15901,14 @@ function diagInit() {
   }
   // no reading from Chrome: a tiny probe on the audio thread notices when the sound is handed over late (an estimate)
   if (!ctx.audioWorklet || typeof AudioWorkletNode === "undefined") { DIAG.src = "none"; return; }
-  const lim = Math.max(30, Math.round((ctx.baseLatency || .01) * 4000));
+  const lim = diagLim();
   const code = `class P extends AudioWorkletProcessor{constructor(o){super();this.l=0;this.n=0;this.c=0;this.lim=o.processorOptions.lim;}
-    process(){const t=Date.now();if(this.l&&t-this.l>this.lim)this.n++;this.l=t;if(++this.c>=375){this.c=0;if(this.n){this.port.postMessage(this.n);this.n=0;}}return true;}}
+    process(){if(!this.h){this.h=1;this.port.onmessage=e=>{this.lim=e.data;};}const t=Date.now();if(this.l&&t-this.l>this.lim)this.n++;this.l=t;if(++this.c>=375){this.c=0;if(this.n){this.port.postMessage(this.n);this.n=0;}}return true;}}
     registerProcessor("gp-probe",P);`;
   const url = URL.createObjectURL(new Blob([code], { type: "application/javascript" }));
   ctx.audioWorklet.addModule(url).then(() => {
     const n = new AudioWorkletNode(ctx, "gp-probe", { processorOptions: { lim } }), z = ctx.createGain(); z.gain.value = 0;
-    n.connect(z).connect(ctx.destination); n.port.onmessage = e => { if (!document.hidden) diagGlitch(e.data); };
+    n.connect(z).connect(ctx.destination); n.port.onmessage = e => { if (!document.hidden && diagSounding()) diagGlitch(e.data); };
     DIAG.src = "probe"; DIAG.probe = n;
   }).catch(() => { DIAG.src = "none"; });
 }
@@ -15916,8 +15916,23 @@ setInterval(() => {
   if (!audio) return;
   if (!DIAG.inited) diagInit();
   if (DIAG.src === "chrome" && audio.ctx.playoutStats) { try { const v = audio.ctx.playoutStats.fallbackFramesEvents || 0; if (v > DIAG.base) { diagGlitch(v - DIAG.base); DIAG.base = v; } } catch (_) {} }
+  if (DIAG.probe) { const l = diagLim(); if (l !== DIAG.lim) { DIAG.lim = l; try { DIAG.probe.port.postMessage(l); } catch (_) {} } }
   if (!$("gSheet").hidden) diagShow();
 }, 1000);
+// 5.69.1: a gap only counts when it's well past the phone's own output size (≈ the reported output delay)
+function diagLim() { const c = audio && audio.ctx; const ms = ((c && c.baseLatency) || .01) * 1000 + ((c && c.outputLatency) || 0) * 1000; return Math.max(40, Math.round(ms * 1.5 + 8)); }
+// something is sounding: the band, a note, or the Home preview (glitches in silence can't be heard)
+function diagSounding() { try { return !!(T.playing || voices.size || (typeof hpv !== "undefined" && hpv.on)); } catch (_) { return true; } }
+// touch → app: how long Chrome takes to hand a pad touch to the app (the touchscreen itself can't be measured)
+{
+  const tch = DIAG.touch = DIAG.touch || { n: 0, sum: 0, max: 0 };
+  area.addEventListener("pointerdown", e => {
+    if (e.pointerType !== "touch") return;
+    const d = performance.now() - e.timeStamp; if (!(d >= 0 && d < 500)) return;
+    const T_ = DIAG.touch; T_.n++; T_.sum += d; T_.max = Math.max(T_.max, d);
+  }, { capture: true, passive: true });
+}
+const diagTouch = () => { const t = DIAG.touch; return t && t.n ? { avg: Math.round(t.sum / t.n), max: Math.round(t.max), touches: t.n } : null; };
 // the busiest moment on the pad: the slowest screen frame
 {
   let last = 0, homeWas = true;
@@ -15935,16 +15950,17 @@ function diagShow() {
   const d = diagDelay(), v = diagVerdict(), mins = Math.max(.1, (performance.now() - DIAG.t0) / 60000);
   const gl = DIAG.src === "none" ? "glitches: not available" : `${DIAG.glitch} glitch${DIAG.glitch === 1 ? "" : "es"}${DIAG.src === "probe" ? " (estimated)" : ""}`;
   $("gDiagV").textContent = v; $("gDiagV").dataset.v = v.toLowerCase();
-  $("gDiag").textContent = `${d ? `Delay ${d.base}${d.output ? " + " + d.output : ""} ms · ` : ""}${gl} in ${mins.toFixed(1)} min · slowest frame ${Math.round(DIAG.worstF)} ms`
+  const tc = diagTouch();
+  $("gDiag").textContent = `${tc ? `Touch ${tc.avg} ms (max ${tc.max}) · ` : ""}${d ? `Audio ${d.base}${d.output ? " + " + d.output : ""} ms · ` : ""}${gl} in ${mins.toFixed(1)} min · slowest frame ${Math.round(DIAG.worstF)} ms`
     + (DIAG.stuck ? ` · ${DIAG.stuck} stuck note${DIAG.stuck > 1 ? "s" : ""} caught` : "") + (DIAG.lost ? ` · picture lost ${DIAG.lost}×` : "");
 }
 function diagReport() {
-  return { verdict: diagVerdict(), minutes: Math.round((performance.now() - DIAG.t0) / 600) / 100, delayMs: diagDelay(), glitchSource: DIAG.src, glitches: DIAG.glitch, glitchesByTheme: DIAG.byTheme,
+  return { verdict: diagVerdict(), minutes: Math.round((performance.now() - DIAG.t0) / 600) / 100, delayMs: diagDelay(), touchMs: diagTouch(), probeLimitMs: DIAG.lim || null, glitchSource: DIAG.src, glitches: DIAG.glitch, glitchesByTheme: DIAG.byTheme,
     lastGlitch: DIAG.lastGlitch, slowestFrameMs: Math.round(DIAG.worstF), slowestFrame: DIAG.worstAt, stuckNotesCaught: DIAG.stuck, pictureLost: DIAG.lost,
     load: DIAG.load, peakLoad: DIAG.peakLoad || null, lowLatency: lowLat(), smoothSound: (() => { try { return audioSmooth(); } catch (_) { return null; } })() };
 }
 $("gDiagReset").addEventListener("click", () => {
-  Object.assign(DIAG, { t0: performance.now(), glitch: 0, stuck: 0, lost: 0, worstF: 0, worstAt: null, lastGlitch: null, byTheme: {}, peakLoad: 0 });
+  Object.assign(DIAG, { t0: performance.now(), glitch: 0, stuck: 0, lost: 0, worstF: 0, worstAt: null, lastGlitch: null, byTheme: {}, peakLoad: 0, touch: { n: 0, sum: 0, max: 0 } });
   try { if (audio && audio.ctx.playoutStats) DIAG.base = audio.ctx.playoutStats.fallbackFramesEvents || 0; } catch (_) {}
   diagShow();
 });

@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.69.1 TEST · game mode · 13 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.70 TEST · game mode · 13 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1528,7 +1528,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.69.1 TEST · game mode · 13 Oct 2026</p>
+      <p class="ver">GlassPad 5.70 TEST · game mode · 13 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -3083,7 +3083,7 @@ function applyFx(id, changed) {
 
 // cut every tail at once: echo, flanger regen, reverb
 function flushTails(soft) {
-  if (!audio) return;
+  if (!audio || T.noFlush) return;   // 5.70: the ending keeps its echo and reverb
   const A = audio, t = A.ctx.currentTime;
   const sends = [A.echoSend.gain, A.revSend.gain]; for (const P of Object.values(A.pfx)) { sends.push(P.revSend.gain); if (P.echoSend) sends.push(P.echoSend.gain); }
   for (const p of [A.echoFb.gain, A.flFb.gain, ...sends]) { p.cancelScheduledValues(t); if (soft) p.setTargetAtTime(0, t, .08); else p.setValueAtTime(0, t); }
@@ -4337,7 +4337,7 @@ function hit(inst, t, vel) {
 const uiQueue = [];
 function scheduler() {
   const ctx = audio.ctx, dur = 60 / T.bpm / 4, m = T.meter, P = m.pulses;
-  while (T.next < ctx.currentTime + .12) {
+  while (T.next < ctx.currentTime + .12 && !(T.endAt != null && T.next >= T.endAt - 1e-4)) {
     // in a song every section (and each repeat of it) starts on the 1, even if the one before ended mid-bar
     let secRel;
     if (isSong() && !T.songEnd) {
@@ -4679,7 +4679,7 @@ function silenceLoop() {
 }
 function armLoop() {
   const m = T.meter;
-  if (game.on) { loop.bars = 4; $("loopBars").value = "4"; }
+  if (game.on) { loop.bars = loopLenBars(); }
   loop.steps = loop.bars * m.steps;
   if (!T.playing) {
     countInThenStart();
@@ -10198,7 +10198,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.69.1 TEST</p>
+    <p class="hm-ver">GlassPad 5.70 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -10263,7 +10263,7 @@ $("hmPlay").addEventListener("click", () => {
   if (l) { restoreLast(l); setPlaying(true); } else { chooseStyle(styleOf(hm.heroId)); setLayout("pad"); }
 });
 $("hmBack").addEventListener("click", homeClose);
-$("hmHelp").addEventListener("click", () => hmToast("The how-to-play guide comes in a later build"));
+$("hmHelp").addEventListener("click", () => openInfo("How to play", HOW_TO_PLAY));   // 5.70
 $("hmUnlock").addEventListener("click", () => hmToast("Unlocking comes later. For now every theme plays"));
 $("hmGear").addEventListener("click", () => { gameSheetSync(); $("gSheet").hidden = false; });
 $("hmStudio").addEventListener("click", () => { ensureAudio(); homeClose(); setGame(false); });
@@ -14397,7 +14397,7 @@ let fingerTxt = (t, f) => {
       step(2, "cols", `<i style="background:${lead};box-shadow:0 0 6px ${lead}"></i><i style="background:${bassC};box-shadow:0 0 6px ${bassC}"></i><i style="background:${hi};box-shadow:0 0 6px ${hi}"></i>`, "COLOURS", t.cols.join(" · "), ""),
       step(3, "lead", SV.wave(lead), "LEAD", fingerTxt(t, 1) + fxs("fx1", true), "2nd finger: " + fingerTxt(t, 2) + fxs("fx2", t.lead2 && t.lead2 !== "off")),
       step(4, "bass", SV.wave(bassC), "BASS", (labRef(t.bass) ? labRef(t.bass).name : t.bassRec ? "My sounds · " + t.bassRec : nameOf(BASS_CHOICES, t.bass)) + fxs("fxB", true), ""),
-      got ? step(5, "feel", SV.feel(lead), "FEEL", f.name, `${f.line} · ${Math.round(pb.bpm * (FEEL_SPEED[sp] || 1))} bpm`, { hl: true })
+      got ? step(5, "feel", SV.feel(lead), "FEEL", f.name, `${f.line} · ${Math.round(pb.bpm * (FEEL_SPEED[sp] || 1))} bpm`, {})
           : step(5, "feel", SV.feel(lead), "FEEL", "Pick a feel", "chords, drums and bass line come with it", { hl: true, todo: true }),
       step(6, "chord", SV.chords(hi), "CHORD SOUND", t.chord ? padNm(t.chord) : got ? "The feel's own · " + padNm(pb.pad && pb.pad.sound) : "The feel's own", "", { opt: true }),
       `<div class="mk-step sp"><span class="n">7</span><span class="tx"><small>SPEED</small><small><em>OPTIONAL</em></small></span>
@@ -14503,7 +14503,7 @@ setInterval(() => { if (mk.sheet === "feel" && !$("mkSheet").hidden) { const go 
     <div class="msx-top"><button class="hm-x" id="msxBack" aria-label="Back">${SV.back}</button><div><small id="msxKick">MAKE YOUR OWN</small><h2>MY SOUNDS</h2></div></div>
     <div class="msx-rec"><button id="msxRec" aria-label="Record">${SV.mic}<span id="msxRecTxt">RECORD</span></button>
       <div id="msxMsg">Sing, hum, say a word or play a note. Up to 4 seconds.</div>
-      <button id="msxFileBtn">+ Add a sound file</button><input type="file" id="msxFile" accept="audio/*" hidden></div>
+      <button id="msxFileBtn">+ Add a sound file</button><input type="file" id="msxFile" accept=".mp3,.m4a,.wav,.ogg,.oga,.opus,.aac,.flac,.amr,.3gp,.webm" hidden></div>
     <div class="msx-h">YOUR RECORDINGS<span id="msxCount"></span></div>
     <div id="msxList" style="display:flex;flex-direction:column;gap:8px"></div>
   </div>`;
@@ -14661,7 +14661,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.69.1 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.70 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -14737,7 +14737,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
   b.innerHTML = `${SV.pencil}EDIT`;
   const place = () => { const m = $("gMic"); if (m && b.previousElementSibling !== m) m.after(b); try { b.style.setProperty("--mc", styleColour() || "#ff3fd8"); } catch (_) {} };
   place(); setInterval(place, 700); window.addEventListener("resize", () => setTimeout(place, 50));
-  b.addEventListener("click", () => mkEditPlaying());
+  b.addEventListener("click", () => { mkEditPlaying(); mk.fromPad = true; });
 }
 const MKP = { pending: null };   // what Play it put on the pad, not saved
 function mkEditPlaying() {
@@ -15558,31 +15558,31 @@ mkLeadHTML = function () {
   const tabs = `<div class="mkl-tabs" role="tablist">${[1, 2].map(n => `<button role="tab" data-fing="${n}" class="${f === n ? "on" : ""}" aria-selected="${f === n}"><small>${n === 1 ? "1ST FINGER" : "2ND FINGER"}</small><span>${escH(fingerTxt(t, n))}</span></button>`).join("")}</div>`;
   const ic = sl.t === "rec" ? SV.mic : sl.t === "lab" ? LBI.star("var(--mkc)") : LBI.wave("var(--mkc)");
   let h = `<p>Each finger has its own sound and its own effects.</p>${tabs}<div class="lbl">SOUND</div>
-    <button class="mk-pickbtn" data-a="pick"><span>${ic}</span><span><small>${k}</small><b>${escH(nm)}</b></span><em>Change</em></button>`;
+    <button class="mk-pickbtn" data-a="sndpick"><span>${ic}</span><span><small>${k}</small><b>${escH(nm)}</b></span><em>Change</em></button>`;
   if (recs.length > 1) h += `<div class="mkl-turns"><span>They <b>take turns</b>: <q>${recs.slice(0, 3).map(escH).join(" → ")}${recs.length > 2 ? "" : " → " + escH(recs[0])}…</q></span><button class="mkl-sw" data-shuf="1" aria-pressed="${!!sh}">Shuffle<i></i></button></div>`;
   if (recs.length) h += `<span class="tiny">RECORDINGS REPEAT WHILE YOU HOLD</span>`;
   if (sl.t === "lab") h += `<span class="tiny">EFFECTS COME WITH THIS SOUND (SOUND LAB)</span>`;
   else if (sl.t !== "off") h += fxHTML(f === 1 ? "fx1" : "fx2", "FOR THIS FINGER");
-  if (f === 2 && sl.t !== "off" && sl.t !== "lab") h += `<div class="mks-line"><label for="mksVol2">Level</label><input type="range" id="mksVol2" min="0.4" max="1.6" step="0.05" value="${t.vol2 ?? 1}"></div>`;
   return h;
 };
 mkBassHTML = function () {
   const t = mk.t, sl = slotOf(t, 3), [k, nm] = slotTxt(sl, "bass"), ic = sl.t === "rec" ? SV.mic : sl.t === "lab" ? LBI.star("var(--mkc)") : LBI.wave("var(--mkc)");
   let h = `<p>Pick a bass sound, one of yours, or a recording.</p><div class="lbl">SOUND</div>
-    <button class="mk-pickbtn" data-a="pick"><span>${ic}</span><span><small>${k}</small><b>${escH(nm)}</b></span><em>Change</em></button>`;
+    <button class="mk-pickbtn" data-a="sndpick"><span>${ic}</span><span><small>${k}</small><b>${escH(nm)}</b></span><em>Change</em></button>`;
   if (sl.t === "rec") h += `<span class="tiny">A RECORDING ON THE BASS DROPS AN OCTAVE BY ITSELF</span>`;
   if (sl.t === "lab") h += `<span class="tiny">EFFECTS COME WITH THIS SOUND (SOUND LAB)</span>`; else h += fxHTML("fxB", "");
   return h;
 };
 MK_SHEETS.lead2f[1] = () => mkLeadHTML(); MK_SHEETS.bass2f[1] = () => mkBassHTML();
 $("mksBox").addEventListener("click", e => {
-  const b = e.target.closest('[data-a="pick"]'); if (!b || !mk.t) return;
+  const b = e.target.closest('[data-a="sndpick"]'); if (!b || !mk.t) return;
   const t = mk.t, bassSheet = mk.sheet === "bass2f", f = bassSheet ? 3 : (mk.fing || 1);
   const done = () => { mkRender(); mkRedraw(); };
   pickOpen({ title: bassSheet ? "BASS SOUND" : f === 1 ? "LEAD · 1ST FINGER" : "LEAD · 2ND FINGER", kind: bassSheet ? "bass" : "lead", cur: slotOf(t, f), multi: !bassSheet, off: f === 2, second: f === 2,
     col: getComputedStyle($("mk")).getPropertyValue("--mkc").trim() || "#ff3fd8",
     afterHear: () => mkFxLive(true),
     onPick: sel => {
+      if (t.unset && f !== 2) t.unset[f === 3 ? "bass" : "lead"] = false;   // 5.70
       if (f === 3) {
         if (sel.t === "lab") { t.bass = "lab:" + sel.v; t.bassRec = null; }
         else if (sel.t === "synth") { t.bass = sel.v; t.bassRec = null; }
@@ -15969,6 +15969,191 @@ $("gDiagReset").addEventListener("click", () => {
   st.textContent = `#gDiagV { font: 600 11px "IBM Plex Mono", monospace; margin-left: 6px; padding: 1px 7px; border-radius: 8px; background: rgba(255,255,255,.1); }
     #gDiagV[data-v=ok] { color: #5dffa8; } #gDiagV[data-v=busy] { color: #ffd166; } #gDiagV[data-v=struggling] { color: #ff6b78; }
     .gdiag small { font-variant-numeric: tabular-nums; }`;
+  document.head.appendChild(st);
+}
+
+
+/* ---------- 5.70: his notes of 13 Oct (bugs, Hold to try, band intro/ending, loop length, blank new theme) ---------- */
+const HOW_TO_PLAY = `<p><b>Pick a theme</b> and tap <b>Jump in</b>. The band starts and you play over it.</p>
+<p><b>Top part: the lead.</b> Slide a finger across the strips. Every strip is a note that fits the music. Higher up the screen sounds brighter.</p>
+<p><b>Bottom part: the bass.</b> Hold a strip. The band's own bass steps back while you play and comes back when you let go.</p>
+<p><b>BAND</b> makes the band calmer or busier. <b>SHIFT</b> changes key with a build-up. <b>BASS</b> and <b>LEAD</b> play patterns for you.</p>
+<p><b>Loop</b> records what you play and plays it back. <b>Rec</b> records your jam as audio or video.</p>
+<p><b>Solo · Mix</b> changes how the strips follow the chords, and the levels. <b>Edit</b> makes your own version of a theme.</p>`;
+// stop everything that's sounding (before recording a sound)
+function stopAllSound() {
+  try { ltStopAll(); } catch (_) {}
+  try { if (typeof LAB !== "undefined") LAB.trying = false; } catch (_) {}
+  try { mkStopAll(); } catch (_) {}
+  try { mkRiffStop(); } catch (_) {}
+  try { pvClear(); hpv.on = false; } catch (_) {}
+  try { if (T.playing) setPlaying(false); } catch (_) {}
+  try { allNotesOff(); } catch (_) {}
+}
+{ const ms0 = msxStart; msxStart = async function () { stopAllSound(); return ms0.apply(this, arguments); }; }
+
+/* ----- a new theme starts blank: colours, lead and bass say "Pick…" until you pick (the feel fills them in meanwhile) ----- */
+{
+  const fr0 = mkFresh;
+  mkFresh = function () { const t = fr0.apply(this, arguments); t.unset = { cols: true, lead: true, bass: true }; return t; };
+  const op0 = mkOpen;
+  mkOpen = function (t) { const r = op0.apply(this, arguments); mk.fromPad = false; if (t) delete mk.t.unset; return r; };
+  const ep0 = mkEditPlaying;
+  mkEditPlaying = function () { const r = ep0.apply(this, arguments); if (mk.t && (mk.editing || mk.t.fromName)) delete mk.t.unset; mkRender(); return r; };
+  // a feel fills whatever you haven't picked
+  $("mksBox").addEventListener("click", e => {
+    const t = mk.t; if (!t) return;
+    const fb = e.target.closest("[data-feel]");
+    if (fb && t.unset) {
+      const st = QSTYLES_SYNTH[fb.dataset.feel], p = st && st.p; if (!p) return;
+      if (t.unset.cols && st.cols) t.cols = [...st.cols];
+      if (t.unset.lead) { t.lead = feelWave(fb.dataset.feel); t.recs = []; }
+      if (t.unset.bass) { t.bass = (p.bass && p.bass.sound && p.bass.sound !== "sampler") ? p.bass.sound : "finger"; t.bassRec = null; }
+    }
+    if (e.target.closest("[data-n]") && t.unset) t.unset.cols = false;
+  }, true);
+  const r0 = mkRender;
+  mkRender = function () {
+    r0.apply(this, arguments);
+    const t = mk.t; if (!t || !t.unset) return;
+    const got = t.feelSet !== false;
+    const say = (k, txt) => { const row = $("mkRows").querySelector(`.mk-step[data-k="${k}"] b`); if (row) row.textContent = txt; };
+    if (t.unset.cols) say("cols", got ? "The feel's colours" : "Pick colours");
+    if (t.unset.lead) say("lead", got ? "The feel's lead · " + fingerTxt(t, 1) : "Pick a sound");
+    if (t.unset.bass) say("bass", got ? "The feel's bass · " + nameOf(BASS_CHOICES, t.bass) : "Pick a sound");
+  };
+  // Edit from the pad: back goes back to the pad
+  $("mkBack").addEventListener("click", e => {
+    if (!mk.fromPad) return;
+    e.stopImmediatePropagation(); mk.fromPad = false; mkClose(false);
+  }, true);
+}
+
+/* ----- the band: no count-in in game mode; Play = a drum fill into bar 1; Stop = an ending (tap again = stop now) ----- */
+const END = { on: false, t: 0 };
+{
+  const sp0 = setPlaying;
+  setPlaying = function (on, startAt) {
+    if (on) { T.endAt = null; END.on = false; clearTimeout(END.t); if (game.on && startAt === undefined) bandFresh = false; }
+    else { clearTimeout(END.t); END.on = false; T.endAt = null; }
+    return sp0.apply(this, arguments);
+  };
+}
+function bandIntro() {
+  ensureAudio();
+  const now = audio.ctx.currentTime + .06, s16 = 60 / T.bpm / 4;
+  [[0, "snare", .4], [2, "snare", .5], [4, "tomhi", .65], [5, "tomhi", .65], [6, "tommid", .75], [7, "tomlo", .85]].forEach(([i, inst, v]) => { try { hit(inst, now + i * s16, v); } catch (_) {} });
+  const start = now + 8 * s16;
+  try { hit("crash", start, .7); hit("kick", start, .9); } catch (_) {}
+  setPlaying(true, start);
+}
+function bandEnding() {
+  const ctx = audio.ctx, d = stepDur(), m = T.meter;
+  let endT = T.next + ((m.steps - T.step) % m.steps) * d;
+  if (endT - ctx.currentTime < 60 / T.bpm * .5) endT += m.steps * d;   // too close: finish the next bar instead
+  T.endAt = endT; END.on = true;
+  document.querySelectorAll(".playBtn").forEach(b => b.textContent = "■ Ending…");
+  END.t = setTimeout(() => {
+    if (!END.on || !T.playing) return;
+    const at = T.endAt, ch = (() => { try { return tonicChord(); } catch (_) { return null; } })();
+    T.noFlush = true; try { setPlaying(false); } finally { T.noFlush = false; }
+    try { hit("kick", at, 1); hit("crash", at, .9); } catch (_) {}
+    try { if (pad.on && ch) padChord(ch, at, 60 / T.bpm * 4); } catch (_) {}
+  }, Math.max(0, (endT - ctx.currentTime - .15) * 1000));
+}
+$("play").addEventListener("click", e => {
+  if (!game.on) return;
+  e.stopImmediatePropagation();
+  if (END.on) { setPlaying(false); return; }                       // second tap: stop now
+  if (T.playing) { if (audio && audio.ctx.currentTime < T.next - 60 / T.bpm) { setPlaying(false); return; } bandEnding(); return; }
+  bandIntro();
+}, true);
+
+/* ----- Sound lab: tap Hold to try = one smooth arpeggio, hold = one long note, Glide on = it slides ----- */
+const LT = { v: [], seq: [], holdT: 0, mode: null };
+function ltVoice(s, midi, t) { return buildVoice(s.kind, midi, s.kind === "lead" ? 2600 : 900, t, .5, s.base.v); }
+function ltRel(v) {
+  try { const t = audio.ctx.currentTime, tc = relTcFor(v.kind), end = t + tc * 7 + .1; fadeOut(v.g.gain, t, tc);
+    if (v.stopSched) v.stopSched(t + Math.min(.5, tc * 4)); for (const [o] of v.parts) { try { o.stop(end); } catch (_) {} }
+    if (v.vibOsc) { try { v.vibOsc.stop(end); } catch (_) {} } setTimeout(() => unplugVoice(v), (end - t + .2) * 1000); } catch (_) {}
+}
+function ltStopAll() { clearTimeout(LT.holdT); LT.seq.forEach(clearTimeout); LT.seq = []; LT.v.forEach(ltRel); LT.v = []; LT.mode = null; }
+function ltArp(s) {
+  const lead = s.kind === "lead", base = lead ? 69 : 45, notes = lead ? [0, 3, 7, 12, 7, 3, 0] : [0, 7, 12, 7, 0], step = .3, ctx = audio.ctx, t0 = ctx.currentTime + .03;
+  if (s.glide) {
+    const v = ltVoice(s, base, t0); LT.v.push(v);
+    notes.forEach((n, i) => { if (i) pitchParts(v, base + n, t0 + i * step, .045); });
+    LT.seq.push(setTimeout(() => { ltRel(v); LT.v = LT.v.filter(x => x !== v); }, notes.length * step * 1000));
+    return;
+  }
+  notes.forEach((n, i) => LT.seq.push(setTimeout(() => {
+    const v = ltVoice(s, base + n, ctx.currentTime); LT.v.push(v);
+    LT.seq.push(setTimeout(() => { ltRel(v); LT.v = LT.v.filter(x => x !== v); }, step * 1000 * 1.08));
+  }, i * step * 1000)));
+}
+{
+  const old = $("lbTry"), b = old.cloneNode(true); old.replaceWith(b);
+  const rec = () => LAB.cur && LAB.cur.base.t === "rec";
+  b.addEventListener("pointerdown", e => {
+    e.preventDefault(); if (!LAB.cur) return; ensureAudio(); ltStopAll(); mkRiffStop(); labLive(LAB.cur); b.classList.add("go"); LAB.trying = true;
+    LT.holdT = setTimeout(() => {
+      LT.mode = "hold";
+      if (rec()) { const loop = () => { if (LT.mode !== "hold") return; mkRiff(LAB.cur.kind, 2, labOver(LAB.cur)); LT.seq.push(setTimeout(loop, (8 * 60 / 90) * 1000)); }; loop(); return; }
+      LT.v.push(ltVoice(LAB.cur, LAB.cur.kind === "lead" ? 69 : 45, audio.ctx.currentTime));
+    }, 220);
+  });
+  const up = () => {
+    if (!LAB.trying) return; LAB.trying = false; b.classList.remove("go");
+    if (LT.mode === "hold") { ltStopAll(); mkRiffStop(); return; }
+    clearTimeout(LT.holdT); if (!LAB.cur) return;
+    if (rec()) mkRiff(LAB.cur.kind, 1, labOver(LAB.cur)); else ltArp(LAB.cur);
+  };
+  b.addEventListener("pointerup", up); b.addEventListener("pointercancel", () => { LAB.trying = false; b.classList.remove("go"); ltStopAll(); });
+  b.addEventListener("pointerleave", () => { if (LT.mode === "hold") up(); });
+  b.addEventListener("contextmenu", e => e.preventDefault());
+}
+
+/* ----- loop: length in Settings (4 bars, 8 bars, whole chord progression) and ✕ needs two taps ----- */
+function loopLenBars() {
+  let v = "4"; try { v = localStorage.getItem("glasspad.loopLen") || "4"; } catch (_) {}
+  if (v === "all") { try { return Math.max(1, Math.min(16, Math.round(passBars()))); } catch (_) { return 4; } }
+  return +v || 4;
+}
+{
+  const r = document.createElement("div"); r.className = "gr";
+  r.innerHTML = `<div><label>Loop length</label><small>Whole = as long as the theme's chords go round (Blues: 12 bars)</small></div><div class="gseg" id="gLoopLen"><button data-v="4">4 bars</button><button data-v="8">8 bars</button><button data-v="all">Whole</button></div>`;
+  ($("gStrips") ? $("gStrips").closest(".gr") : $("gSheet").querySelector(".gtest")).after(r);
+  const sync = () => { let v = "4"; try { v = localStorage.getItem("glasspad.loopLen") || "4"; } catch (_) {} $("gLoopLen").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === v)); };
+  $("gLoopLen").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; try { localStorage.setItem("glasspad.loopLen", b.dataset.v); } catch (_) {} sync(); });
+  sync();
+  const old = $("gLoopX"), x = old.cloneNode(true); old.replaceWith(x);
+  let armT = 0;
+  const disarm = () => { clearTimeout(armT); x.classList.remove("sure"); x.setAttribute("aria-label", "Delete the loop"); };
+  x.addEventListener("click", e => {
+    e.stopPropagation();
+    if (!x.classList.contains("sure")) { x.classList.add("sure"); x.setAttribute("aria-label", "Tap again to delete the loop"); armT = setTimeout(disarm, 2000); return; }
+    disarm(); loopClear(); toast("Loop deleted");
+  });
+}
+
+/* ----- Test box only in creator mode (7 taps on the version number) ----- */
+{
+  const cs0 = creSync;
+  creSync = function () { cs0.apply(this, arguments); const g = document.querySelector("#gSheet .gtest"); if (g) g.hidden = !CRE.on; };
+  creSync();
+}
+
+/* ----- touches: swipes on waves and sliders scroll the page; pressed buttons light up in their own shape; messages show above every page ----- */
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  #msx canvas, #lab canvas, #mk canvas, #mkSheet canvas, #pk2 canvas, #rc canvas, #home canvas, #smSheet canvas { touch-action: pan-y !important; }
+  #msx input[type=range], #lab input[type=range], #mk input[type=range], #mkSheet input[type=range], #pk2 input[type=range], #gSheet input[type=range], #smSheet input[type=range] { touch-action: pan-y; }
+  button:active:not(:disabled), [role=button]:active { filter: brightness(1.35) saturate(1.15) drop-shadow(0 0 7px rgba(255,255,255,.3)); scale: .97; }
+  #toast { position: fixed !important; z-index: 120 !important; top: max(14px, env(safe-area-inset-top)) !important; }
+  #gSheet .gtest[hidden] { display: none !important; }
+  #gLoopX.sure { background: #d6283c !important; border-color: #ff6a7c !important; color: #fff !important; box-shadow: 0 0 12px rgba(255,60,80,.7); }
+  #lbTry.go { filter: brightness(1.3); }`;
   document.head.appendChild(st);
 }
 

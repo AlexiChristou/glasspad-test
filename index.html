@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.67 TEST · game mode · 13 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.68 TEST · game mode · 13 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1527,7 +1527,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.67 TEST · game mode · 13 Oct 2026</p>
+      <p class="ver">GlassPad 5.68 TEST · game mode · 13 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -7300,7 +7300,7 @@ function holdRepeat(btn, step, done) {
   let downAt = 0; btn.addEventListener("pointerdown", () => downAt = performance.now());
   btn.addEventListener("click", e => { if (e.detail === 0 && performance.now() - downAt > 600) { step(); done(); } });   // keyboard
 }
-function playClipOnce(c) { ensureAudio(); const src = audio.ctx.createBufferSource(); src.buffer = c.buf; src.connect(audio.bus); src.start(); }
+function playClipOnce(c) { ensureAudio(); const src = audio.ctx.createBufferSource(); src.buffer = c.buf; src.connect(audio.master); src.start(); }   // 5.68: dry, not through the lead's pedals
 let slotOpen = -1;   // which sound is folded open (one at a time)
 function renderSlots() {
   const box = $("slots"); box.innerHTML = "";
@@ -10197,7 +10197,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.67 TEST</p>
+    <p class="hm-ver">GlassPad 5.68 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14660,7 +14660,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.67 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.68 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -15249,7 +15249,7 @@ function labNew(kind) {
   const D = DEFAULT_PRESET, n = LAB.store.sounds.filter(s => s.kind === kind).length + 1;
   if (kind === "lead") {
     const fx = bmc(D.fx || {}); for (const id of LEAD_FX_IDS) fx[id] = { ...(fx[id] || {}), on: false };
-    fx.echo = { on: true, send: .3 }; fx.reverb = { on: true, mix: .3 };
+    fx.echo = { on: true, send: .3 }; fx.reverb = { on: true, mix: .3 }; fx.octave.mode = fx.octave.mode || "down"; fx.trem.sync = fx.trem.sync || "free";
     return { id: "s" + Date.now().toString(36), name: "Lead sound " + n, kind, base: { t: "synth", v: "supersaw" }, level: 1, tone: { ...(D.tone || tone) }, fx, glide: false, autoVib: false };
   }
   const fx = bmc(PFX_DEF.bass); for (const id of BASS_FX_IDS) fx[id] = { ...fx[id], on: id === "comp" };
@@ -15401,6 +15401,13 @@ function labHear(s, after) {
   .lb-ped.on .pt span::after { background: var(--lc); box-shadow: 0 0 8px var(--lc); }
   .lb-ped label { display: flex; justify-content: space-between; font: 500 9.5px var(--mono); color: #b8aee6; }
   .lb-ped input { width: 100%; accent-color: var(--lc); margin: 0; }
+  .lb-ped .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border-radius: 9px; overflow: hidden; border: 1px solid rgba(255,255,255,.2); }
+  .lb-ped .seg button { background: transparent; border: 0; color: #b8aee6; font: 500 9.5px var(--mono); min-height: 30px; padding: 0; }
+  .lb-ped .seg button + button { border-left: 1px solid rgba(255,255,255,.12); }
+  .lb-ped .seg button.on { background: color-mix(in srgb, var(--lc) 38%, transparent); color: #fff; }
+  /* 5.68: no square tap box; a pressed button brightens in its own shape */
+  * { -webkit-tap-highlight-color: transparent; }
+  button:active:not(:disabled), [role=button]:active { filter: brightness(1.35) saturate(1.15); }
   .lb-sw { display: flex; align-items: center; gap: 10px; min-height: 44px; background: transparent; border: 0; color: #fff; padding: 0; text-align: left; width: 100%; }
   .lb-sw span { flex: 1; font: 400 14px "IBM Plex Sans", var(--body); } .lb-sw small { display: block; font-size: 12px; color: #a99fd0; }
   .lb-sw i { width: 46px; height: 28px; border-radius: 14px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); position: relative; flex: none; }
@@ -15638,12 +15645,13 @@ function labRender() {
   const s = LAB.cur, lead = s.kind === "lead", rec = s.base.t === "rec", n = labUsedBy(s.id).length, isNew = !labGet(s.id);
   const sl = (key, label, v, fmt, o = {}) => `<div class="lb-sl${o.dim ? " dim" : ""}"><span>${label}</span><input type="range" min="${o.min ?? 0}" max="${o.max ?? 1}" step="0.01" value="${v}" data-${o.attr || "tone"}="${key}"><output>${fmt(v)}</output></div>`;
   const pct = v => Math.round(v * 100) + "%";
-  const ped = (id, name, params) => { const fx = s.fx[id] || {}, on = !!fx.on;
-    return `<div class="lb-ped${on ? " on" : ""}"><button class="pt" data-fxon="${id}">${name}<span>${on ? "ON" : "OFF"}</span></button>${params.map(([k, l]) => `<label>${l}<span>${pct(fx[k] ?? 0)}</span></label><input type="range" min="0" max="1" step="0.01" value="${fx[k] ?? 0}" data-fx="${id}:${k}">`).join("")}</div>`; };
-  const peds = lead ? [["octave", "Octave", [["level", "LEVEL"]]], ["drive", "Drive", [["amt", "GAIN"], ["tone", "TONE"]]], ["chorus", "Chorus", [["rate", "RATE"], ["depth", "DEPTH"]]],
-    ["flanger", "Flanger", [["rate", "RATE"], ["fb", "REGEN"]]], ["phaser", "Phaser", [["rate", "RATE"], ["depth", "DEPTH"]]], ["trem", "Tremolo", [["rate", "SPEED"], ["depth", "DEPTH"]]]]
-    : [["drive", "Drive", [["amt", "GAIN"], ["tone", "TONE"]]], ["chorus", "Chorus", [["rate", "RATE"], ["depth", "DEPTH"]]], ["filter", "Filter", [["cut", "CUTOFF"], ["depth", "DEPTH"]]],
-       ["octave", "Octave", [["level", "LEVEL"]]], ["comp", "Squeeze", [["amt", "AMOUNT"], ["punch", "PUNCH"]]]];
+  const ped = (id, name, params, ch) => { const fx = s.fx[id] || {}, on = !!fx.on;   // 5.68: ch = [key, [[value, label]…], default] for the pedal's choice
+    const seg = ch ? `<div class="seg" style="grid-template-columns:repeat(${ch[1].length},minmax(0,1fr))">${ch[1].map(([v, l]) => `<button class="${(fx[ch[0]] ?? ch[2]) === v ? "on" : ""}" data-fxc="${id}:${ch[0]}:${v}">${l}</button>`).join("")}</div>` : "";
+    return `<div class="lb-ped${on ? " on" : ""}"><button class="pt" data-fxon="${id}">${name}<span>${on ? "ON" : "OFF"}</span></button>${seg}${params.map(([k, l]) => `<label>${l}<span>${pct(fx[k] ?? 0)}</span></label><input type="range" min="0" max="1" step="0.01" value="${fx[k] ?? 0}" data-fx="${id}:${k}">`).join("")}</div>`; };
+  const peds = lead ? [["octave", "Octave", [["level", "LEVEL"]], LAB_CH.octL], ["drive", "Drive", [["amt", "GAIN"], ["tone", "TONE"]]], ["chorus", "Chorus", [["rate", "RATE"], ["depth", "DEPTH"]]],
+    ["flanger", "Flanger", [["rate", "RATE"], ["fb", "REGEN"]]], ["phaser", "Phaser", [["rate", "RATE"], ["depth", "DEPTH"]]], ["trem", "Tremolo", [["rate", "SPEED"], ["depth", "DEPTH"]], LAB_CH.trem]]
+    : [["drive", "Drive", [["amt", "GAIN"], ["tone", "TONE"]]], ["chorus", "Chorus", [["rate", "RATE"], ["depth", "DEPTH"]]], ["filter", "Filter", [["cut", "CUTOFF"], ["depth", "DEPTH"], ["res", "RESONANCE"], ["speed", "SPEED"]], LAB_CH.filt],
+       ["octave", "Octave", [["level", "LEVEL"]], LAB_CH.octB], ["comp", "Squeeze", [["amt", "AMOUNT"], ["punch", "PUNCH"]]]];
   const rv = lead ? (s.fx.reverb || {}).mix ?? 0 : (s.fx.reverb || {}).send ?? 0, ev = (s.fx.echo || {}).send ?? 0;
   const ic = rec ? SV.mic : LBI.wave("var(--lc)");
   B.innerHTML = `<div class="lb-top">${back}<div><small>SOUND LAB · ${lead ? "LEAD" : "BASS"}</small><h2>${escH(s.name.toUpperCase())}</h2></div><button class="lb-chg" id="lbChg" ${labChanged() || isNew ? "" : "hidden"}>${isNew ? "NOT SAVED" : "● CHANGED"}</button></div>
@@ -15666,7 +15674,19 @@ function labRender() {
     <div class="lb-acts"><button id="lbAsNew">Save as new</button><button class="del" id="lbDel">${isNew ? "Discard" : "Delete this sound"}</button></div>`;
   $("lab").style.setProperty("--lc", labColour(s.kind));
 }
-function labEdit(s) { LAB.cur = bmc(s); LAB.orig = labGet(s.id) ? bmc(s) : null; LAB.view = "sound"; LAB.sure = false; labLive(LAB.cur); labRender(); $("lab").scrollTop = 0; }
+const LAB_CH = {   // 5.68
+  octL: ["mode", [["down", "−1 OCT"], ["up", "+1 OCT"], ["both", "BOTH"]], "down"],
+  octB: ["mode", [["down", "−1 OCT"], ["up", "+1 OCT"], ["both", "BOTH"]], "up"],
+  trem: ["sync", [["free", "FREE"], ["time", "IN TIME"]], "free"],
+  filt: ["mode", [["sweep", "SWEEP"], ["env", "ENV"], ["still", "STILL"]], "env"],
+};
+function labFill(s) {
+  const f = s.fx = s.fx || {}, put = (id, k, v) => { f[id] = f[id] || {}; if (f[id][k] == null) f[id][k] = v; };
+  if (s.kind === "lead") { put("octave", "mode", "down"); put("trem", "sync", "free"); }
+  else { put("octave", "mode", "up"); put("filter", "mode", "env"); put("filter", "res", PFX_DEF.bass.filter.res); put("filter", "speed", PFX_DEF.bass.filter.speed); }
+  return s;
+}
+function labEdit(s) { LAB.cur = labFill(bmc(s)); LAB.orig = labGet(s.id) ? bmc(s) : null; LAB.view = "sound"; LAB.sure = false; labLive(LAB.cur); labRender(); $("lab").scrollTop = 0; }
 const labSync = () => { const c = $("lbChg"); if (c) { const nw = !labGet(LAB.cur.id); c.hidden = !(labChanged() || nw); c.textContent = nw ? "NOT SAVED" : "● CHANGED"; } };
 $("lab").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
@@ -15692,7 +15712,8 @@ $("lab").addEventListener("click", e => {
       onRecord: () => { $("lab").hidden = true; msxOpen({ from: "labsound" }); } });
     return;
   }
-  if (b.dataset.fxon) { const id = b.dataset.fxon; s.fx[id] = { ...(s.fx[id] || {}), on: !(s.fx[id] || {}).on }; labLive(s); labRender(); labHearSoon(); return; }
+  if (b.dataset.fxon) { const id = b.dataset.fxon; s.fx[id] = { ...(s.fx[id] || {}), on: !(s.fx[id] || {}).on }; labLive(s); labRender(); return; }
+  if (b.dataset.fxc) { const [id, k, v] = b.dataset.fxc.split(":"); s.fx[id] = { ...(s.fx[id] || {}), [k]: v }; labLive(s); const y = $("lab").scrollTop; labRender(); $("lab").scrollTop = y; return; }
   if (b.dataset.sw) { s[b.dataset.sw] = !s[b.dataset.sw]; b.setAttribute("aria-pressed", s[b.dataset.sw]); labSync(); return; }
   if (b.id === "lbAsNew") { const n = bmc(s); n.id = "s" + Date.now().toString(36); n.name = (s.name + " 2").slice(0, 24); labCommit(n, true); return; }
   if (b.id === "lbDel") {
@@ -15711,7 +15732,7 @@ $("lab").addEventListener("input", e => {
   else if (r.dataset.fx) { const [id, k] = r.dataset.fx.split(":"); s.fx[id] = { ...(s.fx[id] || {}), [k]: v }; const lab = r.previousElementSibling && r.previousElementSibling.querySelector("span"); if (lab) lab.textContent = Math.round(v * 100) + "%"; }
   labLive(s); labSync();
 });
-$("lab").addEventListener("change", e => { if (e.target.matches("input[type=range]") && LAB.cur) labHearSoon(); });
+// 5.68: no sound after a change (it was annoying); HOLD TO TRY is the way to hear it
 const labHearSoon = () => { clearTimeout(LAB.hs); LAB.hs = setTimeout(() => { if (LAB.cur && !LAB.trying) mkRiff(LAB.cur.kind, 1, labOver(LAB.cur)); }, 120); };
 // hold to try: the riff loops while held
 {

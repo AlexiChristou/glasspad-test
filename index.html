@@ -1419,7 +1419,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.71 TEST · game mode · 14 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.72 TEST · game mode · 14 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1528,7 +1528,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.71 TEST · game mode · 14 Oct 2026</p>
+      <p class="ver">GlassPad 5.72 TEST · game mode · 14 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10199,7 +10199,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.71 TEST</p>
+    <p class="hm-ver">GlassPad 5.72 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14662,7 +14662,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.71 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.72 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -15689,7 +15689,7 @@ function labFill(s) {
   return s;
 }
 function labEdit(s) { LAB.cur = labFill(bmc(s)); LAB.orig = labGet(s.id) ? bmc(s) : null; LAB.view = "sound"; LAB.sure = false; labLive(LAB.cur); labRender(); $("lab").scrollTop = 0; }
-const labSync = () => { const c = $("lbChg"); if (c) { const nw = !labGet(LAB.cur.id); c.hidden = !(labChanged() || nw); c.textContent = nw ? "NOT SAVED" : "● CHANGED"; } };
+const labSync = () => { const c = $("lbChg"); if (c) { const nw = !labGet(LAB.cur.id); c.hidden = !(labChanged() || nw); c.textContent = nw ? "NOT SAVED" : "● CHANGED"; } try { labDot(); } catch (_) {} };
 $("lab").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
   if (b.id === "lbBack") {
@@ -16263,6 +16263,212 @@ try { $("gBandVol").closest(".gr").hidden = true; if (game.bandVol !== 1) { game
   #gSheet .gr[hidden] { display: none !important; }`;
   document.head.appendChild(st);
 }
+
+/* ---------- 5.72: his Strip Tuner numbers, centred headers, New Theme bottom + Save dot, Sound lab tabs / bin / + New under the list, Save as new flash, Edit on Home ---------- */
+// strips: one look everywhere (Strip Tuner, 14 Oct), each page its own strength and top/bottom fade; drawn once as a picture
+const BGSTR = { count: 10, lineW: 2.6, lineA: .48, lineSoft: 1.7, glowW: 17, glowA: .4, glowSoft: 6.5, bandA: .105, bandSoft: 8,
+  pages: { home: { page: .49, fade: 1 }, lab: { page: .6, fade: .96 }, mk: { page: .42, fade: .94 }, sp: { page: .22, fade: .96 } } };
+function stripSvg(c, pg) {
+  const V = BGSTR, P = V.pages[pg] || V.pages.lab, W = 390, H = 844, n = V.count, m = (n - 1) / 2;
+  const col = i => i < m ? neonMix(c.bass, c.mid, i / m) : neonMix(c.mid, c.lead, (i - m) / m), xs = Array.from({ length: n }, (_, i) => 5 + i * (W - 10) / (n - 1));
+  const f = (id, sd) => `<filter id="${id}" filterUnits="userSpaceOnUse" x="-60" y="-10" width="510" height="864"><feGaussianBlur stdDeviation="${sd} 0"/></filter>`;
+  let h = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><defs>${f("b", V.bandSoft)}${f("g", V.glowSoft)}${f("l", V.lineSoft)}<linearGradient id="d" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="${1 - P.fade}"/><stop offset="${.08 + P.fade * .25}" stop-color="#fff"/><stop offset="${.92 - P.fade * .25}" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="${1 - P.fade}"/></linearGradient><mask id="k" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="url(#d)"/></mask></defs><g mask="url(#k)"><g filter="url(#b)">`;
+  for (let i = 0; i < n - 1; i += 2) h += `<rect x="${xs[i]}" y="0" width="${xs[i + 1] - xs[i]}" height="${H}" fill="${col(i)}" opacity="${V.bandA}"/>`;
+  h += `</g><g filter="url(#g)">`; xs.forEach((x, i) => h += `<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="${col(i)}" stroke-width="${V.glowW}" opacity="${V.glowA}"/>`);
+  h += `</g><g filter="url(#l)">`; xs.forEach((x, i) => h += `<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="${col(i)}" stroke-width="${V.lineW}" opacity="${V.lineA}"/>`);
+  return h + `</g></g></svg>`;
+}
+neonStrips = function (el, cOver) {
+  if (!el) return;
+  const pg = el.id === "home" ? "home" : el.id === "mk" ? "mk" : el.id === "sp" ? "sp" : "lab", cs = getComputedStyle(el);
+  const c = cOver || { lead: cs.getPropertyValue("--nl").trim() || NEON_DEF.lead, bass: cs.getPropertyValue("--nb").trim() || NEON_DEF.bass, mid: cs.getPropertyValue("--nm").trim() || NEON_DEF.mid };
+  const key = pg + c.lead + c.bass + c.mid;
+  let im = el.querySelector(":scope > .nstrips");
+  if (im && im.dataset.k === key) return;
+  if (im && im.tagName !== "IMG") { im.remove(); im = null; }
+  if (!im) { im = document.createElement("img"); im.className = "nstrips"; im.alt = ""; im.setAttribute("aria-hidden", "true"); im.decoding = "async"; el.prepend(im); }
+  im.dataset.k = key; im.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(stripSvg(c, pg));
+  im.style.setProperty("--sp", (BGSTR.pages[pg] || BGSTR.pages.lab).page);
+};
+// New Theme gets faint strips in the theme's colours
+function mkStrips() { try { const m = $("mk"); if (m.hidden || !mk.t) return; neonStrips(m, { lead: mkCol(0), bass: mkCol(1), mid: mkCol(2) }); } catch (_) {} }
+
+// headers: back button a little higher; logo + title one block, centred; long titles shrink, then "…"
+function hdrCentre(row) {
+  if (!row) return;
+  let c = row.querySelector(":scope > .gcen");
+  if (!c) {
+    c = document.createElement("div"); c.className = "gcen";
+    const lg = row.querySelector(":scope > .glogo"), h = row.querySelector("h2");
+    if (lg) c.appendChild(lg); if (h) c.appendChild(h);
+    row.appendChild(c);
+  }
+  hdrFit(row);
+}
+hdrFit = function (row) {
+  const h = row && row.querySelector("h2"); if (!h) return;
+  const room = (row.clientWidth || innerWidth - 32) - 2 * 64 - 34;
+  h.style.maxWidth = room + "px"; h.style.fontSize = "";
+  let fs = 24; h.style.fontSize = fs + "px";
+  while (h.scrollWidth > h.clientWidth + 1 && fs > 16) { fs -= 1; h.style.fontSize = fs + "px"; }
+};
+{
+  const d0 = hdrDeco;
+  hdrDeco = function (row) { d0(row); hdrCentre(row); };
+}
+document.querySelectorAll(".ghdr").forEach(hdrCentre);
+
+// New Theme: "not saved" moves from the header to a glowing dot on Save
+{
+  const r0 = mkRender;
+  mkRender = function () {
+    r0.apply(this, arguments);
+    const t = mk.t; if (!t) return;
+    $("mk").classList.toggle("dirty", !(mk.editing && t.id && !mk.dirty));
+    hdrFit(document.querySelector("#mk .mk-top")); mkStrips();
+  };
+  const o0 = mkOpen;
+  mkOpen = function () { const r = o0.apply(this, arguments); mkStrips(); hdrFit(document.querySelector("#mk .mk-top")); return r; };
+}
+try { $("mkSave").textContent = "SAVE"; } catch (_) {}
+
+// Save as new: the button flashes and a toast names the copy
+function flashBtn(b) { if (!b) return; b.classList.remove("flash"); void b.offsetWidth; b.classList.add("flash"); setTimeout(() => b.classList.remove("flash"), 900); }
+{
+  const c0 = labCommit;
+  labCommit = function (s, asNew) { const r = c0.apply(this, arguments); if (asNew) { flashBtn($("lbAsNew")); flashBtn($("lbSave")); } return r; };
+}
+$("mksBox").addEventListener("click", e => {
+  const b = e.target.closest("[data-sv]"); if (!b || b.dataset.sv === "cancel") return;
+  flashBtn(b); flashBtn($("mkSave"));
+}, true);
+{
+  // the theme save shows a toast too (it went straight to the pad before, with nothing to say it worked)
+  const sv0 = $("mksBox");
+  sv0.addEventListener("click", e => {
+    const b = e.target.closest("[data-sv]"); if (!b || b.dataset.sv === "cancel") return;
+    const nm = (($("mksNm") || {}).value || "").trim().slice(0, 24) || $("mkName").placeholder;
+    setTimeout(() => toast(b.dataset.sv === "over" ? `Saved “${nm}”` : `Saved as “${nm}”`), 60);
+  });
+}
+
+// Sound lab sound page: CHANGED / NOT SAVED becomes the dot on Save
+function labDot() { const c = $("lbChg"), sv = $("lbSave"); if (sv) sv.classList.toggle("dirty", !!(c && !c.hidden)); }
+{
+  const r0 = labRender;
+  labRender = function () { const r = r0.apply(this, arguments); labDot(); labHomeDeco(); return r; };
+}
+// Sound lab home: whole row opens the sound, bin on each row with a red check, + New right under the list
+const LBBIN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/></svg>`;
+function labHomeDeco() {
+  const B = $("lbBody"); if (!B || LAB.view !== "home") return;
+  B.querySelectorAll(".lb-row").forEach(r => {
+    const id = r.querySelector("[data-edit]")?.dataset.edit; if (!id) return;
+    r.dataset.row = id;
+    r.insertAdjacentHTML("beforeend", `<button class="bin" data-bin="${id}" aria-label="Delete">${LBBIN}</button>`);
+    if (LAB.ask === id) {
+      const s = labGet(id), ts = labUsedBy(id), n = ts.length;
+      r.classList.add("ask");
+      r.insertAdjacentHTML("beforeend", `<div class="askx"><p>Delete “${escH(s.name)}”?${n ? ` It's in ${n} theme${n > 1 ? "s" : ""}: ${ts.map(t => escH(t.name)).join(", ")}. ${n > 1 ? "They go" : "It goes"} back to its plain starting sound.` : ""}</p><div><button data-keep="1">Keep</button><button class="d" data-delok="${id}">Delete</button></div></div>`);
+    }
+  });
+  const nw = B.querySelector(".lb-pin .lb-new");
+  if (nw) {
+    const b = nw.cloneNode(true); b.className = "lb-newin"; nw.remove();
+    const rows = B.querySelectorAll(".lb-row"), after = rows[rows.length - 1] || B.querySelector(".lb-empty") || B.querySelector(".lb-tabs");
+    after.after(b);
+  }
+}
+$("lab").addEventListener("click", e => {
+  const t = e.target;
+  const bin = t.closest("[data-bin]"); if (bin) { e.stopImmediatePropagation(); LAB.ask = LAB.ask === bin.dataset.bin ? null : bin.dataset.bin; labRender(); return; }
+  if (t.closest("[data-keep]")) { e.stopImmediatePropagation(); LAB.ask = null; labRender(); return; }
+  const ok = t.closest("[data-delok]");
+  if (ok) { e.stopImmediatePropagation(); const s = labGet(ok.dataset.delok); LAB.ask = null; labDelete(ok.dataset.delok); labRender(); toast(s ? `Deleted “${s.name}”` : "Sound deleted"); return; }
+  const row = t.closest(".lb-row[data-row]");
+  if (row && !t.closest("button") && !t.closest(".askx")) { e.stopImmediatePropagation(); const s = labGet(row.dataset.row); if (s) { LAB.ask = null; labEdit(s); } return; }
+  if (t.closest("[data-ltab]") || t.closest("[data-edit]") || t.closest("[data-new]")) LAB.ask = null;
+}, true);
+// the lab keeps the theme's colours but loses the corner haze (Strip Tuner: none)
+{
+  const o0 = labOpen;
+  labOpen = function () { LAB.ask = null; return o0.apply(this, arguments); };
+}
+
+// Home: Edit on the big window opens the theme in Make your own (same as Edit on the pad)
+function mkEditTheme(id) {
+  if (id === "__mkplay" && MKP.pending) { mkOpen(null); mk.t = JSON.parse(JSON.stringify(MKP.pending.t)); mk.editing = MKP.pending.editing; mkAfterOpen(); return; }
+  const mine = isMine(id) && MY.list.find(x => x.id === id);
+  if (mine) { mkOpen(mine); mkAfterOpen(); return; }
+  const src = QSTYLES_SYNTH[id] && !QSTYLES_SYNTH[id].mine ? id : null;
+  mkOpen(null);
+  if (src) {
+    const st = QSTYLES_SYNTH[src], p = st.p;
+    Object.assign(mk.t, { band: src, feelSet: true, cols: [...(st.cols || mk.t.cols)], lead: p.wave && p.wave !== "sampler" ? p.wave : "supersaw",
+      lead2: (p.lead && p.lead.snd2 && p.lead.snd2 !== "sampler") ? p.lead.snd2 : "off", vol2: (p.lead && p.lead.vol2) ?? 1,
+      bass: (p.bass && p.bass.sound && p.bass.sound !== "sampler") ? p.bass.sound : "finger", fromName: st.name });
+    mk.t.name = st.name + " remix";
+  }
+  mkAfterOpen();
+}
+mkEditPlaying = function () { return mkEditTheme(gameKey()); };
+{
+  const b = document.createElement("button"); b.className = "hm-edit"; b.id = "hmEdit"; b.setAttribute("aria-label", "Edit this theme");
+  b.innerHTML = `${SV.pencil}EDIT`;
+  const pv = $("hmPv"); pv.before(b);
+  b.addEventListener("click", e => { e.stopPropagation(); if ($("home").classList.contains("hmlock")) return; const id = hm.heroId; mkEditTheme(id); mk.fromPad = false; mkStrips(); });
+}
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  .nstrips { --sp: .4; opacity: var(--sp) !important; object-fit: fill; }
+  #home.hmlock .nstrips { opacity: calc(var(--sp) * .7) !important; }
+  #lab::before { display: none !important; }
+  #lab > .nstrips, #mk > .nstrips { z-index: -1; }
+  #mk > .nstrips { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  /* centred header */
+  .ghdr { padding-top: 10px !important; }
+  .ghdr > .hm-x { margin-top: 2px !important; position: relative; z-index: 2; }
+  .ghdr .gcen { position: absolute; left: 50%; top: 9px; transform: translateX(-50%); height: 62px; pointer-events: none; z-index: 1; }
+  .ghdr .gcen .glogo { position: absolute !important; left: 0 !important; top: 0 !important; }
+  .ghdr .gcen h2 { position: relative !important; left: auto !important; top: auto !important; display: block; margin: 17px 0 0 26px !important; }
+  #mkTag, #lbChg { display: none !important; }
+  /* Save dot (New Theme and a lab sound) */
+  #mk.dirty #mkSave::after, #lbSave.dirty::after { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: currentColor; margin-left: 8px; vertical-align: 1px; box-shadow: 0 0 8px currentColor; }
+  #mk.dirty #mkSave { box-shadow: 0 0 12px color-mix(in srgb, var(--mkc) 55%, transparent) !important; color: color-mix(in srgb, var(--mkc) 45%, #fff) !important; }
+  /* New Theme: all 7 steps above Play it / Save when standing up */
+  @media (orientation: portrait) { #mk .mk-prev { height: min(190px, 26vh) !important; } }
+  #mk .mk-rows { padding-bottom: 20px; }
+  #mk .mk-two { padding-top: 22px !important; background: linear-gradient(180deg, rgba(5,6,11,0), rgba(5,6,11,.75) 18%, #05060b 42%) !important; }
+  /* flash */
+  @keyframes gflash { 0% { filter: brightness(2.1) drop-shadow(0 0 14px #fff); } 100% { filter: none; } }
+  .flash { animation: gflash .85s ease-out; }
+  /* Sound lab tabs: outlined in their own colour, filled when picked */
+  .lb-tabs { gap: 8px; border: 0 !important; background: transparent !important; overflow: visible !important; }
+  .lb-tabs button { border-radius: 14px !important; border: 1.5px solid var(--rc) !important; color: color-mix(in srgb, var(--rc) 75%, #fff) !important; background: #0b0714 !important; box-shadow: 0 0 8px color-mix(in srgb, var(--rc) 30%, transparent) !important; }
+  .lb-tabs button[aria-selected="true"] { background: var(--rc) !important; color: #0a0412 !important; box-shadow: 0 0 14px color-mix(in srgb, var(--rc) 60%, transparent) !important; }
+  /* rows */
+  .lb-row { cursor: pointer; }
+  .lb-row .cv { display: none !important; }
+  .lb-row .bin { flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; color: #a59fc0; background: transparent !important; border: 0; margin-right: -4px; padding: 0; }
+  .lb-row .bin svg { width: 19px; height: 19px; }
+  .lb-row.ask { border-color: #ff3b4e !important; flex-wrap: wrap; }
+  .lb-row.ask .bin { color: #ff3b4e; }
+  .askx { flex: 1 0 100%; display: flex; flex-direction: column; gap: 10px; padding: 4px 4px 6px; }
+  .askx p { margin: 0; font-size: 13px; color: #ffd3d8; line-height: 1.4; }
+  .askx div { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .askx button { height: 40px; border-radius: 12px; font: 700 12px var(--display); letter-spacing: .06em; border: 1.5px solid rgba(255,255,255,.2); background: #0b0714 !important; color: #fff; }
+  .askx button.d { background: #ff3b4e !important; border-color: #ff3b4e; }
+  .lb-newin { display: block; width: 100%; height: 52px; flex: none; border-radius: 14px; border: 1.5px dashed var(--rc) !important; background: transparent !important; color: color-mix(in srgb, var(--rc) 80%, #fff); font: 700 13px var(--display); letter-spacing: .04em; }
+  /* Home: Edit on the big window */
+  #home .hm-edit { position: absolute; right: 12px; top: 12px; z-index: 3; height: 34px; padding: 0 13px 0 10px; border-radius: 17px; display: flex; align-items: center; gap: 6px; font: 700 11.5px var(--display); letter-spacing: .07em; color: #fff;
+    background: rgba(12,6,24,.72); border: 1.5px solid var(--nl); box-shadow: 0 0 10px color-mix(in srgb, var(--nl) 50%, transparent); }
+  #home .hm-edit svg { width: 15px; height: 15px; }
+  #home.hmlock .hm-edit { display: none; }`;
+  document.head.appendChild(st);
+}
+// redraw what's showing with the new strips
+try { ["home", "lab", "sp"].forEach(id => { const el = $(id); if (el && el.querySelector(":scope > .nstrips")) { el.querySelector(":scope > .nstrips").remove(); neonStrips(el); } }); } catch (_) {}
 
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }

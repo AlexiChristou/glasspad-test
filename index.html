@@ -1432,7 +1432,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.73.1 TEST · game mode · 14 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.74 TEST · game mode · 14 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1541,7 +1541,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.73.1 TEST · game mode · 14 Oct 2026</p>
+      <p class="ver">GlassPad 5.74 TEST · game mode · 14 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -8857,7 +8857,7 @@ function gameFx(now, LH) {
   const L = gameLiftAmt(), home = keyLift.now === 0 && !(keyLift.pend && T.playing) && !game.local;
   const d = (keyLift.pend && T.playing) || game.local ? game.dir : (keyLift.now === 0 ? Math.sign(L) : -Math.sign(keyLift.now));
   const txt = armed >= 0 ? `READY ${d > 0 ? "▲" : "▼"}` : p >= 0 ? (d > 0 ? "▲ ▲ ▲" : "▼ ▼ ▼") : `SHIFT ${d > 0 ? "▲" : "▼"}`;
-  if (txt !== game.txt) { game.txt = txt; b.querySelector("span").textContent = txt; }
+  if (txt !== game.txt) { game.txt = txt; b.querySelector("span").innerHTML = txt.replace(/([▲▼])/g, '<b class="sar">$1</b>'); }   // 5.74
   b.classList.toggle("armed", armed >= 0); b.classList.toggle("down", d < 0); b.classList.toggle("away", keyLift.now !== 0 && !home);
   b.style.setProperty("--rf", armed >= 0 ? (armed * 100).toFixed(1) + "%" : "0%");
   b.style.setProperty("--lf", p >= 0 ? (p * 100).toFixed(1) + "%" : "0%");
@@ -10213,7 +10213,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.73.1 TEST</p>
+    <p class="hm-ver">GlassPad 5.74 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14676,7 +14676,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.73.1 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.74 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -14884,17 +14884,18 @@ const RIFF_OVR = { l1: null, b: null };
   };
 }
 function riffNote(kind, snd, midi, at, len, second) {
+  const base = RIFF.base, early = base != null ? .08 : 0;   // 5.74
   RIFF.timers.push(setTimeout(() => {
     try {
       RIFF_OVR.on = true; buildingSecond = !!second && kind === "lead";
-      let v; try { v = buildVoice(kind, midi, kind === "lead" ? 2600 : 900, audio.ctx.currentTime, .5, snd); } finally { buildingSecond = false; }
+      let v; try { v = buildVoice(kind, midi, kind === "lead" ? 2600 : 900, base != null ? Math.max(audio.ctx.currentTime, base + at) : audio.ctx.currentTime, .5, snd); } finally { buildingSecond = false; }
       if (second && kind === "lead") { try { v.g.disconnect(); } catch (_) {} v.g.connect(audio.bus2); v.second = true; }
       RIFF_OVR.on = false; RIFF.voices.push(v);
       RIFF.timers.push(setTimeout(() => { try { const t = audio.ctx.currentTime, tc = relTcFor(v.kind), end = t + tc * 7 + .1; fadeOut(v.g.gain, t, tc);
         if (v.stopSched) v.stopSched(t + Math.min(.5, tc * 4)); for (const [o] of v.parts) { try { o.stop(end); } catch (_) {} }
-        if (v.vibOsc) { try { v.vibOsc.stop(end); } catch (_) {} } setTimeout(() => unplugVoice(v), (end - t + .2) * 1000); } catch (_) {} }, len * 1000));
+        if (v.vibOsc) { try { v.vibOsc.stop(end); } catch (_) {} } setTimeout(() => unplugVoice(v), (end - t + .2) * 1000); } catch (_) {} }, (len + early) * 1000));
     } catch (_) { RIFF_OVR.on = false; }
-  }, at * 1000));
+  }, Math.max(0, at - early) * 1000));
 }
 // parts: "lead", "bass" or "both"; bars: 1 or 2. Uses the theme's 1st-finger sound/recordings and its bass.
 function mkRiff(parts, bars, over) {
@@ -16704,6 +16705,77 @@ if (game.edgeSet !== "auto") game.edge = game.edgeSet;
   const g0 = gameSheetSync;
   gameSheetSync = function () { g0.apply(this, arguments); $("gEdge").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === game.edgeSet)); };
 }
+
+/* ---------- 5.74: symmetrical pad buttons, a new theme's preview plays only what you've picked ---------- */
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  body.game:not(.studio) #styleChip, body.game:not(.studio) #gEdit { width: 80px !important; min-width: 80px !important; padding-left: 8px !important; padding-right: 8px !important; justify-content: center !important; box-sizing: border-box; }
+  body.game #gBand, body.game #gShift { width: 104px !important; min-width: 104px !important; justify-content: center !important; box-sizing: border-box; flex: none !important; }
+  body.game #gShift span { font-size: 11px !important; letter-spacing: .12em !important; display: inline-flex; align-items: center; gap: 6px; }
+  #gShift span b.sar { font-size: 17px; line-height: 1; font-weight: 400; color: var(--amber); text-shadow: 0 0 8px var(--amber); }
+  #gShift span b.sar + b.sar { margin-left: -3px; }`;
+  document.head.appendChild(st);
+}
+// a new theme: colours, lead and bass say "Pick…" until you pick them (the feel's are used behind the scenes so Play it works)
+{
+  const r0 = mkRender;
+  mkRender = function () {
+    r0.apply(this, arguments);
+    const t = mk.t; if (!t || !t.unset) return;
+    const say = (k, txt) => { const row = $("mkRows").querySelector(`.mk-step[data-k="${k}"] b`); if (row) row.textContent = txt; };
+    if (t.unset.cols) say("cols", "Pick colours");
+    if (t.unset.lead) say("lead", "Pick a sound");
+    if (t.unset.bass) say("bass", "Pick a sound");
+  };
+}
+function mkPicked() { const t = mk.t || {}, u = t.unset || {}; return { feel: t.feelSet !== false, lead: !u.lead, bass: !u.bass }; }
+function mkPulse(keys) {
+  keys.forEach((k, i) => { const s = $("mkRows").querySelector(`.mk-step[data-k="${k}"]`); if (!s) return; setTimeout(() => { s.classList.remove("pulse"); void s.offsetWidth; s.classList.add("pulse"); }, i * 120); });
+}
+// the lead riff over the band preview, locked to the band's bars (2 bars at a time, while the preview runs)
+const MKL = { t: 0, on: false };
+function mkLeadOver() {
+  clearTimeout(MKL.t); MKL.on = true;
+  let tries = 0;
+  const go = () => {
+    if (!MKL.on || $("mk").hidden || !mk.t) return (MKL.on = false);
+    if (!(T.playing && hpv.on)) { if (++tries < 60) MKL.t = setTimeout(go, 50); else MKL.on = false; return; }
+    const now = audio.ctx.currentTime, barLen = stepDur() * T.meter.steps, g0 = gridZero();
+    const nb = g0 + Math.ceil((now + .2 - g0) / barLen) * barLen;
+    MKL.t = setTimeout(() => {
+      if (!MKL.on || !(T.playing && hpv.on) || $("mk").hidden) return (MKL.on = false);
+      RIFF.base = nb; try { mkRiff("lead", 2); } catch (_) {} RIFF.base = null;
+      MKL.t = setTimeout(go, barLen * 1.5 * 1000);   // look for the bar after next
+    }, Math.max(0, (nb - now) * 1000 - 150));
+  };
+  go();
+}
+{
+  const p0 = mkPreviewPlay;
+  mkPreviewPlay = function () { const r = p0.apply(this, arguments); if (mkPicked().lead) mkLeadOver(); else { MKL.on = false; clearTimeout(MKL.t); } return r; };
+  const s0 = mkStopAll;
+  mkStopAll = function () { MKL.on = false; clearTimeout(MKL.t); return s0.apply(this, arguments); };
+  const c0 = mkClose;
+  mkClose = function () { MKL.on = false; clearTimeout(MKL.t); return c0.apply(this, arguments); };
+}
+// over the band, the riff uses the band's own tempo
+{ const k0 = riffKey; riffKey = function () { const k = k0.apply(this, arguments); if (RIFF.base != null && T.playing) k.bpm = T.bpm; return k; }; }
+// ▶ on the picture: only what's picked plays
+mkHear = function () {
+  const t = mk.t; if (!t) return;
+  if (T.playing || hpv.on || riffOn()) { mkStopAll(); mkHearSync(); return; }
+  const k = mkPicked();
+  if (!k.feel && !k.lead && !k.bass) { toast("Pick a feel and some sounds!"); mkPulse(["feel", "lead", "bass", "cols"]); return; }
+  if (!k.feel) { mkRiff(k.lead && k.bass ? "both" : k.lead ? "lead" : "bass", 2); mkHearSync(); return; }
+  mkPreviewPlay(); mkHearSync();
+};
+// Play it: sounds you haven't picked use the feel's, and it says so
+$("mkPlayIt").addEventListener("click", () => {
+  const t = mk.t; if (!t || t.feelSet === false) return;
+  const k = mkPicked(), miss = [!k.lead && "Lead", !k.bass && "bass"].filter(Boolean);
+  if (miss.length) setTimeout(() => toast(`${miss.length === 2 ? "Lead and bass" : miss[0][0].toUpperCase() + miss[0].slice(1)}: the feel's sound${miss.length === 2 ? "s" : ""} for now`), 300);
+}, true);
 
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }

@@ -1432,7 +1432,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.75 TEST · game mode · 14 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.76 TEST · game mode · 14 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1541,7 +1541,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.75 TEST · game mode · 14 Oct 2026</p>
+      <p class="ver">GlassPad 5.76 TEST · game mode · 14 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -8857,7 +8857,7 @@ function gameFx(now, LH) {
   const L = gameLiftAmt(), home = keyLift.now === 0 && !(keyLift.pend && T.playing) && !game.local;
   const d = (keyLift.pend && T.playing) || game.local ? game.dir : (keyLift.now === 0 ? Math.sign(L) : -Math.sign(keyLift.now));
   const txt = armed >= 0 ? `READY ${d > 0 ? "▲" : "▼"}` : p >= 0 ? (d > 0 ? "▲ ▲ ▲" : "▼ ▼ ▼") : `SHIFT ${d > 0 ? "▲" : "▼"}`;
-  if (txt !== game.txt) { game.txt = txt; b.querySelector("span").innerHTML = txt.replace(/([▲▼])/g, '<b class="sar">$1</b>'); }   // 5.74
+  if (txt !== game.txt) { game.txt = txt; b.querySelector("span").innerHTML = txt.replace(/([▲▼])/g, m => `<b class="sar${m === "▼" ? " dn" : ""}">${m}</b>`); }   // 5.74
   b.classList.toggle("armed", armed >= 0); b.classList.toggle("down", d < 0); b.classList.toggle("away", keyLift.now !== 0 && !home);
   b.style.setProperty("--rf", armed >= 0 ? (armed * 100).toFixed(1) + "%" : "0%");
   b.style.setProperty("--lf", p >= 0 ? (p * 100).toFixed(1) + "%" : "0%");
@@ -10213,7 +10213,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.75 TEST</p>
+    <p class="hm-ver">GlassPad 5.76 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -10931,7 +10931,7 @@ loadStyle = function (st) {
     <button class="mk-del" id="mkDel" hidden>Delete this theme</button>
     <button class="mk-save" id="mkSave">SAVE &amp; PLAY</button>
   </div>
-  <input type="file" id="mkFile" accept="image/*" hidden>`;
+  <input type="file" id="mkFile" accept="image/*" hidden><input type="file" id="mkCam" accept="image/*" capture="environment" hidden>`;
   document.body.appendChild(d);
   const s = document.createElement("div"); s.id = "mkSheet"; s.hidden = true;
   s.innerHTML = `<div class="bk" id="mkSheetBk"></div><div class="mks" role="dialog" id="mksBox"></div>`;
@@ -10992,10 +10992,10 @@ function mkSheet(k) {
   if (k === "photo") {
     const pic = t.pic || hmPic(t.band);
     return mkSheetOpen("PHOTO", `<div class="mks-photo"><img src="${pic}" alt="The picture now"><div>
-      <button class="main" data-a="pick">${t.pic ? "Choose another photo" : "Choose a photo"}</button>
+      <button class="main mks-ic" data-a="cam">${SV_CAM}Take a photo</button><button class="mks-ic" data-a="pick">${SV_PIC}Choose from phone</button>
       ${t.pic ? `<button data-a="clear">Use the theme's picture</button>` : ""}
       <button data-a="cols" ${t.pic ? "" : "hidden"}>Colours from the photo</button></div></div>
-      <p>Pick any photo from your phone. The bottom of the pad shows it reflected, like water.</p>`);
+      <p>Take one now or pick any photo from your phone. The bottom of the pad shows it reflected, like water.</p>`);
   }
   if (k === "cols") {
     const row = (lbl, i) => `<div class="lbl">${lbl}</div><div class="mks-sw" data-i="${i}">${GLOW_COLOURS.map(([n, h]) => `<button data-n="${n}" aria-label="${n}" class="${t.cols[i] === n ? "on" : ""}" style="background:${h};--c:${h}"></button>`).join("")}</div>`;
@@ -11035,6 +11035,7 @@ $("mksBox").addEventListener("click", e => {
   if (b.id === "mksDone") return mkSheetClose();
   const a = b.dataset.a;
   if (a === "pick") return $("mkFile").click();
+  if (a === "cam") return $("mkCam").click();   // 5.76
   if (a === "clear") { t.pic = null; t.cols = [...QSTYLES_SYNTH[t.band].cols]; mkSheetClose(); return; }
   if (a === "cols") { mkColsFromPhoto(); mkSheetClose(); return; }
   if (a === "rec") { const part = mk.sheet === "bass" ? "bass" : "lead"; mkSheetClose(); vs.part = part; vs.fromMk = true; vsOpen(); return; }
@@ -14676,7 +14677,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.75 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.76 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -16826,6 +16827,60 @@ if (NATIVE.on) {
   // Copy setup gets the native numbers too
   const d0 = diagReport;
   diagReport = function () { const r = d0.apply(this, arguments); try { r.native = JSON.parse(GPNative.info()); r.nativeLead = NATIVE.lead; } catch (_) {} return r; };
+}
+
+const SV_CAM = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>`;
+const SV_PIC = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg>`;
+/* ---------- 5.76: only jumping in counts as "last played", an unsaved try-out shows its own picture, Take a photo, SHIFT's triangle ---------- */
+// previews (Home tiles, Make your own) never become "last played"; jumping in does
+const LASTP = { ok: false };
+{
+  const s0 = saveLast;
+  saveLast = function () {
+    if (!LASTP.ok && (!$("home").hidden || !$("mk").hidden)) return;
+    return s0.apply(this, arguments);
+  };
+  const j0 = hmJump;
+  hmJump = function () { const r = j0.apply(this, arguments); LASTP.ok = true; try { saveLast(); } finally { LASTP.ok = false; } return r; };
+  // the Jump in button was bound to the old function: send it to the new one
+  const old = $("hmPlay"), b = old.cloneNode(true); old.replaceWith(b); b.addEventListener("click", () => hmJump());
+}
+// Last played = a Play it try-out that wasn't saved: its feel's picture and "(not saved)"
+{
+  const o0 = homeOpen;
+  homeOpen = function (fromPad) {
+    const r = o0.apply(this, arguments);
+    try {
+      if (!fromPad) {
+        const l = readLast();
+        if (l && l.qs && l.qs.base === "__mkplay") {
+          const id = GAME_IMGS[l.qs.id] ? l.qs.id : "tokyo";
+          hm.heroId = id; $("hmHeroImg").src = hmPic(id);
+          $("hmHeroName").textContent = (l.qs.name || "Your theme").replace(/ \(not saved\)$/, "") + " (not saved)";
+          const h = $("home"), c = neonCols(id); neonSet(h, c); h.style.setProperty("--hacc", c.lead); neonStrips(h);
+        }
+      }
+    } catch (_) {}
+    return r;
+  };
+}
+// the camera: same handling as a picked photo
+$("mkCam").addEventListener("change", () => {
+  const f = $("mkCam").files && $("mkCam").files[0]; $("mkCam").value = ""; if (!f) return;
+  try { const dt = new DataTransfer(); dt.items.add(f); $("mkFile").files = dt.files; $("mkFile").dispatchEvent(new Event("change")); } catch (_) { toast("Couldn't open that picture"); }
+});
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  .mks-photo .mks-ic { display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .mks-photo .mks-ic svg { width: 18px; height: 18px; flex: none; }
+  /* SHIFT: a drawn triangle, bigger and level with the word */
+  #gShift span { gap: 8px !important; justify-content: center; }
+  #gShift span b.sar { font-size: 0 !important; text-shadow: none !important; width: 19px; height: 16px; display: inline-block; vertical-align: middle; position: relative; top: -1px;
+    background: var(--amber); clip-path: polygon(50% 0, 100% 100%, 0 100%); filter: drop-shadow(0 0 5px var(--amber)); margin: 0 !important; }
+  #gShift span b.sar.dn { clip-path: polygon(0 0, 100% 0, 50% 100%); }
+  #gShift span b.sar + b.sar { margin-left: -3px !important; }`;
+  document.head.appendChild(st);
 }
 
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)

@@ -1432,7 +1432,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.73 TEST · game mode · 14 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.73.1 TEST · game mode · 14 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1541,7 +1541,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.73 TEST · game mode · 14 Oct 2026</p>
+      <p class="ver">GlassPad 5.73.1 TEST · game mode · 14 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -3641,21 +3641,22 @@ function gateHit(v, ts, len, lvl) {
   if (v.fenv) { const f = v.filt.frequency; f.setValueAtTime(v.cut0 * v.fenv[0], ts); f.setTargetAtTime(v.cut0, ts + .005, v.fenv[1]); }
   if (v.kind === "bass") fenv("bass", ts);
 }
-function patStep(v, ts) {
+function patStep(v, ts, so = 0) {
+  const tsA = ts + so;   // 5.73.1: when it sounds (swung); ts stays on the grid for counting
   const P = v.pn, cfg = P.cfg, b = P.base(ts);
   const bp = barPos(cfg, ts);
   const arpNote = () => arpPick(cfg.arp, arpNotes(v.kind, b.lane, b.midi, v.kbv, cfg.arp, b.notes, v.kind === "bass" && T.playing && pad.on ? chordAtAbs(absIndex(ts)) : null), v.kind === "bass" ? bassArpK(cfg, ts, bp) : bp.k, P);
   if (cfg.rhythm) {
     const c = cfg.rhythm[bp.step % 16];
-    if (c === "-") { v.gate.gain.setTargetAtTime(0, ts, .006); return; }
+    if (c === "-") { v.gate.gain.setTargetAtTime(0, tsA, .006); return; }
     if (c === "=") return;
     // hold for as long as the pattern says, then let the next step decide
-    gateHit(v, ts, Infinity, c === "o" ? .62 : 1);
-    pitchParts(v, (cfg.arp ? arpNote() : b.midi) + (c === "O" ? 12 : 0), ts, .003);
+    gateHit(v, tsA, Infinity, c === "o" ? .62 : 1);
+    pitchParts(v, (cfg.arp ? arpNote() : b.midi) + (c === "O" ? 12 : 0), tsA, .003);
     return;
   }
-  pitchParts(v, arpNote(), ts, .002);
-  gateHit(v, ts, patUnit(cfg) * .85, 1);
+  pitchParts(v, arpNote(), tsA, .002);
+  gateHit(v, tsA, Math.max(patUnit(cfg) * .3, patUnit(cfg) * .85 - so), 1);
 }
 function patTick() {
   if (!audio) return;
@@ -3672,7 +3673,7 @@ function patTick() {
     }
     const u = patUnit(cfg);
     if (P.next < now - .05) P.next = gridNextU(now + .005, u);   // (only skip ahead if we're well behind)
-    while (P.next < hz && P.next < P.endT) { patStep(v, P.next); P.next = gridNextU(P.next + u * .5, u); }
+    while (P.next < hz && P.next < P.endT) { patStep(v, P.next, patSwing(P.next, u, cfg)); P.next = gridNextU(P.next + u * .5, u); }
   }
 }
 setInterval(patTick, 25);
@@ -10212,7 +10213,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.73 TEST</p>
+    <p class="hm-ver">GlassPad 5.73.1 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14675,7 +14676,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.73 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.73.1 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -16661,6 +16662,47 @@ function hmHeroSurprise(on, name, cols) {
     } catch (_) {}
     return r;
   };
+}
+
+/* ---------- 5.73.1: arps swing with the band (fast arps play triplets in heavy shuffles), pad edge Auto ---------- */
+// the band delays the "and" of each beat (the 3rd 16th) by swing × .66 of a 16th; arps on 8ths or 16ths do the same
+function patSwing(t, u, cfg) {
+  if (!T.playing || !(drum.swing > 0) || (T.meter.steps % 4) || (cfg && cfg.trip)) return 0;
+  const d = stepDur(); if (Math.abs(u - d) > 1e-6 && Math.abs(u - 2 * d) > 1e-6) return 0;
+  const barLen = d * T.meter.steps, pos = (((t - gridZero()) % barLen) + barLen) % barLen, step = Math.round(pos / d) % T.meter.steps;
+  return step % 4 === 2 ? drum.swing * d * .66 : 0;
+}
+// heavy shuffle (swing over 50%): 16ths become 8th triplets, 32nds become 16th triplets (squeezed 16ths never sit in a shuffle)
+{
+  const f0 = patFor;
+  patFor = function (kind) {
+    const c = f0.apply(this, arguments);
+    if (!c || c.rhythm || !(drum.swing > .5) || !T.playing) return c;
+    if (c.beats === .25) return { ...c, beats: 1 / 3, trip: true };
+    if (c.beats === .125) return { ...c, beats: 1 / 6, trip: true };
+    return c;
+  };
+}
+// pad edge: Auto (new default) = glow line with no picture, soft with one
+game.edgeSet = "auto";
+try { const v = localStorage.getItem("glasspad.edge2"); if (["auto", "lines", "soft", "glow"].includes(v)) game.edgeSet = v; } catch (_) {}
+if (game.edgeSet !== "auto") game.edge = game.edgeSet;
+{
+  const e0 = edgeLines;
+  edgeLines = function () {
+    if (game.edgeSet === "auto") { const want = game.imgOn ? "soft" : "glow"; if (game.edge !== want) { game.edge = want; gEdgeApply(); } }
+    return e0.apply(this, arguments);
+  };
+  const seg = $("gEdge");
+  seg.insertAdjacentHTML("afterbegin", `<button data-v="auto">Auto</button>`);
+  try { seg.closest(".gr").querySelector("small").textContent = "Auto: a glow line when there's no picture, soft with one. Or always lines, soft or a glow line"; } catch (_) {}
+  seg.addEventListener("click", e => {
+    const x = e.target.closest("button"); if (!x) return;
+    game.edgeSet = x.dataset.v; try { localStorage.setItem("glasspad.edge2", game.edgeSet); } catch (_) {}
+    if (game.edgeSet === "auto") { e.stopImmediatePropagation(); game.edge = game.imgOn ? "soft" : "glow"; gEdgeK = ""; gEdgeApply(); gameSheetSync(); }
+  }, true);
+  const g0 = gameSheetSync;
+  gameSheetSync = function () { g0.apply(this, arguments); $("gEdge").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === game.edgeSet)); };
 }
 
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)

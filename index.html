@@ -95,8 +95,21 @@
   .own7[aria-pressed="true"] { color: var(--amber); border-color: var(--amber); }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Tomorrow:wght@400;500;600&family=Orbitron:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Orbitron:wght@500;700&display=swap">
 <style>
+  @font-face { font-family: "GPDisplay"; font-weight: 400; font-style: normal; font-display: swap; src: url(fonts/exo2-600.woff2) format("woff2"); }
+  @font-face { font-family: "GPDisplay"; font-weight: 500; font-style: normal; font-display: swap; src: url(fonts/exo2-600.woff2) format("woff2"); }
+  @font-face { font-family: "GPDisplay"; font-weight: 600; font-style: normal; font-display: swap; src: url(fonts/exo2-700.woff2) format("woff2"); }
+  @font-face { font-family: "GPDisplay"; font-weight: 700; font-style: normal; font-display: swap; src: url(fonts/exo2-800.woff2) format("woff2"); }
+  @font-face { font-family: "GPDisplay"; font-weight: 800; font-style: normal; font-display: swap; src: url(fonts/exo2-900.woff2) format("woff2"); }
+  @font-face { font-family: "GPDisplay"; font-weight: 900; font-style: normal; font-display: swap; src: url(fonts/exo2-900.woff2) format("woff2"); }
+  @font-face { font-family: "GPDisplay"; font-weight: 700; font-style: italic; font-display: swap; src: url(fonts/exo2-800-italic.woff2) format("woff2"); }
+  @font-face { font-family: "GPDisplay"; font-weight: 800; font-style: italic; font-display: swap; src: url(fonts/exo2-900-italic.woff2) format("woff2"); }
+  @font-face { font-family: "GPDisplay"; font-weight: 900; font-style: italic; font-display: swap; src: url(fonts/exo2-900-italic.woff2) format("woff2"); }
+  @font-face { font-family: "GPBody"; font-weight: 400; font-style: normal; font-display: swap; src: url(fonts/exo2-400.woff2) format("woff2"); }
+  @font-face { font-family: "GPBody"; font-weight: 500; font-style: normal; font-display: swap; src: url(fonts/exo2-500.woff2) format("woff2"); }
+  @font-face { font-family: "GPBody"; font-weight: 600; font-style: normal; font-display: swap; src: url(fonts/exo2-600.woff2) format("woff2"); }
+  @font-face { font-family: "GPBody"; font-weight: 700; font-style: normal; font-display: swap; src: url(fonts/exo2-700.woff2) format("woff2"); }
   :root {
     color-scheme: dark;
     --ink: #0c1119;
@@ -110,11 +123,11 @@
     --acc-rgb: 242,176,74;
     --acc2-rgb: 79,199,180;
     --panel2: #0f1520;
-    --display: "Unbounded", "Arial Black", system-ui, sans-serif;
+    --display: "GPDisplay", "Exo 2", "Arial Black", system-ui, sans-serif;
     --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
     /* 5.12: everyday text (values, summaries, help, messages) in Tomorrow; the Quick start page in Orbitron */
-    --body: "Tomorrow", system-ui, sans-serif;
-    --neon: "Orbitron", "Unbounded", system-ui, sans-serif;
+    --body: "GPBody", system-ui, sans-serif;
+    --neon: "Orbitron", "GPDisplay", system-ui, sans-serif;
   }
   html, body { height: 100%; }
   body {
@@ -1419,7 +1432,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.72.1 TEST · game mode · 14 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.73 TEST · game mode · 14 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1528,7 +1541,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.72.1 TEST · game mode · 14 Oct 2026</p>
+      <p class="ver">GlassPad 5.73 TEST · game mode · 14 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -6752,8 +6765,8 @@ function drawLiftFx(now, LH) {
     if (a > 0) {
       const sc = .7 + .45 * (1 - Math.pow(1 - grow, 3)), n = keyLift.now;
       cx.save(); cx.translate(W / 2, LH * .45); cx.scale(sc, sc); cx.textAlign = "center";
-      cx.fillStyle = `rgba(${TH.accRgb},${a * .35})`; cx.font = '700 76px "Unbounded", "Arial Black", sans-serif'; cx.fillText(NAMES[mod12(+rootSel.value + n)], 0, 0);
-      cx.fillStyle = `rgba(255,255,255,${a * .9})`; cx.font = '700 72px "Unbounded", "Arial Black", sans-serif'; cx.fillText(NAMES[mod12(+rootSel.value + n)], 0, -2);
+      cx.fillStyle = `rgba(${TH.accRgb},${a * .35})`; cx.font = '800 76px "GPDisplay", "Arial Black", sans-serif'; cx.fillText(NAMES[mod12(+rootSel.value + n)], 0, 0);
+      cx.fillStyle = `rgba(255,255,255,${a * .9})`; cx.font = '800 72px "GPDisplay", "Arial Black", sans-serif'; cx.fillText(NAMES[mod12(+rootSel.value + n)], 0, -2);
       cx.fillStyle = `rgba(${TH.accRgb},${a})`; cx.font = '500 13px "IBM Plex Mono", monospace'; cx.fillText("KEY " + (n > 0 ? "+" + n : n), 0, 26);
       cx.restore();
     }
@@ -6860,7 +6873,7 @@ function draw() {
   // song count-in: 4 3 2 1 on the pad
   if (audio && T.playing && T.countIn && audio.ctx.currentTime < T.countIn.end) {
     const now = audio.ctx.currentTime, len = T.countIn.beats.length, idx = T.countIn.beats.filter(b => b <= now).length;
-    cx.fillStyle = `rgba(${TH.accRgb},.9)`; cx.font = '700 64px "Unbounded", "Arial Black", sans-serif'; cx.textAlign = "center";
+    cx.fillStyle = `rgba(${TH.accRgb},.9)`; cx.font = '800 64px "GPDisplay", "Arial Black", sans-serif'; cx.textAlign = "center";
     cx.fillText(String(Math.min(len, len - idx + 1)), W / 2, LH / 2 + 22);
     cx.font = '500 12px "IBM Plex Mono", monospace'; cx.fillText("COUNT-IN", W / 2, LH / 2 + 50);
   }
@@ -6869,7 +6882,7 @@ function draw() {
     const a = absNow(), rec = loop.state === "recording" || loop.state === "overdub";
     if (a < loop.startAbs) {
       const beatSteps = T.meter.steps / T.meter.pulses.length, n = Math.ceil((loop.startAbs - a) / beatSteps);
-      cx.fillStyle = "rgba(240,138,122,.85)"; cx.font = '700 64px "Unbounded", "Arial Black", sans-serif'; cx.textAlign = "center";
+      cx.fillStyle = "rgba(240,138,122,.85)"; cx.font = '800 64px "GPDisplay", "Arial Black", sans-serif'; cx.textAlign = "center";
       cx.fillText(String(n), W / 2, LH / 2 + 22);
       cx.font = '500 12px "IBM Plex Mono", monospace'; cx.fillText("COUNT-IN", W / 2, LH / 2 + 50);
     } else {
@@ -10199,7 +10212,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.72.1 TEST</p>
+    <p class="hm-ver">GlassPad 5.73 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -11279,7 +11292,7 @@ function vrecFrame() {
   g.drawImage(cv, R.left * k, R.top * k, R.width * k, R.height * k);
   // the mark
   const fs = Math.round(c.width * .042), y = c.height - fs * 1.4;
-  g.save(); g.textAlign = "center"; g.font = `700 ${fs}px Unbounded, sans-serif`; g.fillStyle = "#fff"; g.shadowColor = TH.leadLine || TH.acc; g.shadowBlur = fs * .6;
+  g.save(); g.textAlign = "center"; g.font = `italic 800 ${fs}px GPDisplay, sans-serif`; g.fillStyle = "#fff"; g.shadowColor = TH.leadLine || TH.acc; g.shadowBlur = fs * .6;
   g.fillText("Made with GlassPad", c.width / 2, y); g.shadowBlur = 0;
   g.font = `400 ${Math.round(fs * .6)}px "IBM Plex Mono", monospace`; g.fillStyle = "rgba(238,241,247,.8)"; g.fillText(GP_LINK.replace("https://", ""), c.width / 2, y + fs * .95);
   g.restore();
@@ -14662,7 +14675,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.72.1 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.73 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -16501,6 +16514,153 @@ document.addEventListener("keydown", e => {
   #mk::before { display: none !important; }
   .mk-prev input, .mk-prev input:focus { border-bottom: 0 !important; }`;
   document.head.appendChild(st);
+}
+
+/* ---------- 5.73: Exo 2 (titles italic, buttons upright, pad buttons too), BAND as bright as SHIFT, stop-all that catches lost sounds + a record for Copy setup, Surprise me shows its colours ---------- */
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  /* titles and theme names lean like the logo */
+  .ghdr h2, .hm-title, #hmHeroName, .hm-tile span, .mk-prev input, #mkName, .msx-top h2 { font-style: italic !important; }
+  /* the pad's buttons: Exo 2 instead of the typewriter font */
+  body.game:not(.studio) header.bar button, body.game:not(.studio) #styleChip, body.game:not(.studio) #gSM, body.game:not(.studio) #gEdit,
+  body.game:not(.studio) #styleName::after, body.game #gDock button, body.game #gBand em, body.game #gLoopX { font-family: var(--display) !important; font-weight: 600 !important; letter-spacing: .02em !important; }
+  body.game #gBand em { color: var(--text) !important; font-style: normal !important; }
+  /* Surprise me: no picture, its own colours with strips */
+  .hm-hero.nopic #hmHeroImg { opacity: 0 !important; }
+  .hm-hero .hstr { display: none; position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+  .hm-hero.nopic .hstr { display: block; }
+  .hm-hero.nopic { background: radial-gradient(ellipse at 30% 110%, color-mix(in srgb, var(--hb, #2fd6ff) 45%, transparent), transparent 60%), radial-gradient(ellipse at 85% -10%, color-mix(in srgb, var(--hl, #ff3fd8) 50%, transparent), transparent 60%), linear-gradient(160deg, color-mix(in srgb, var(--hm, #7a4dff) 35%, #05060b), #05060b 75%) !important; }
+  .hm-hero.nopic .hm-edit { display: none !important; }`;
+  document.head.appendChild(st);
+}
+
+// ----- a record of every sound source, so a stuck one can be found and stopped -----
+const SND = { live: new Set(), own: "" };
+{
+  const P = AudioScheduledSourceNode.prototype, st0 = P.start, sp0 = P.stop;
+  P.start = function (...a) {
+    const r = { n: this, own: SND.own || "other", t: performance.now(), stop: null };
+    SND.live.add(r); this.__gp = r;
+    this.addEventListener("ended", () => SND.live.delete(r));
+    return st0.apply(this, a);
+  };
+  P.stop = function (...a) { if (this.__gp) this.__gp.stop = a[0] ?? 0; return sp0.apply(this, a); };
+  const tag = (name, own) => { const f = window[name]; if (typeof f !== "function") return; window[name] = function () { const o = SND.own; SND.own = own; try { return f.apply(this, arguments); } finally { SND.own = o; } }; };
+  [["lfo", "lfo"], ["buildVoice", "note"], ["padNote", "chords"], ["hit", "drums"], ["kitHit", "drums"], ["gameBassNote", "bass"], ["mkRiff", "riff"], ["playClipOnce", "recording"]].forEach(([n, o]) => tag(n, o));
+}
+// sources that are sounding and shouldn't be: no stop planned (or one far away), not a modulator
+function sndStray(minAge) {
+  const now = performance.now(), ct = audio ? audio.ctx.currentTime : 0, out = [];
+  for (const r of SND.live) {
+    if (r.own === "lfo") continue;
+    if (r.stop !== null && r.stop !== 0 && r.stop - ct < 30) continue;
+    if (now - r.t < (minAge || 0)) continue;
+    out.push(r);
+  }
+  return out;
+}
+function sndReport() {
+  const by = {};
+  for (const r of sndStray(0)) {
+    const n = r.n, k = r.own + " · " + n.constructor.name.replace("Node", "") + (n.frequency ? " " + Math.round(n.frequency.value) + " Hz" : "") + (n.buffer ? " " + n.buffer.duration.toFixed(1) + " s" : "") + (r.stop === null ? " · no stop" : " · stop later");
+    by[k] = by[k] || { n: 0, age: 0 }; by[k].n++; by[k].age = Math.max(by[k].age, Math.round((performance.now() - r.t) / 1000));
+  }
+  return Object.entries(by).map(([k, v]) => `${v.n}× ${k} · ${v.age}s old`);
+}
+// output level (everything that reaches the speaker)
+function sndMeter() {
+  if (!audio) return 0;
+  if (!audio.outAn || audio.outAn.context !== audio.ctx) { audio.outAn = audio.ctx.createAnalyser(); audio.outAn.fftSize = 1024; audio.master.connect(audio.outAn); audio.outBuf = new Float32Array(1024); }
+  audio.outAn.getFloatTimeDomainData(audio.outBuf); let e = 0; for (let i = 0; i < 1024; i += 4) e += audio.outBuf[i] * audio.outBuf[i];
+  return Math.sqrt(e / 256);
+}
+// Hush also comes up when sound keeps coming out with nothing playing (band stopped, no fingers, no preview) for 4 s
+const HUSH2 = { since: 0, snapped: false };
+{
+  const c0 = checkHush;
+  checkHush = function (now) {
+    c0(now);
+    try {
+      const quiet = audio && !T.playing && active.size === 0 && !(typeof hpv !== "undefined" && hpv.on) && !(LAB && LAB.trying) && !(RIFF && RIFF.until > performance.now()) && $("lab").hidden && $("mk").hidden;
+      const loud = quiet && sndMeter() > .004;
+      if (loud) { if (!HUSH2.since) HUSH2.since = now; } else { HUSH2.since = 0; HUSH2.snapped = false; }
+      if (loud && now - HUSH2.since > 4000) {
+        if ($("hush").hidden) $("hush").hidden = false;
+        if (!HUSH2.snapped) { HUSH2.snapped = true; try { localStorage.setItem("glasspad.stuck", JSON.stringify({ at: new Date().toISOString(), theme: qs.name, level: +sndMeter().toFixed(4), sounding: sndReport() })); } catch (_) {} }
+      }
+    } catch (_) {}
+  };
+}
+// Hush: everything else too (chords, drones, previews, the riff, every stray source); if sound is still coming out a second later, a fresh sound engine
+function hushDeep() {
+  try { releasePad(); } catch (_) {}
+  try { mkRiffStop(); } catch (_) {}
+  try { if (typeof pvClear === "function") pvClear(); if (typeof hpv !== "undefined") hpv.on = false; } catch (_) {}
+  const ct = audio ? audio.ctx.currentTime : 0;
+  for (const r of sndStray(0)) { try { r.n.stop(ct + .05); } catch (_) {} }
+  HUSH2.since = 0;
+  setTimeout(() => {
+    try {
+      if (audio && !T.playing && sndMeter() > .003) {
+        try { localStorage.setItem("glasspad.stuck", JSON.stringify({ at: new Date().toISOString(), theme: qs.name, afterHush: true, level: +sndMeter().toFixed(4), sounding: sndReport() })); } catch (_) {}
+        rebuildAudio(true); toast("Sound engine restarted");
+      }
+    } catch (_) {}
+  }, 1200);
+}
+$("hush").addEventListener("click", hushDeep);
+// Copy setup: what was sounding when a stuck sound was last caught, and what is sounding now
+{
+  const d0 = diagReport;
+  diagReport = function () {
+    const r = d0.apply(this, arguments);
+    try { r.soundingNow = sndReport(); r.lastStuck = JSON.parse(localStorage.getItem("glasspad.stuck") || "null"); } catch (_) {}
+    return r;
+  };
+}
+
+// ----- Surprise me on Home: its colours and strips, never another theme's picture -----
+function hmColsOf(cols) { const g = n => (typeof GC !== "undefined" && GC[n]) || null; return { lead: g(cols && cols[0]) || NEON_DEF.lead, bass: g(cols && cols[1]) || NEON_DEF.bass, mid: g(cols && cols[2]) || NEON_DEF.mid }; }
+function hmHeroSurprise(on, name, cols) {
+  const hero = $("home").querySelector(".hm-hero"); if (!hero) return;
+  hero.classList.toggle("nopic", !!on);
+  if (!on) return;
+  const c = hmColsOf(cols);
+  hero.style.setProperty("--hl", c.lead); hero.style.setProperty("--hb", c.bass); hero.style.setProperty("--hm", c.mid);
+  let im = hero.querySelector(".hstr");
+  if (!im) { im = document.createElement("img"); im.className = "hstr"; im.alt = ""; im.setAttribute("aria-hidden", "true"); hero.querySelector("#hmHeroImg").after(im); }
+  BGSTR.pages.hero = BGSTR.pages.hero || { page: 1, fade: .55 };
+  im.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(stripSvg(c, "hero")); im.style.opacity = ".85";
+  if (name) $("hmHeroName").textContent = name;
+  try { const h = $("home"); neonSet(h, c); h.style.setProperty("--hacc", c.lead); neonStrips(h); } catch (_) {}
+}
+{
+  const s0 = hmShow;
+  hmShow = function (id) {
+    const r = s0.apply(this, arguments);
+    const rolled = id === "surprise" && qs.id === "surprise";   // the preview may already have rolled it
+    hmHeroSurprise(id === "surprise", id === "surprise" ? (rolled ? qs.name : "Surprise me") : null, rolled ? qs.cols : null);
+    return r;
+  };
+  // the preview loads its roll a moment later: then show its name and colours
+  const l0 = loadStyle;
+  loadStyle = function (st) {
+    const r = l0.apply(this, arguments);
+    try { if (st && st.id === "surprise" && !$("home").hidden && hpv.id === "surprise") hmHeroSurprise(true, qs.name, qs.cols); } catch (_) {}
+    return r;
+  };
+  const o0 = homeOpen;
+  homeOpen = function (fromPad) {
+    const r = o0.apply(this, arguments);
+    try {
+      let sur = false, name = null, cols = null;
+      if (fromPad) { sur = qs.id === "surprise" || (qs.id === "manual" && qs.base === "surprise"); name = qs.name; cols = qs.cols; }
+      else { const l = readLast(); if (l && l.qs && (l.qs.id === "surprise" || l.qs.base === "surprise")) { sur = true; name = l.qs.name; cols = l.qs.cols; } }
+      hmHeroSurprise(sur, name, cols);
+    } catch (_) {}
+    return r;
+  };
 }
 
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)

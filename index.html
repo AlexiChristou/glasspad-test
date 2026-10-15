@@ -1432,7 +1432,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.76.2 TEST · game mode · 15 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.77 TEST · game mode · 15 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1541,7 +1541,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.76.2 TEST · game mode · 15 Oct 2026</p>
+      <p class="ver">GlassPad 5.77 TEST · game mode · 15 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10213,7 +10213,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.76.2 TEST</p>
+    <p class="hm-ver">GlassPad 5.77 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14677,7 +14677,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.76.2 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.77 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -17006,6 +17006,69 @@ $("mkCam").addEventListener("change", () => {
     setInterval(show, 500); show();
     const rb = $("gNatReset"); if (rb) rb.addEventListener("click", () => { st.page = { n: 0, sum: 0, max: 0 }; });
   }
+}
+
+/* ---------- 5.77: native step 2, slice 1. In the app (0.1.5+), the band's drums are played by the phone's own engine ----------
+   The page still decides what the drums play and when (patterns, fills, levels); each hit goes to the engine with the moment
+   it must be heard, so it lines up with the bass and chords that are still played here. Synth kit only (a sample kit stays here). */
+if (NATIVE.on) {
+  NATIVE.band = true; try { NATIVE.band = localStorage.getItem("glasspad.nativeBand") !== "0"; } catch (_) {}
+  NATIVE.drumOk = typeof GPNative.drum === "function" && typeof GPNative.drumMix === "function";
+  const D = NATIVE.drums = { sent: 0, viaTs: 0, aheadSum: 0, aheadN: 0, mix: "" };
+  const natDrums = () => NATIVE.band && NATIVE.drumOk && (!drum.kit || drum.kit === "synth");
+  // how many ms from now the page's own sound at context time t will be heard (+6 ms: the page's master limiter looks ahead)
+  const heardIn = t => {
+    const c = audio.ctx; let ts = null;
+    try { ts = c.getOutputTimestamp ? c.getOutputTimestamp() : null; } catch (_) {}
+    if (ts && ts.performanceTime > 0 && ts.contextTime > 0) { D.viaTs++; return ts.performanceTime + (t - ts.contextTime) * 1000 - performance.now() + 6; }
+    return (t - c.currentTime) * 1000 + ((c.baseLatency || 0) + (c.outputLatency || 0)) * 1000 + 6;
+  };
+  const h0 = hit;
+  hit = function (inst, t, vel) {
+    if (!audio || !natDrums()) return h0.apply(this, arguments);
+    try {
+      // the same name mapping as the page's synth kit
+      if (inst === "fill") inst = KIT[drum.style]?.snare || "snare";
+      if (inst === "ride" || inst === "phat") { vel *= inst === "phat" ? .5 : .8; inst = "hat"; }
+      if (inst === "tomhi" || inst === "tommid" || inst === "tomlo") inst = "dum";
+      const ms = heardIn(t);
+      GPNative.drum(inst, vel, ms); D.sent++;
+      const now = heardIn(audio.ctx.currentTime) - 6; D.aheadSum += now; D.aheadN++;
+    } catch (_) { return h0.apply(this, arguments); }
+  };
+  // the page's drum mixer (level, Balance, master, comp, room) follows along, checked a few times a second
+  const sendMix = () => {
+    if (!audio || !NATIVE.drumOk) return;
+    try {
+      const P = PFX.drums, A = audio;
+      const m = { bus: A.drums.gain.value, trim: A.drumTrim.gain.value, master: A.master.gain.value, comp: !!P.comp.on, amt: P.comp.amt, punch: P.comp.punch,
+        rev: A.pfx.drums.revSend.gain.value, size: S.reverb.size, tone: S.reverb.tone };
+      const k = JSON.stringify(m, (_, v) => typeof v === "number" ? +v.toFixed(3) : v);
+      if (k !== D.mix) { D.mix = k; GPNative.drumMix(k); }
+    } catch (_) {}
+  };
+  setInterval(sendMix, 300);
+  // Settings: a Band switch beside the Lead one
+  const lb = $("gNatLead");
+  if (lb) {
+    const b = document.createElement("button"); b.id = "gNatBand"; lb.after(b);
+    const sync = () => { b.textContent = !NATIVE.drumOk ? "Band: page (old app)" : drum.kit && drum.kit !== "synth" ? "Band: page (sample kit)" : NATIVE.band ? "Band: native" : "Band: page"; };
+    b.addEventListener("click", () => { if (!NATIVE.drumOk) return; NATIVE.band = !NATIVE.band; try { localStorage.setItem("glasspad.nativeBand", NATIVE.band ? "1" : "0"); } catch (_) {} sync(); });
+    sync(); setInterval(() => { if (!$("gSheet").hidden) sync(); }, 1000);
+  }
+  // Copy setup: how the native drums are doing
+  const d0 = diagReport;
+  diagReport = function () {
+    const r = d0.apply(this, arguments);
+    try {
+      const n = r.native || {}, c = audio && audio.ctx;
+      r.nativeBand = { on: natDrums(), kit: drum.kit || "synth", sent: D.sent, played: n.drumHits, late: n.drumLate, lateMaxMs: n.drumLateMaxMs,
+        timing: D.viaTs ? "output timestamp" : "latency", pageHeardMs: D.aheadN ? Math.round(D.aheadSum / D.aheadN) : null,
+        pageLatencyMs: c ? Math.round(((c.baseLatency || 0) + (c.outputLatency || 0)) * 1000) : null,
+        notNative: [PFX.drums.echo.on && "drum echo", PFX.drums.drive.on && "drum drive"].filter(Boolean), mix: D.mix ? JSON.parse(D.mix) : null };
+    } catch (_) {}
+    return r;
+  };
 }
 
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)

@@ -1432,7 +1432,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.78 TEST · game mode · 15 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.79 TEST · game mode · 16 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1541,7 +1541,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.78 TEST · game mode · 15 Oct 2026</p>
+      <p class="ver">GlassPad 5.79 TEST · game mode · 16 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -2980,7 +2980,7 @@ function buildPartFx(ctx, part, from, to) {
     ens() { const m = insert(ctx); m.entry = [];
       [[.012, .41, -1], [.017, .57, 0], [.023, .73, 1]].forEach(([d, r, pan]) => {
         const dl = ctx.createDelay(.05); dl.delayTime.value = d; const o = lfo(ctx, r), g = ctx.createGain(); g.gain.value = 0; o.connect(g).connect(dl.delayTime);
-        const p = new StereoPannerNode(ctx, { pan: 0 }); dl.connect(p).connect(m.wet); m.entry.push(dl); (m.mod = m.mod || []).push(g); (m.pans = m.pans || []).push([p, pan]); });
+        const p = new StereoPannerNode(ctx, { pan: 0 }); m.inp.connect(dl); dl.connect(p).connect(m.wet); m.entry.push(dl); (m.mod = m.mod || []).push(g); (m.pans = m.pans || []).push([p, pan]); });
       return m; },
     phaser() { const m = insert(ctx); m.lfo = lfo(ctx, .4); m.g = ctx.createGain(); m.lfo.connect(m.g); let prev = m.inp;
       for (let i = 0; i < 6; i++) { const f = ctx.createBiquadFilter(); f.type = "allpass"; f.frequency.value = 1000; f.Q.value = .6; m.g.connect(f.frequency); prev.connect(f); prev = f; if (!i) m.entry = [f]; }
@@ -10213,7 +10213,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.78 TEST</p>
+    <p class="hm-ver">GlassPad 5.79 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14677,7 +14677,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.78 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.79 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -17127,6 +17127,73 @@ if (NATIVE.on && NATIVE.heardIn) {
       const nb = r.nativeBand || (r.nativeBand = {}), n = r.native || {};
       nb.bass = { on: natBass(), sound: bass.sound, sent: B.sent, played: n.bassNotes, late: n.bassLate,
         notNative: [PFX.bass.chorus.on && "bass chorus", PFX.bass.echo.on && "bass echo"].filter(Boolean) };
+    } catch (_) {}
+    return r;
+  };
+}
+
+/* ---------- 5.79: native step 2, slice 3. In the app (0.1.7+), the chords play on the phone's engine too ----------
+   The page still decides every chord, rhythm hit and arpeggio note (padChord, padStep, the feel) and works out each note's
+   level, attack and filter; the engine plays it with its own copy of the chord sounds and the chords' pedals (Filter,
+   Ensemble, Phaser, Tremolo, echo and reverb sends, Pump). Releases (a drone let go, an arpeggio note cut) go the same way. */
+if (NATIVE.on && NATIVE.heardIn) {
+  NATIVE.padOk = typeof GPNative.padNote === "function" && typeof GPNative.padMix === "function";
+  const C = NATIVE.padN = { sent: 0, rel: 0, mix: "" };
+  const PS = ["strings", "glass", "organ", "choir", "pluck", "saws", "synth", "warm", "stab"];   // the engine's order
+  const natPad = () => NATIVE.band && NATIVE.padOk && PS.includes(pad.sound);
+  let nid = 1;
+  const rel = (id, at, tc) => { try { GPNative.padRelease(id, tc, NATIVE.heardIn(Math.max(at, audio.ctx.currentTime))); C.rel++; } catch (_) {} };
+  const pn0 = padNote;
+  padNote = function (midi, t, len, vel = 1, attack, lite) {
+    if (!audio || !natPad()) return pn0.apply(this, arguments);
+    try {
+      const P = PAD[pad.sound];
+      // the same numbers the page's own note would use
+      const fq = P.f[1] * (feelOn("bright") && P.f[0] === "lowpass" ? Math.pow(2, (vel - .85) * 1.6 * FEEL.amt) : 1);
+      const a = attack ?? Math.min(P.a, len * .4), pk = P.g * vel * sndTrim("pad", pad.sound);
+      const id = nid++; if (nid > 1e9) nid = 1;
+      GPNative.padNote(id, PS.indexOf(pad.sound), midi, len, pk, a, fq, lite ? 1 : 0, NATIVE.heardIn(t)); C.sent++;
+      // a stand-in for the page's note, so letting go (releaseHandle, the arpeggio's cuts) reaches the engine
+      const gain = { value: 0, setTargetAtTime(v, at, tc) { if (v === 0) rel(id, at, tc); }, cancelScheduledValues() {}, cancelAndHoldAtTime() {}, setValueAtTime() {}, linearRampToValueAtTime() {} };
+      const h = { g: { gain }, oscs: [], r: P.r, end: t + len, nat: id };
+      pad.live.push(h);
+      return h;
+    } catch (_) { return pn0.apply(this, arguments); }
+  };
+  // Pump: when the drums play here (sample kit), the page's kicks are sent too, so the native chords and bass still dip
+  const pa0 = pumpAt;
+  pumpAt = function (t, vel = 1) {
+    const r = pa0.apply(this, arguments);
+    try { if (audio && pad.pump && NATIVE.band && NATIVE.padOk && !(NATIVE.drumOk && (!drum.kit || drum.kit === "synth"))) GPNative.pump(vel, NATIVE.heardIn(t)); } catch (_) {}
+    return r;
+  };
+  // the chords' mixer follows the page (numbers only: the app reads them in a fixed order)
+  const sendMix = () => {
+    if (!audio || !NATIVE.padOk) return;
+    try {
+      const P = PFX.pad, f = P.filter, tr = P.trem, A = audio, bar = T.meter.steps * 15 / T.bpm, n = x => x ? 1 : 0, timed = tr.sync === "time", Pd = PAD[pad.sound];
+      const m = { bus: A.padBus.gain.value, trim: A.padOut.gain.value, master: A.master.gain.value, mono: Pd && Pd.osc.some(o => o[3]) ? 0 : 1,
+        rev: A.pfx.pad.revSend.gain.value, echo: A.pfx.pad.echoSend.gain.value, eSecs: A.echoD.delayTime.value, eFb: A.echoFb.gain.value,
+        filt: n(f.on), fMode: f.mode === "env" ? 0 : f.mode === "sweep" ? 1 : 2, fCut: f.cut, fDepth: f.depth, fRes: f.res,
+        fRateHz: 1 / (SWEEP_BARS[pickIdx(f.speed, SWEEP_BARS.length)][0] * bar),
+        ens: n(P.ens.on), eWidth: P.ens.width, eDepth: P.ens.depth, ph: n(P.phaser.on), phRate: P.phaser.rate, phDepth: P.phaser.depth,
+        tr: n(tr.on), trTimed: n(timed), trHz: timed ? 1 / (TREM_DIV[pickIdx(tr.rate, TREM_DIV.length)][0] * 60 / T.bpm) : 1 + tr.rate * 13, trDepth: tr.depth,
+        pump: pad.pump || 0, beat: 60 / T.bpm };
+      const k = JSON.stringify(m, (_, v) => typeof v === "number" ? +v.toFixed(4) : v);
+      if (k !== C.mix) { C.mix = k; GPNative.padMix(k); }
+    } catch (_) {}
+  };
+  setInterval(sendMix, 300);
+  // the Band button says what moved
+  const BSNDS = ["finger", "sub", "reese", "fuzz", "acid", "pluck"];
+  NATIVE.bandLabel = () => !NATIVE.bassOk ? "Band: native (drums only, old app)" : !NATIVE.padOk ? "Band: native (drums + bass; chords need the new app)"
+    : !BSNDS.includes(bass.sound) ? "Band: native (your bass sound stays here)" : "Band: native";
+  const d0 = diagReport;
+  diagReport = function () {
+    const r = d0.apply(this, arguments);
+    try {
+      const nb = r.nativeBand || (r.nativeBand = {}), n = r.native || {};
+      nb.chords = { on: natPad(), sound: pad.sound, sent: C.sent, released: C.rel, played: n.padNotes, late: n.padLate, lateMaxMs: n.padLateMaxMs };
     } catch (_) {}
     return r;
   };

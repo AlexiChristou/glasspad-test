@@ -17369,7 +17369,7 @@ if (NATIVE.on && typeof GPNative.bandSetup === "function") {
   for (const evn of ["pointerup", "pointercancel"]) addEventListener(evn, () => { if (NB.held && !game.bassPids.size) { NB.held = false; try { GPNative.bassTouch(0); } catch (_) {} } });
   // the Band button says where the band plays
   const bl0 = NATIVE.bandLabel;
-  NATIVE.bandLabel = () => !engineBand() ? (game.on ? "Band: page (this theme's sounds stay here)" : "Band: page") : "Band: native (the engine keeps time)";
+  NATIVE.bandLabel = () => engineBand() ? "Band: native" : "Band: page";   // (short: the button sits in a row with Lead and Reset)
   // Copy setup: the engine's band
   const d0 = diagReport;
   diagReport = function () {

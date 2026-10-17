@@ -1432,7 +1432,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.86 TEST · game mode · 17 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.87 TEST · game mode · 17 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1541,7 +1541,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.86 TEST · game mode · 17 Oct 2026</p>
+      <p class="ver">GlassPad 5.87 TEST · game mode · 17 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10213,7 +10213,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.86 TEST</p>
+    <p class="hm-ver">GlassPad 5.87 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14677,7 +14677,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.86 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.87 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -17060,7 +17060,7 @@ if (NATIVE.on) {
   NATIVE.band = true; try { NATIVE.band = localStorage.getItem("glasspad.nativeBand") !== "0"; } catch (_) {}
   NATIVE.drumOk = typeof GPNative.drum === "function" && typeof GPNative.drumMix === "function";
   const D = NATIVE.drums = { sent: 0, viaTs: 0, aheadSum: 0, aheadN: 0, mix: "" };
-  const natDrums = () => NATIVE.band && NATIVE.drumOk && (!drum.kit || drum.kit === "synth");
+  const natDrums = () => NATIVE.band && NATIVE.drumOk && (!drum.kit || drum.kit === "synth" || !!(window.NKIT && NKIT.ready(drum.kit)));
   // how many ms from now the page's own sound at context time t will be heard (+6 ms: the page's master limiter looks ahead)
   const CLK = []; let clkT = 0;
   const clkOff = () => {
@@ -17082,12 +17082,15 @@ if (NATIVE.on) {
   hit = function (inst, t, vel) {
     if (!audio || !natDrums()) return h0.apply(this, arguments);
     try {
-      // the same name mapping as the page's synth kit
+      const raw = inst, rawVel = vel;   // 5.87: a sample kit in the engine picks its sound from the band's own name
+      // the same name mapping as the page's synth kit (5.87: + the beat maker's own names, as the engine's band does)
       if (inst === "fill") inst = KIT[drum.style]?.snare || "snare";
-      if (inst === "ride" || inst === "phat") { vel *= inst === "phat" ? .5 : .8; inst = "hat"; }
-      if (inst === "tomhi" || inst === "tommid" || inst === "tomlo") inst = "dum";
+      if (inst === "ride" || inst === "phat" || inst === "ride2") { vel *= inst === "phat" ? .5 : .8; inst = "hat"; }
+      if (inst === "tomhi" || inst === "tommid" || inst === "tomlo" || inst === "tom1" || inst === "tom2" || inst === "tom3") inst = "dum";
+      if (inst === "crash2") inst = "crash"; if (inst === "esnare") inst = "snare";
       const ms = heardIn(t);
-      GPNative.drum(inst, vel, ms); D.sent++;
+      if (drum.kit && drum.kit !== "synth") GPNative.drum2(raw, inst, rawVel, vel, ms); else GPNative.drum(inst, vel, ms);
+      D.sent++;
       const now = heardIn(audio.ctx.currentTime) - 6; D.aheadSum += now; D.aheadN++;
     } catch (_) { return h0.apply(this, arguments); }
   };
@@ -17107,7 +17110,7 @@ if (NATIVE.on) {
   const lb = $("gNatLead");
   if (lb) {
     const b = document.createElement("button"); b.id = "gNatBand"; lb.after(b);
-    const sync = () => { b.textContent = !NATIVE.drumOk ? "Band: page (old app)" : drum.kit && drum.kit !== "synth" ? "Band: page (sample kit)" : NATIVE.band ? (NATIVE.bandLabel ? NATIVE.bandLabel() : "Band: native") : "Band: page"; };
+    const sync = () => { b.textContent = !NATIVE.drumOk ? "Band: page (old app)" : drum.kit && drum.kit !== "synth" && !(window.NKIT && NKIT.ready(drum.kit)) ? "Band: page (sample kit)" : NATIVE.band ? (NATIVE.bandLabel ? NATIVE.bandLabel() : "Band: native") : "Band: page"; };
     b.addEventListener("click", () => { if (!NATIVE.drumOk) return; NATIVE.band = !NATIVE.band; try { localStorage.setItem("glasspad.nativeBand", NATIVE.band ? "1" : "0"); } catch (_) {} sync(); });
     sync(); setInterval(() => { if (!$("gSheet").hidden) sync(); }, 1000);
   }
@@ -17209,7 +17212,7 @@ if (NATIVE.on && NATIVE.heardIn) {
   const pa0 = pumpAt;
   pumpAt = function (t, vel = 1) {
     const r = pa0.apply(this, arguments);
-    try { if (audio && pad.pump && NATIVE.band && NATIVE.padOk && !(NATIVE.drumOk && (!drum.kit || drum.kit === "synth"))) GPNative.pump(vel, NATIVE.heardIn(t)); } catch (_) {}
+    try { if (audio && pad.pump && NATIVE.band && NATIVE.padOk && !(NATIVE.drumOk && (!drum.kit || drum.kit === "synth" || !!(window.NKIT && NKIT.ready(drum.kit))))) GPNative.pump(vel, NATIVE.heardIn(t)); } catch (_) {}
     return r;
   };
   // the chords' mixer follows the page (numbers only: the app reads them in a fixed order)
@@ -17255,7 +17258,7 @@ if (NATIVE.on && typeof GPNative.bandSetup === "function") {
   if (GPNative.web) { NATIVE.band = true; NATIVE.lead = typeof GPNative.leadHold === "function"; }   // the web: the band, and (5.82) the lead
   NATIVE.heardIn = GPNative.web ? (t => (t - audio.ctx.currentTime) * 1000) : NATIVE.heardIn;
   const PS = ["strings", "glass", "organ", "choir", "pluck", "saws", "synth", "warm", "stab"], BSNDS = ["finger", "sub", "reese", "fuzz", "acid", "pluck"];
-  const engineBand = () => game.on && NATIVE.band && !isSong() && !isManual() && (!drum.kit || drum.kit === "synth") && BSNDS.includes(bass.sound) && PS.includes(pad.sound);
+  const engineBand = () => game.on && NATIVE.band && !isSong() && !isManual() && (!drum.kit || drum.kit === "synth" || !!(window.NKIT && NKIT.ready(drum.kit))) && BSNDS.includes(bass.sound) && PS.includes(pad.sound);
   // the band's setup: everything the engine needs to play this theme (the drum tables per BAND level, chords, bass lines, SHIFT)
   function bandSetup() {
     const m = T.meter, S = m.steps, LV = ["low", "normal", "high"], K = KIT[drum.style] || {}, bt = beatOn();
@@ -17549,6 +17552,43 @@ if (NATIVE.on && typeof GPNative.arpSet === "function") {
     const n = JSON.parse(GPNative.info()); r.nativeArp.page = window.BDIARY; r.nativeArp.engine = { leadNotes: n.arpLead, bassNotes: n.arpBass, missed: n.arpMiss, arpsNow: n.bandArps, bassPadHeld: n.bandBassHeld }; } catch (_) {} return r; };
 }
 
+/* ---------- 5.87 (app 0.3.6): sample kits in the engine ----------
+   Ferros and LinnDrum were the reason a theme fell back to "Band: page". The page now sends a kit to the engine once
+   (the kit file as it is, plus KIT_MAPS / KIT_GAINS), then says which kit the drums use. NKIT.ready(id) is true once the
+   engine has it; until then the page plays the kit itself, exactly as before. */
+if (window.GPNative && (typeof GPNative.kitUse === "function" || GPNative.web)) {
+  if (GPNative.web) {   // the web engine (?engine): the same calls into the worklet
+    const W = window.GPWEB, send = m => { if (W.node) W.node.port.postMessage(m); else W.q.push(m); };
+    const DR = ["kick", "dum", "tek", "bkick", "k808", "shaker", "gsnare", "snare", "clap", "hat", "ohat", "crash", "rim"];
+    const DN = DR.concat(["fill", "ride", "phat", "tomhi", "tommid", "tomlo", "crash2", "ride2", "tom1", "tom2", "tom3", "esnare"]);
+    GPNative.kitLoad = j => { send(["kitLoad", new TextEncoder().encode(j)]); return true; };
+    GPNative.kitUse = id => send(["kitUse", new TextEncoder().encode(id)]);
+    GPNative.drum2 = (raw, name, rawVel, vel, ms) => { const i = DR.indexOf(name); if (i >= 0 && W.ctx) send(["drum2", DN.indexOf(raw), i, rawVel, vel, Math.round((W.ctx.currentTime + ms / 1000) * W.ctx.sampleRate)]); };
+  }
+  const NKIT = window.NKIT = { sent: [], used: null, loaded: 0, busy: false, err: null };
+  const loadedNow = () => { try { const d = JSON.parse(GPNative.info()); return +d.kitsLoaded || 0; } catch (_) { return 0; } };
+  NKIT.ready = id => !!id && id !== "synth" && NKIT.sent.indexOf(id) >= 0 && NKIT.sent.indexOf(id) < NKIT.loaded;
+  async function send(id) {
+    NKIT.busy = true;
+    try {
+      const text = await (await fetch("kit-" + id + ".json", { cache: "force-cache" })).text();
+      const j = '{"id":' + JSON.stringify(id) + ',"map":' + JSON.stringify(KIT_MAPS[id] || {}) + ',"gains":' + JSON.stringify(KIT_GAINS[id] || {}) + ',"kit":' + text + '}';
+      if (GPNative.kitLoad(j)) NKIT.sent.push(id);
+    } catch (e) { NKIT.err = String(e); }
+    NKIT.busy = false;
+  }
+  setInterval(() => {
+    try {
+      if (!audio) return;
+      const want = drum.kit && drum.kit !== "synth" && KIT_MAPS[drum.kit] ? drum.kit : "synth";
+      if (want !== "synth" && NKIT.sent.indexOf(want) < 0 && !NKIT.busy) send(want);
+      if (NKIT.loaded < NKIT.sent.length) NKIT.loaded = loadedNow();
+      if (want !== NKIT.used) { GPNative.kitUse(want); NKIT.used = want; }
+    } catch (_) {}
+  }, 200);
+  const d0 = diagReport;
+  diagReport = function () { const r = d0.apply(this, arguments); try { r.nativeKit = { want: drum.kit || "synth", used: NKIT.used, sent: NKIT.sent, loaded: NKIT.loaded, ready: NKIT.ready(drum.kit), err: NKIT.err }; } catch (_) {} return r; };
+}
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }
 

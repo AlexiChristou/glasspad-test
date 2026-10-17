@@ -1432,7 +1432,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.89 TEST · game mode · 17 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.90 TEST · game mode · 18 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1541,7 +1541,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.89 TEST · game mode · 17 Oct 2026</p>
+      <p class="ver">GlassPad 5.90 TEST · game mode · 18 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -6462,7 +6462,7 @@ function drawScope(LH) {
   const y0 = bass.on ? LH : LH - 3, P = 128, pts = new Float32Array(P);
   let pk = 0;
   if (audio && audio.an && (T.playing || voices.size)) {
-    const an = audio.an; if (!scopeBuf || scopeBuf.length !== an.fftSize) scopeBuf = new Float32Array(an.fftSize);
+    const an = visAn("scope"); if (!scopeBuf || scopeBuf.length !== an.fftSize) scopeBuf = new Float32Array(an.fftSize);
     an.getFloatTimeDomainData(scopeBuf);
     const n = scopeBuf.length >> 1, step = n / P; let st = 0;
     for (let i = 1; i < n; i++) if (scopeBuf[i - 1] < 0 && scopeBuf[i] >= 0) { st = i; break; }
@@ -6486,8 +6486,8 @@ function drawScope(LH) {
 let eqBuf = null;
 const eqLvl = { lead: new Float32Array(64), bass: new Float32Array(32) }, eqTop = { lead: -60, bass: -60 };
 function eqFrame() {
-  if (ls.eq === "off" || !audio || !audio.eqAn || !(T.playing || voices.size) || (window.PADV && PADV.silent())) { eqLvl.lead.fill(0); eqLvl.bass.fill(0); return false; }
-  const an = audio.eqAn; if (!eqBuf || eqBuf.length !== an.frequencyBinCount) eqBuf = new Float32Array(an.frequencyBinCount);
+  if (ls.eq === "off" || !audio || !audio.eqAn || !(T.playing || voices.size)) { eqLvl.lead.fill(0); eqLvl.bass.fill(0); return false; }
+  const an = visAn("eq"); if (!eqBuf || eqBuf.length !== an.frequencyBinCount) eqBuf = new Float32Array(an.frequencyBinCount);
   an.getFloatFrequencyData(eqBuf);
   const bin = audio.ctx.sampleRate / an.fftSize;
   const zone = (z, raw) => {
@@ -10236,7 +10236,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.89 TEST</p>
+    <p class="hm-ver">GlassPad 5.90 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14700,7 +14700,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.89 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.90 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -16815,7 +16815,7 @@ if (!window.GPNative && /[?&]engine\b/.test(location.search) && window.AudioWork
       if (!audio || audio.ctx !== ctx) return;
       const n = new AudioWorkletNode(ctx, "gp-core", { numberOfOutputs: 1, outputChannelCount: [2], processorOptions: { wasm } });
       n.connect(ctx.destination);
-      n.port.onmessage = e => { if (e.data.ui) W.ui.push(...e.data.ui); if (e.data.stats) W.stats = e.data.stats; };
+      n.port.onmessage = e => { if (e.data.ui) W.ui.push(...e.data.ui); if (e.data.stats) W.stats = e.data.stats; if (e.data.meter) W.meter = e.data.meter; };
       n.onprocessorerror = e => { W.err = "processor error"; console.warn("engine: processor error", e); };
       W.node = n; for (const m of W.q.splice(0)) n.port.postMessage(m);
     }).catch(err => console.warn("engine", err));
@@ -17787,6 +17787,44 @@ if (window.GPNative && (typeof GPNative.loopCmd === "function" || GPNative.web))
     document.querySelector("#gSheet .gtest h3").after(r);
     $("gFast").addEventListener("click", () => { try { localStorage.setItem("glasspad.fastScreen", FASTSCREEN ? "0" : "1"); } catch (_) {} location.reload(); });
   } catch (_) {}
+}
+/* ---------- 5.90 (app 0.3.8): the visuals hear the engine ----------
+   The waveform line and the strip lights read the page's analysers, which hear nothing once the engine makes the sound.
+   The engine now analyses its own mix (meter.h: a 4096-point spectrum like the page's analyser, and its waveform) and
+   these stand-ins give the visuals the same calls with the engine's numbers, so they look the same as before. */
+const VIS = window.VIS = { t: 0, pulls: 0, ok: false, spec: new Float32Array(414), wave: new Float32Array(512), map: null, rate: 0 };
+function visEngine() {
+  try { return !!(window.GPNative && (typeof GPNative.meter === "function") && typeof NATIVE !== "undefined" && NATIVE.on && ((window.NATBAND && NATBAND.running) || NATIVE.lead)); } catch (_) { return false; }
+}
+function visPull() {
+  const now = performance.now(); if (now - VIS.t < 8) return VIS.ok; VIS.t = now;
+  try {
+    let b = GPNative.meter();
+    if (typeof b === "string") { const s = atob(b), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); b = u; }
+    if (!b || b.length < 926) return (VIS.ok = false);
+    for (let i = 0; i < 414; i++) VIS.spec[i] = b[i] - 160;
+    for (let i = 0; i < 512; i++) VIS.wave[i] = (b[414 + i] - 128) / 127;
+    VIS.pulls++; return (VIS.ok = true);
+  } catch (_) { return (VIS.ok = false); }
+}
+const VIS_EQ = { fftSize: 4096, frequencyBinCount: 2048,
+  getFloatFrequencyData(buf) {
+    if (!visPull()) { buf.fill(-140); return; }
+    const sr = audio.ctx.sampleRate;
+    if (!VIS.map || VIS.rate !== sr) { VIS.rate = sr; VIS.map = new Float32Array(2048); for (let i = 0; i < 2048; i++) { const f = i * sr / 4096; VIS.map[i] = f < 30 ? -1 : Math.min(413, 48 * Math.log2(f / 30)); } }
+    const S = VIS.spec, M = VIS.map;
+    for (let i = 0; i < buf.length && i < 2048; i++) { const x = M[i]; if (x < 0) { buf[i] = S[0] - 12; continue; } const k = Math.floor(x), f = x - k; buf[i] = k >= 413 ? S[413] : S[k] + (S[k + 1] - S[k]) * f; }
+  } };
+const VIS_SCOPE = { fftSize: 1024,
+  getFloatTimeDomainData(buf) {
+    if (!visPull()) { buf.fill(0); return; }
+    const W8 = VIS.wave; for (let i = 0; i < buf.length && i < 1024; i++) { const x = i / 2, k = Math.floor(x), f = x - k; buf[i] = k >= 511 ? W8[511] : W8[k] + (W8[k + 1] - W8[k]) * f; }
+  } };
+function visAn(which) { return visEngine() ? (which === "eq" ? VIS_EQ : VIS_SCOPE) : (which === "eq" ? audio.eqAn : audio.an); }
+if (window.GPNative && GPNative.web) GPNative.meter = () => window.GPWEB && GPWEB.meter;
+{
+  const d0 = diagReport;
+  diagReport = function () { const r = d0.apply(this, arguments); try { r.visuals = { engine: visEngine(), pulls: VIS.pulls, ok: VIS.ok, eq: ls.eq, scope: lsOn("scope") }; } catch (_) {} return r; };
 }
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }

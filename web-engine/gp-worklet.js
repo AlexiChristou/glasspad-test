@@ -65,6 +65,8 @@ class GPCore extends AudioWorkletProcessor {
     // the band's screen events, with context frames
     const k = x.gp_uiPoll();
     if (k) { const u = new Float64Array(x.memory.buffer, x.gp_uiBuf(), 5 * k), ev = []; for (let i = 0; i < k; i++) ev.push([u[5 * i], u[5 * i + 1] + this.off, u[5 * i + 2], u[5 * i + 3], u[5 * i + 4]]); this.port.postMessage({ ui: ev }); }
+    // 0.3.8: the visuals' spectrum + waveform, ~60 times a second
+    if ((this.mtick = (this.mtick || 0) + n) >= sampleRate / 60) { this.mtick = 0; const p = x.gp_meter(), m = new Uint8Array(x.memory.buffer, p, x.gp_meterLen()).slice(); this.port.postMessage({ meter: m }, [m.buffer]); }
     if ((this.tick += n) >= sampleRate / 4) {
       this.tick = 0;
       const s = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21].map(k => x.gp_stat(k));

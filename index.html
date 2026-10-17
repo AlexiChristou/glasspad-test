@@ -1432,7 +1432,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.90 TEST · game mode · 18 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.91 TEST · game mode · 18 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1541,7 +1541,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.90 TEST · game mode · 18 Oct 2026</p>
+      <p class="ver">GlassPad 5.91 TEST · game mode · 18 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10236,7 +10236,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.90 TEST</p>
+    <p class="hm-ver">GlassPad 5.91 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14700,7 +14700,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.90 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.91 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -16850,7 +16850,7 @@ if (!window.GPNative && /[?&]engine\b/.test(location.search) && window.AudioWork
 // Only in the app: in Chrome nothing changes. Step 1 = a plain test lead (saw), the band still plays here.
 const NATIVE = { on: !!(window.GPNative && GPNative.noteOn), lead: true, sink: null, ts: 0, perNote: false };
 try { NATIVE.lead = localStorage.getItem("glasspad.nativeLead") !== "0"; } catch (_) {}
-const natLead = () => NATIVE.on && NATIVE.lead && game.on && $("wave").value !== "sampler" && lead.snd2 !== "sampler";   // (5.82: "My sounds" play on the page)
+const natLead = () => NATIVE.on && NATIVE.lead && game.on && ($("wave").value !== "sampler" || !!(window.NSAMP && NSAMP.ready(0))) && (lead.snd2 !== "sampler" || !!(window.NSAMP && NSAMP.ready(1)));   // (5.91: "My sounds" too, once the engine has them)
 function natSink() { if (!NATIVE.sink || NATIVE.sink.context !== audio.ctx) { NATIVE.sink = audio.ctx.createGain(); NATIVE.sink.gain.value = 0; } return NATIVE.sink; }
 if (NATIVE.on) {
   const sv0 = startVoice;
@@ -17281,7 +17281,7 @@ if (NATIVE.on && typeof GPNative.bandSetup === "function") {
   if (GPNative.web) { NATIVE.band = true; NATIVE.lead = typeof GPNative.leadHold === "function"; }   // the web: the band, and (5.82) the lead
   NATIVE.heardIn = GPNative.web ? (t => (t - audio.ctx.currentTime) * 1000) : NATIVE.heardIn;
   const PS = ["strings", "glass", "organ", "choir", "pluck", "saws", "synth", "warm", "stab"], BSNDS = ["finger", "sub", "reese", "fuzz", "acid", "pluck"];
-  const engineBand = () => game.on && NATIVE.band && !isSong() && !isManual() && (!drum.kit || drum.kit === "synth" || !!(window.NKIT && NKIT.ready(drum.kit))) && BSNDS.includes(bass.sound) && PS.includes(pad.sound);
+  const engineBand = () => game.on && NATIVE.band && !isSong() && !isManual() && (!drum.kit || drum.kit === "synth" || !!(window.NKIT && NKIT.ready(drum.kit))) && (BSNDS.includes(bass.sound) || bass.sound === "sampler" && !!(window.NSAMP && NSAMP.ready(2))) && PS.includes(pad.sound);
   // the band's setup: everything the engine needs to play this theme (the drum tables per BAND level, chords, bass lines, SHIFT)
   function bandSetup() {
     const m = T.meter, S = m.steps, LV = ["low", "normal", "high"], K = KIT[drum.style] || {}, bt = beatOn();
@@ -17424,7 +17424,7 @@ window.BDIARY = [];
 const bdiary = (what, id, v) => { const d = window.BDIARY; d.push([+(performance.now() / 1000).toFixed(2), what, id, v]); if (d.length > 40) d.shift(); };
 if (NATIVE.on && typeof GPNative.bassHold === "function") {
   const BSNDS = ["finger", "sub", "reese", "fuzz", "acid", "pluck"];
-  const natBassPad = () => game.on && NATIVE.band && NATIVE.bassOk && BSNDS.includes(bass.sound) && (!game.arpB || typeof GPNative.arpSet === "function");
+  const natBassPad = () => game.on && NATIVE.band && NATIVE.bassOk && (BSNDS.includes(bass.sound) || bass.sound === "sampler" && !!(window.NSAMP && NSAMP.ready(2))) && (!game.arpB || typeof GPNative.arpSet === "function");
   const B5 = window.NATBASS = { held: 0, glides: 0, made: 0, lead: 0 };
   let nid = 1;
   const nop = () => {}, msOf = t => { const d = (t - audio.ctx.currentTime) * 1000; return d > 2 ? d : 0; };
@@ -17437,7 +17437,8 @@ if (NATIVE.on && typeof GPNative.bassHold === "function") {
       if (SND.path === "finger" && snd === undefined && audio) {
         if (kind === "bass" && natBassPad()) {
           const id = nid++, b = BASS[bass.sound];
-          GPNative.bassHold(id, midi, cut); B5.held++; bdiary("hold", id, game.arpB ? "arp on" : "arp off"); if (window.NARPtick) queueMicrotask(NARPtick);
+          if (bass.sound === "sampler") GPNative.bassHoldS(id, midi, cut, NSAMP.pick("bass", frac, false)); else GPNative.bassHold(id, midi, cut);
+          B5.held++; bdiary("hold", id, game.arpB ? "arp on" : "arp off"); if (window.NARPtick) queueMicrotask(NARPtick);
           const osc = node({ frequency: param((f, at, tc) => { if (window.NARP && NARP.has("b" + id)) return; B5.glides++; GPNative.bassGlide(id, ftom(f), tc, msOf(at)); }), detune: param() });
           const v = { kind, midi, parts: [[osc, 0]], cutBase: b.cut, natB: id, natBass: true,
             filt: node({ frequency: param((c, at, tc) => GPNative.bassBright(id, c, tc, msOf(at))), Q: param() }),
@@ -17489,7 +17490,7 @@ function leadMixArr() {
 }
 if (NATIVE.on && typeof GPNative.leadHold === "function") {
   const L5 = window.NATLEAD = { held: 0, glides: 0, mix: "", page: 0 };
-  const realLead = () => natLead() && LEAD_SNDS.includes($("wave").value) && (lead.snd2 === "off" || LEAD_SNDS.includes(lead.snd2));
+  const realLead = () => natLead() && (LEAD_SNDS.includes($("wave").value) || $("wave").value === "sampler") && (lead.snd2 === "off" || LEAD_SNDS.includes(lead.snd2) || lead.snd2 === "sampler");
   let nid = 1;
   const nop = () => {}, msOf = t => { const d = (t - audio.ctx.currentTime) * 1000; return d > 2 ? d : 0; };
   const param = set => ({ value: 0, setTargetAtTime: set || nop, setValueAtTime: nop, linearRampToValueAtTime: nop, exponentialRampToValueAtTime: nop, cancelScheduledValues: nop, cancelAndHoldAtTime: nop });
@@ -17500,7 +17501,9 @@ if (NATIVE.on && typeof GPNative.leadHold === "function") {
     try {
       if (kind === "lead" && SND.path === "finger" && audio && realLead() && (!patFor("lead") || typeof GPNative.arpSet === "function")) {
         const id = nid++, second = !!buildingSecond, age = NATIVE.ts ? performance.now() - NATIVE.ts : -1;
-        GPNative.leadHold(id, midi, cut, second ? 1 : 0, age >= 0 && age < 500 ? age : -1); L5.held++; NATIVE.perNote = true; if (window.NARPtick) queueMicrotask(NARPtick);
+        if ((second ? lead.snd2 : $("wave").value) === "sampler") GPNative.leadHoldS(id, midi, cut, second ? 1 : 0, NSAMP.pick("lead", frac, second), age >= 0 && age < 500 ? age : -1);
+        else GPNative.leadHold(id, midi, cut, second ? 1 : 0, age >= 0 && age < 500 ? age : -1);
+        L5.held++; NATIVE.perNote = true; if (window.NARPtick) queueMicrotask(NARPtick);
         const osc = node({ frequency: param((f, at, tc) => { if (window.NARP && NARP.has("l" + id)) return; L5.glides++; GPNative.leadGlide(id, ftom(f), tc, msOf(at)); }), detune: param() });
         return { kind, midi, parts: [[osc, 0]], nl: id,
           filt: node({ frequency: param((c, at, tc) => GPNative.leadBright(id, c, tc, msOf(at))), Q: param() }),
@@ -17825,6 +17828,62 @@ if (window.GPNative && GPNative.web) GPNative.meter = () => window.GPWEB && GPWE
 {
   const d0 = diagReport;
   diagReport = function () { const r = d0.apply(this, arguments); try { r.visuals = { engine: visEngine(), pulls: VIS.pulls, ok: VIS.ok, eq: ls.eq, scope: lsOn("scope") }; } catch (_) {} return r; };
+}
+/* ---------- 5.91 (app 0.3.9): My sounds in the engine ----------
+   The engine gets each recording once (as it plays: trimmed, tuned, faded) and, for the lead, the 2nd finger and the bass,
+   which recordings it plays from and how (note length, repeat while held, in turn / shuffled, the octave they sit in).
+   A finger on a My sounds strip then plays in the engine like any other sound (the page still picks which recording). */
+if (window.GPNative && (typeof GPNative.sampSetup === "function" || GPNative.web)) {
+  if (GPNative.web) {
+    const W = window.GPWEB, send = m => { if (W.node) W.node.port.postMessage(m); else W.q.push(m); };
+    GPNative.leadHoldS = (id, m, cut, bus, idx) => send(["leadHoldS", id, m, cut, bus, idx]);
+    GPNative.bassHoldS = (id, m, cut, idx) => send(["bassHoldS", id, m, cut, idx]);
+    GPNative.clipLoad = (id, rate, b64) => { send(["clipLoad", id, rate, new TextEncoder().encode(b64)]); return true; };
+    GPNative.sampSetup = j => send(["sampSetup", new TextEncoder().encode(j)]);
+  }
+  const NS = window.NSAMP = { ids: new Map(), next: 1, sent: "", ok: [false, false, false], clips: 0, setups: 0, err: null };
+  const b64of = f => { const n = f.length, u = new Uint8Array(n * 2); for (let i = 0; i < n; i++) { let v = Math.round(Math.max(-1, Math.min(1, f[i])) * 32767); if (v < 0) v += 65536; u[2 * i] = v & 255; u[2 * i + 1] = v >> 8; }
+    let s = ""; for (let i = 0; i < u.length; i += 8192) s += String.fromCharCode.apply(null, u.subarray(i, i + 8192)); return btoa(s); };
+  // a recording's number in the engine (sent again when its sound changes: trimmed, tuned, recorded again)
+  const idOf = c => {
+    if (!c || !c.buf) return -1;
+    const have = NS.ids.get(c); if (have && have.buf === c.buf) return have.id;
+    const id = NS.next++; if (NS.next >= 512) NS.next = 1;
+    if (GPNative.clipLoad(id, c.buf.sampleRate, b64of(c.buf.getChannelData(0)))) { NS.ids.set(c, { id, buf: c.buf }); NS.clips++; return id; }
+    return -1;
+  };
+  const LEN = { even: 1, stretch: 2, tight: 3 }, MODE = { cycle: 0, shuffle: 1, split: 2 };
+  const slotOf = (slot, kind, second) => {
+    const was = buildingSecond; buildingSecond = second;
+    try {
+      const pool = samplesFor(kind) || []; if (!pool.length) return { slot, on: false, clips: [] };
+      const clips = pool.slice(0, 8).map(idOf); if (clips.some(x => x < 0)) return { slot, on: false, clips: [] };
+      const md = sampOpt(kind, null, "mode");
+      return { slot, on: true, clips, roots: pool.slice(0, 8).map(c => +(rootOf(c) + sampleShift(kind, c)).toFixed(3)), early: pool.slice(0, 8).map(c => +clipLead(c).toFixed(4)),
+        len: pool.slice(0, 8).map(c => LEN[sampOpt(kind, c, "len")] ?? 0), repeat: !!(sampOpt(kind, pool[0], "hold") || (state.hold && kind === "lead")),
+        repCycle: sampOpt(kind, null, "repCycle") !== false ? 1 : 0, mode: MODE[md] ?? 0 };
+    } finally { buildingSecond = was; }
+  };
+  // which recording a new note starts from (the page's own pick: in turn, shuffled, split across the strips, per finger)
+  NS.pick = (kind, frac, second) => {
+    const was = buildingSecond; buildingSecond = second;
+    try { const pool = samplesFor(kind) || []; const c = pickSample(frac ?? .5, pool, kind); return Math.max(0, Math.min(7, pool.indexOf(c))); } catch (_) { return 0; } finally { buildingSecond = was; }
+  };
+  NS.ready = slot => !!NS.ok[slot];
+  const sync = () => {
+    try {
+      if (!audio || !game.on) return;
+      const want = [$("wave").value === "sampler", lead.snd2 === "sampler", bass.sound === "sampler"];
+      const slots = [want[0] ? slotOf(0, "lead", false) : { slot: 0, on: false }, want[1] ? slotOf(1, "lead", true) : { slot: 1, on: false }, want[2] ? slotOf(2, "bass", false) : { slot: 2, on: false }];
+      const j = JSON.stringify({ bandCut: BASS.sampler.cut * 2.2, slots });
+      if (j !== NS.sent) { NS.sent = j; GPNative.sampSetup(j); NS.setups++; }
+      NS.ok = slots.map(x => !!x.on);
+    } catch (e) { NS.err = String(e); }
+  };
+  setInterval(sync, 250);
+  NS.sync = sync;
+  const d0 = diagReport;
+  diagReport = function () { const r = d0.apply(this, arguments); try { const n = JSON.parse(GPNative.info()); r.nativeMySounds = { ready: NS.ok, clipsSent: NS.clips, setups: NS.setups, err: NS.err, engine: { notes: n.sampNotes, clips: n.clipsLoaded, slots: n.slots } }; } catch (_) {} return r; };
 }
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }

@@ -1432,7 +1432,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.81 TEST · game mode · 17 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.82 TEST · game mode · 17 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1541,7 +1541,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.81 TEST · game mode · 17 Oct 2026</p>
+      <p class="ver">GlassPad 5.82 TEST · game mode · 17 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10213,7 +10213,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.81 TEST</p>
+    <p class="hm-ver">GlassPad 5.82 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14677,7 +14677,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.81 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.82 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -16813,6 +16813,9 @@ if (!window.GPNative && /[?&]engine\b/.test(location.search) && window.AudioWork
     bandSetup(j) { send(["bandSetup", new TextEncoder().encode(j)]); }, bandStart(intro, ms) { send(["bandCmd", 0, intro, ms >= 0 && W.ctx ? frameIn(ms) : -1]); },
     bandEnd() { send(["bandCmd", 1, 0, -1]); }, bandStop() { send(["bandCmd", 2, 0, -1]); }, bandTap() { send(["bandCmd", 3, 0, -1]); },
     bandShift() { send(["bandCmd", 4, 0, -1]); }, bassTouch(d) { send(["bandCmd", 5, d, -1]); },
+    leadHold(id, m, cut, bus) { send(["leadHold", id, m, cut, bus]); }, leadGlide(id, m, tc, ms) { send(["leadGlide", id, m, tc, ms > 0 && W.ctx ? frameIn(ms) : -1]); },
+    leadBright(id, cut, tc, ms) { send(["leadBright", id, cut, tc, ms > 0 && W.ctx ? frameIn(ms) : -1]); }, leadLetGo(id, tc, ms) { send(["leadLetGo", id, tc, ms > 0 && W.ctx ? frameIn(ms) : -1]); },
+    leadMix(j) { send(["leadMix", JSON.parse(j)]); },
     bassHold(id, m, cut) { send(["bassHold", id, m, cut]); }, bassGlide(id, m, tc, ms) { send(["bassGlide", id, m, tc, ms > 0 && W.ctx ? frameIn(ms) : -1]); },
     bassBright(id, cut, tc, ms) { send(["bassBright", id, cut, tc, ms > 0 && W.ctx ? frameIn(ms) : -1]); }, bassLetGo(id, tc, ms) { send(["bassLetGo", id, tc, ms > 0 && W.ctx ? frameIn(ms) : -1]); },
     bandPoll() { const ev = W.ui.splice(0), sr = W.ctx ? W.ctx.sampleRate : 48000, now = W.ctx ? W.ctx.currentTime : 0; return JSON.stringify(ev.map(([t, f, a, b, v]) => [t, (f / sr - now) * 1000, a, b, v])); },
@@ -16824,14 +16827,14 @@ if (!window.GPNative && /[?&]engine\b/.test(location.search) && window.AudioWork
 // Only in the app: in Chrome nothing changes. Step 1 = a plain test lead (saw), the band still plays here.
 const NATIVE = { on: !!(window.GPNative && GPNative.noteOn), lead: true, sink: null, ts: 0, perNote: false };
 try { NATIVE.lead = localStorage.getItem("glasspad.nativeLead") !== "0"; } catch (_) {}
-const natLead = () => NATIVE.on && NATIVE.lead && game.on;
+const natLead = () => NATIVE.on && NATIVE.lead && game.on && $("wave").value !== "sampler" && lead.snd2 !== "sampler";   // (5.82: "My sounds" play on the page)
 function natSink() { if (!NATIVE.sink || NATIVE.sink.context !== audio.ctx) { NATIVE.sink = audio.ctx.createGain(); NATIVE.sink.gain.value = 0; } return NATIVE.sink; }
 if (NATIVE.on) {
   const sv0 = startVoice;
   startVoice = function (key, x, y, type, kind) {
     const v = sv0.apply(this, arguments);
     try {
-      if (v && kind === "lead" && natLead() && !(v.pn && v.pn.cfg)) {   // arps stay in the page for now
+      if (v && kind === "lead" && natLead() && !(v.pn && v.pn.cfg) && !v.nl) {   // arps stay in the page for now (5.82: the real lead has its own hooks)
         const out = v.gate || v.g; try { out.disconnect(); } catch (_) {} out.connect(natSink());
         v.nat = key; const age = NATIVE.ts ? performance.now() - NATIVE.ts : -1;
         if (typeof GPNative.noteOn2 === "function" && age >= 0 && age < 500) { GPNative.noteOn2(key, v.midi, leadCut(Math.min(y, leadH())), 1, age); NATIVE.perNote = true; }
@@ -17249,7 +17252,7 @@ if (NATIVE.on && NATIVE.heardIn) {
    Used in game mode with the synth kit and a built-in bass sound; anything else plays the page's band as before. */
 if (NATIVE.on && typeof GPNative.bandSetup === "function") {
   const NB = window.NATBAND = { running: false, lastSetup: "", sent: 0, events: 0, starts: 0, held: false, quiet: false, intro: false, saved: null };
-  if (GPNative.web) { NATIVE.lead = false; NATIVE.band = true; }   // the web: only the band (the lead stays on the page)
+  if (GPNative.web) { NATIVE.band = true; NATIVE.lead = typeof GPNative.leadHold === "function"; }   // the web: the band, and (5.82) the lead
   NATIVE.heardIn = GPNative.web ? (t => (t - audio.ctx.currentTime) * 1000) : NATIVE.heardIn;
   const PS = ["strings", "glass", "organ", "choir", "pluck", "saws", "synth", "warm", "stab"], BSNDS = ["finger", "sub", "reese", "fuzz", "acid", "pluck"];
   const engineBand = () => game.on && NATIVE.band && !isSong() && !isManual() && (!drum.kit || drum.kit === "synth") && BSNDS.includes(bass.sound) && PS.includes(pad.sound);
@@ -17425,6 +17428,65 @@ if (NATIVE.on && typeof GPNative.bassHold === "function") {
   diagReport = function () {
     const r = d0.apply(this, arguments);
     try { (r.nativeBand || (r.nativeBand = {})).bassPad = { native: natBassPad(), held: B5.held, glides: B5.glides, leadStandIns: B5.lead, pageVoicesBuilt: B5.made }; } catch (_) {}
+    return r;
+  };
+}
+
+/* ---------- 5.82: the lead's real sounds play in the engine (app 0.3+, or ?engine on the web) ----------
+   Until now the app's lead was a plain test sound. Now a finger on the lead holds a note in the engine with the theme's own
+   sound (saw / square / triangle / sine with detune, Supersaw, Electric piano, Chip, Flute), the tone settings, Octave,
+   vibrato, and the lead's pedals (Drive, Chorus, Flanger, Phaser, Tremolo, echo and reverb sends); the 2nd-finger sound
+   with its own pedals. The page still works out each note (strips, glide, edges, keyboard) and its brightness. */
+const LEAD_SNDS = ["sawtooth", "square", "triangle", "sine", "supersaw", "epiano", "chip", "flute"];
+// the lead's mixer for the engine: per bus (the lead, the 2nd sound) 25 numbers, then 9 shared (core.h readLead)
+function leadMixArr() {
+  const A = audio, n = x => x ? 1 : 0, w1 = $("wave").value, w2 = lead.snd2;
+  const trHz = (s, timed) => timed ? 1 / (TREM_DIV[pickIdx(s.rate, TREM_DIV.length)][0] * 60 / T.bpm) : 1 + s.rate * 13;
+  const busArr = (snd, oct, gBus, gBal, P, isLead) => {
+    const [od, ou] = octGains(oct), timed = P.trem.sync === "time";
+    return [Math.max(0, LEAD_SNDS.indexOf(snd)), sndTrim("lead", snd), n(oct.on), od, ou, gBus, gBal,
+      n(P.drive.on), P.drive.amt, P.drive.tone, n(P.chorus.on), P.chorus.rate, P.chorus.depth,
+      n(isLead && P.flanger.on), isLead ? P.flanger.rate : 0, isLead ? P.flanger.fb : 0, n(P.phaser.on), P.phaser.rate, P.phaser.depth,
+      n(P.trem.on), n(timed), trHz(P.trem, timed), P.trem.depth,
+      P.echo.on ? P.echo.send * .8 : 0, isLead ? (P.reverb.on ? P.reverb.mix * 1.1 : 0) : (P.reverb.on ? P.reverb.send * 1.1 : 0)];
+  };
+  return [...busArr(w1, S.octave, A.bus.gain.value, A.balLead.gain.value, S, true),
+    ...busArr(w2 === "off" ? w1 : w2, PFX.lead2.octave, A.bus2.gain.value, A.bal2.gain.value, PFX.lead2, false),
+    tmap.attack(tone.attack), relTcFor("lead"), tmap.res(tone.res), tmap.detune(tone.detune), tone.vib ? tmap.vib(tone.vib) : 0, n(state.autoVib),
+    A.master.gain.value, echoSecs(), S.echo.fb * .65].map(x => +(+x).toFixed(5));
+}
+if (NATIVE.on && typeof GPNative.leadHold === "function") {
+  const L5 = window.NATLEAD = { held: 0, glides: 0, mix: "", page: 0 };
+  const realLead = () => natLead() && LEAD_SNDS.includes($("wave").value) && (lead.snd2 === "off" || LEAD_SNDS.includes(lead.snd2));
+  let nid = 1;
+  const nop = () => {}, msOf = t => { const d = (t - audio.ctx.currentTime) * 1000; return d > 2 ? d : 0; };
+  const param = set => ({ value: 0, setTargetAtTime: set || nop, setValueAtTime: nop, linearRampToValueAtTime: nop, exponentialRampToValueAtTime: nop, cancelScheduledValues: nop, cancelAndHoldAtTime: nop });
+  const node = extra => Object.assign({ connect(x) { return x; }, disconnect: nop, start: nop, stop: nop }, extra);
+  const ftom = f => 69 + 12 * Math.log2(f / 440);
+  const bv0 = buildVoice;
+  buildVoice = function (kind, midi, cut, t, frac, snd) {
+    try {
+      if (kind === "lead" && SND.path === "finger" && audio && realLead() && !patFor("lead")) {
+        const id = nid++, second = !!buildingSecond, age = NATIVE.ts ? performance.now() - NATIVE.ts : -1;
+        GPNative.leadHold(id, midi, cut, second ? 1 : 0, age >= 0 && age < 500 ? age : -1); L5.held++; NATIVE.perNote = true;
+        const osc = node({ frequency: param((f, at, tc) => { L5.glides++; GPNative.leadGlide(id, ftom(f), tc, msOf(at)); }), detune: param() });
+        return { kind, midi, parts: [[osc, 0]], nl: id,
+          filt: node({ frequency: param((c, at, tc) => GPNative.leadBright(id, c, tc, msOf(at))), Q: param() }),
+          g: node({ gain: param((x, at, tc) => { if (x === 0) GPNative.leadLetGo(id, tc, msOf(at)); }) }) };
+      }
+    } catch (_) {}
+    if (kind === "lead") L5.page++;
+    return bv0.apply(this, arguments);
+  };
+  // the lead's mixer follows the page
+  setInterval(() => {
+    if (!audio || !GPNative.leadMix) return;
+    try { const k = JSON.stringify(leadMixArr()); if (k !== L5.mix) { L5.mix = k; GPNative.leadMix(k); } } catch (_) {}
+  }, 300);
+  const d0 = diagReport;
+  diagReport = function () {
+    const r = d0.apply(this, arguments);
+    try { r.nativeLeadSound = { on: realLead(), sound: $("wave").value, second: lead.snd2, held: L5.held, glides: L5.glides, pageVoices: L5.page, arpOnPage: !!patFor("lead") }; } catch (_) {}
     return r;
   };
 }

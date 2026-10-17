@@ -1432,7 +1432,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.88 TEST · game mode · 17 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.89 TEST · game mode · 17 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1541,7 +1541,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.88 TEST · game mode · 17 Oct 2026</p>
+      <p class="ver">GlassPad 5.89 TEST · game mode · 17 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -2784,7 +2784,12 @@ function softClip(ctx) {
   for (let i = 0; i < n; i++) { const x = i / (n - 1) * 2 - 1; c[i] = .9 * Math.tanh(x / .9); }
   s.curve = c; return s;
 }
+const IMPULSES = new Map();
 function impulse(ctx, secs) {
+  const key = ctx.sampleRate + "|" + secs.toFixed(2), have = IMPULSES.get(key); if (have && have.ctx === ctx) return have.buf;
+  const buf = impulseNew(ctx, secs); IMPULSES.set(key, { ctx, buf }); return buf;
+}
+function impulseNew(ctx, secs) {
   const len = Math.floor(ctx.sampleRate * secs), buf = ctx.createBuffer(2, len, ctx.sampleRate);
   for (let ch = 0; ch < 2; ch++) {
     const d = buf.getChannelData(ch);
@@ -4892,7 +4897,9 @@ function openPart(id) {
 quickButton("chipLead", () => openPart("d-sound"));
 quickButton("chipBass", () => openPart("m-bass"));
 let chipPos = "";
+let chipT = 0;
 function placeChips(LH) {
+  const tc = performance.now(); if (tc - chipT < 250) return; chipT = tc;
   const top = cv.offsetTop, left = cv.offsetLeft, pos = [top, left, LH, bass.on, kb.on, KB_TOP, cv.offsetHeight, cv.offsetWidth].join();
   if (pos === chipPos) return; chipPos = pos;
   // in the margin just left of the pad
@@ -6237,7 +6244,8 @@ function applyProgFeel() {
 }));
 
 /* ---------- input ---------- */
-const cv = $("pad"), cx = cv.getContext("2d"), area = document.querySelector("main");
+const FASTSCREEN = (() => { try { return localStorage.getItem("glasspad.fastScreen") !== "0"; } catch (_) { return true; } })();
+const cv = $("pad"), cx = cv.getContext("2d", FASTSCREEN ? { alpha: false, desynchronized: true } : { alpha: false }), area = document.querySelector("main");
 let W = 0, H = 0, DPR = 1;
 // strip edges on whole canvas pixels, so every strip is drawn the same width with the same crisp edge
 // the outer edges of a pad: the same line as between the strips, so the end strips are closed too
@@ -6289,7 +6297,13 @@ area.addEventListener("pointermove", e => {
   const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
   // each bit of the streak keeps the colour of where it was drawn (lead strips: a smooth sweep across)
   const lw = W / Math.max(1, lanes.length);
-  for (const ce of evs) { const [x, y] = pos(ce); v.trail.push({ x, y, t: performance.now(), hue: v.kind === "lead" && !v.kbv ? hueOf(Math.max(0, Math.min(lanes.length - 1, x / lw - .5)), lanes.length) : v.hue }); }
+  const tNow = performance.now();
+  for (const ce of evs) {
+    const [x, y] = pos(ce), q = v.trail[v.trail.length - 1];
+    if (q && Math.abs(q.x - x) + Math.abs(q.y - y) < 2.5 && tNow - q.t < 24) { q.x = x; q.y = y; continue; }   // 5.89: tiny steps move the head instead of adding a point
+    v.trail.push({ x, y, t: tNow, hue: v.kind === "lead" && !v.kbv ? hueOf(Math.max(0, Math.min(lanes.length - 1, x / lw - .5)), lanes.length) : v.hue });
+  }
+  try { const pr = e.getPredictedEvents ? e.getPredictedEvents() : []; if (pr.length) { const [px, py] = pos(pr[pr.length - 1]); v.pred = { x: px, y: py, t: tNow }; } else v.pred = null; } catch (_) { v.pred = null; }
   const [x, y] = pos(e);
   // the lead gets the unclamped position, so sliding into the side margins reaches the extra notes
   moveVoice(v, v.kind === "lead" ? e.clientX - cv.getBoundingClientRect().left : x, y);
@@ -6472,7 +6486,7 @@ function drawScope(LH) {
 let eqBuf = null;
 const eqLvl = { lead: new Float32Array(64), bass: new Float32Array(32) }, eqTop = { lead: -60, bass: -60 };
 function eqFrame() {
-  if (ls.eq === "off" || !audio || !audio.eqAn || !(T.playing || voices.size)) { eqLvl.lead.fill(0); eqLvl.bass.fill(0); return false; }
+  if (ls.eq === "off" || !audio || !audio.eqAn || !(T.playing || voices.size) || (window.PADV && PADV.silent())) { eqLvl.lead.fill(0); eqLvl.bass.fill(0); return false; }
   const an = audio.eqAn; if (!eqBuf || eqBuf.length !== an.frequencyBinCount) eqBuf = new Float32Array(an.frequencyBinCount);
   an.getFloatFrequencyData(eqBuf);
   const bin = audio.ctx.sampleRate / an.fftSize;
@@ -6956,10 +6970,19 @@ function draw() {
     v.trail = v.trail.filter(p => now - p.t < 600);
     if (ls.style === "sparkle") {
       for (let i = 0; i < v.trail.length; i++) { const p = v.trail[i], a = 1 - (now - p.t) / 600; glow(cx, p.x, p.y, 16 * (1 - (1 - a) * .6), hslRgbQ(streakMode === "rainbow" ? p.hue ?? v.hue : v.hue), .55 * a); }
-    } else for (let i = 1; i < v.trail.length; i++) {
-      const a = 1 - (now - v.trail[i].t) / 600;
-      cx.strokeStyle = `hsla(${streakMode === "rainbow" ? v.trail[i].hue ?? v.hue : v.hue},${TH.glow ? 100 : 85}%,${TH.glow ? 60 : 62}%,${a * .8})`; cx.lineWidth = 3 + a * 9;
-      cx.beginPath(); cx.moveTo(v.trail[i - 1].x, v.trail[i - 1].y); cx.lineTo(v.trail[i].x, v.trail[i].y); cx.stroke();
+    } else {
+      const pts = v.trail.slice(); if (v.pred && now - v.pred.t < 40 && pts.length && !v.released) pts.push({ x: v.pred.x, y: v.pred.y, t: now, hue: pts[pts.length - 1].hue });
+      let key = null, open = false;
+      for (let i = 1; i < pts.length; i++) {
+        const a = Math.round(Math.max(0, 1 - (now - pts[i].t) / 600) * 16) / 16, hue = Math.round((streakMode === "rainbow" ? pts[i].hue ?? v.hue : v.hue) / 4) * 4, k = hue + "|" + a;
+        if (k !== key) {
+          if (open) cx.stroke();
+          key = k; cx.strokeStyle = `hsla(${hue},${TH.glow ? 100 : 85}%,${TH.glow ? 60 : 62}%,${a * .8})`; cx.lineWidth = 3 + a * 9;
+          cx.beginPath(); cx.moveTo(pts[i - 1].x, pts[i - 1].y); open = true;
+        }
+        cx.lineTo(pts[i].x, pts[i].y);
+      }
+      if (open) cx.stroke();
     }
     // 5.15.3: a held bass note (Hold) lets its glow go when the finger lifts (a quick fade); the note keeps playing
     const fadeB = v.released && v.kind === "bass" ? Math.max(0, 1 - (now - (v.relAt || 0)) / 250) : 1;
@@ -10213,7 +10236,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.88 TEST</p>
+    <p class="hm-ver">GlassPad 5.89 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14677,7 +14700,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.88 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.89 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -17714,6 +17737,56 @@ if (window.GPNative && (typeof GPNative.loopCmd === "function" || GPNative.web))
       engine: { mode: ["empty", "take", "playing", "stopped", "overdub"][n.loopMode] || n.loopMode, layers: n.loopLayers, notes: n.loopEvents, played: n.loopPlayed, sounded: n.loopNotes } }; } catch (_) {}
     return r;
   };
+}
+/* ---------- 5.89: lag. The pad rests while a full page covers it, and a tap on a button that opens a page gets the
+   frame to itself; the numbers for Copy setup (frames on the pad, tap → next frame, streak age) ---------- */
+{
+  const PV = window.PADV = { covered: false, chk: 0, skipUntil: 0, last: 0, lastDraw: 0, gaps: [], draws: [], navs: [], age: [] };
+  const PAGES = "#home, #mk, #gSheet, #rc, #st, #start";
+  PV.silent = () => { try { return !!(window.NATBAND && NATBAND.running && NATIVE.lead && !window.__pageSound); } catch (_) { return false; } };
+  const coveredNow = () => {
+    try {
+      const r = cv.getBoundingClientRect(); if (r.width < 4 || r.height < 4) return true;
+      for (const fy of [.2, .5, .85]) { const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height * fy); if (!el || !el.closest(PAGES)) return false; }
+      return true;
+    } catch (_) { return false; }
+  };
+  const d0 = draw;
+  draw = function () {
+    const now = performance.now();
+    if (now - PV.chk > 150) { PV.chk = now; PV.covered = coveredNow(); }
+    // covered by a page, or a page is opening: a frame now and then only (so the band's screen events still get handled)
+    if ((PV.covered || now < PV.skipUntil) && now - PV.lastDraw < 250) { requestAnimationFrame(draw); PV.last = 0; return; }
+    if (PV.last && !PV.covered && game.on && $("home").hidden) { PV.gaps.push(now - PV.last); if (PV.gaps.length > 600) PV.gaps.shift(); }
+    PV.last = now; PV.lastDraw = now;
+    // the finger's glow (and the lines it bends) drawn where the finger is about to be, from the browser's prediction,
+    // so it keeps up with a fast swipe; the sound keeps the real position
+    const moved = [];
+    try { for (const v of voices.values()) if (v.pred && !v.released && now - v.pred.t < 40) { moved.push([v, v.x, v.y]); v.x = v.pred.x; v.y = v.pred.y; } } catch (_) {}
+    let r; try { r = d0.apply(this, arguments); } finally { for (const [v, x, y] of moved) { if (v.x === v.pred?.x) v.x = x; if (v.y === v.pred?.y) v.y = y; } }
+    const dt = performance.now() - now; if (!PV.covered) { PV.draws.push(dt); if (PV.draws.length > 600) PV.draws.shift(); }
+    try { for (const v of voices.values()) if (v.trail && v.trail.length && !v.released) { PV.age.push(now - v.trail[v.trail.length - 1].t); if (PV.age.length > 300) PV.age.shift(); break; } } catch (_) {}
+    return r;
+  };
+  // a tap on a button outside the pad: let the page it opens have the next frames, and time tap → the frame after it
+  document.addEventListener("pointerdown", e => {
+    const b = e.target.closest && e.target.closest("button"); if (!b || area.contains(b)) return;
+    PV.skipUntil = performance.now() + 120; PV.down = { t: performance.now(), name: b.id || b.getAttribute("aria-label") || (b.textContent || "").trim().slice(0, 16) };
+  }, { capture: true, passive: true });
+  document.addEventListener("click", () => {
+    const d = PV.down; if (!d || performance.now() - d.t > 2000) return; PV.down = null;
+    requestAnimationFrame(() => requestAnimationFrame(() => { PV.navs.push([d.name, Math.round(performance.now() - d.t)]); if (PV.navs.length > 10) PV.navs.shift(); }));
+  }, { passive: true });
+  const st = a => { if (!a.length) return null; const b = [...a].sort((x, y) => x - y); return { avg: +(b.reduce((x, y) => x + y, 0) / b.length).toFixed(1), p95: +b[Math.floor(b.length * .95)].toFixed(1), max: +b[b.length - 1].toFixed(1), n: b.length }; };
+  const d1 = diagReport;
+  diagReport = function () { const r = d1.apply(this, arguments); try { r.screen = { fast: FASTSCREEN, frameMs: st(PV.gaps), drawMs: st(PV.draws), streakAgeMs: st(PV.age), taps: PV.navs }; } catch (_) {} return r; };
+  // Settings (test): the low-latency screen, on by default (the app restarts its page to switch)
+  try {
+    const r = document.createElement("div"); r.className = "gr";
+    r.innerHTML = `<div><label>Fast screen</label><small>The pad goes straight to the screen, about a frame sooner. Switch off if you see flicker or tearing (the page reloads).</small></div><button class="gsw" id="gFast" aria-pressed="${FASTSCREEN}"></button>`;
+    document.querySelector("#gSheet .gtest h3").after(r);
+    $("gFast").addEventListener("click", () => { try { localStorage.setItem("glasspad.fastScreen", FASTSCREEN ? "0" : "1"); } catch (_) {} location.reload(); });
+  } catch (_) {}
 }
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }

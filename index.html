@@ -1432,7 +1432,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.82 TEST · game mode · 17 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.83 TEST · game mode · 17 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1541,7 +1541,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.82 TEST · game mode · 17 Oct 2026</p>
+      <p class="ver">GlassPad 5.83 TEST · game mode · 17 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10213,7 +10213,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.82 TEST</p>
+    <p class="hm-ver">GlassPad 5.83 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14677,7 +14677,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.82 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.83 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -16815,7 +16815,7 @@ if (!window.GPNative && /[?&]engine\b/.test(location.search) && window.AudioWork
     bandShift() { send(["bandCmd", 4, 0, -1]); }, bassTouch(d) { send(["bandCmd", 5, d, -1]); },
     leadHold(id, m, cut, bus) { send(["leadHold", id, m, cut, bus]); }, leadGlide(id, m, tc, ms) { send(["leadGlide", id, m, tc, ms > 0 && W.ctx ? frameIn(ms) : -1]); },
     leadBright(id, cut, tc, ms) { send(["leadBright", id, cut, tc, ms > 0 && W.ctx ? frameIn(ms) : -1]); }, leadLetGo(id, tc, ms) { send(["leadLetGo", id, tc, ms > 0 && W.ctx ? frameIn(ms) : -1]); },
-    leadMix(j) { send(["leadMix", JSON.parse(j)]); },
+    leadMix(j) { send(["leadMix", JSON.parse(j)]); }, arpSet(j) { send(["arpSet", new TextEncoder().encode(j)]); },
     bassHold(id, m, cut) { send(["bassHold", id, m, cut]); }, bassGlide(id, m, tc, ms) { send(["bassGlide", id, m, tc, ms > 0 && W.ctx ? frameIn(ms) : -1]); },
     bassBright(id, cut, tc, ms) { send(["bassBright", id, cut, tc, ms > 0 && W.ctx ? frameIn(ms) : -1]); }, bassLetGo(id, tc, ms) { send(["bassLetGo", id, tc, ms > 0 && W.ctx ? frameIn(ms) : -1]); },
     bandPoll() { const ev = W.ui.splice(0), sr = W.ctx ? W.ctx.sampleRate : 48000, now = W.ctx ? W.ctx.currentTime : 0; return JSON.stringify(ev.map(([t, f, a, b, v]) => [t, (f / sr - now) * 1000, a, b, v])); },
@@ -17025,7 +17025,7 @@ $("mkCam").addEventListener("change", () => {
   startVoice = function (key, x, y, type, kind) {
     const v = sv.apply(this, arguments);
     try {
-      if (v && kind === "lead" && v.nat === undefined && NATIVE.ts) {
+      if (v && kind === "lead" && v.nat === undefined && !v.nl && NATIVE.ts) {
         const d = performance.now() - NATIVE.ts;
         if (d >= 0 && d < 500) { const p = st.page; p.n++; p.sum += d; p.max = Math.max(p.max, d); }
       }
@@ -17392,7 +17392,7 @@ if (NATIVE.on && typeof GPNative.bandSetup === "function") {
    Loops, the Sound lab and the bass ARP still play on the page. */
 if (NATIVE.on && typeof GPNative.bassHold === "function") {
   const BSNDS = ["finger", "sub", "reese", "fuzz", "acid", "pluck"];
-  const natBassPad = () => game.on && NATIVE.band && NATIVE.bassOk && BSNDS.includes(bass.sound) && !game.arpB;
+  const natBassPad = () => game.on && NATIVE.band && NATIVE.bassOk && BSNDS.includes(bass.sound) && (!game.arpB || typeof GPNative.arpSet === "function");
   const B5 = window.NATBASS = { held: 0, glides: 0, made: 0, lead: 0 };
   let nid = 1;
   const nop = () => {}, msOf = t => { const d = (t - audio.ctx.currentTime) * 1000; return d > 2 ? d : 0; };
@@ -17406,8 +17406,8 @@ if (NATIVE.on && typeof GPNative.bassHold === "function") {
         if (kind === "bass" && natBassPad()) {
           const id = nid++, b = BASS[bass.sound];
           GPNative.bassHold(id, midi, cut); B5.held++;
-          const osc = node({ frequency: param((f, at, tc) => { B5.glides++; GPNative.bassGlide(id, ftom(f), tc, msOf(at)); }), detune: param() });
-          const v = { kind, midi, parts: [[osc, 0]], cutBase: b.cut, nat: id, natBass: true,
+          const osc = node({ frequency: param((f, at, tc) => { if (window.NARP && NARP.has("b" + id)) return; B5.glides++; GPNative.bassGlide(id, ftom(f), tc, msOf(at)); }), detune: param() });
+          const v = { kind, midi, parts: [[osc, 0]], cutBase: b.cut, natB: id, natBass: true,
             filt: node({ frequency: param((c, at, tc) => GPNative.bassBright(id, c, tc, msOf(at))), Q: param() }),
             g: node({ gain: param((x, at, tc) => { if (x === 0) GPNative.bassLetGo(id, tc, msOf(at)); }) }) };
           if (b.env) { v.fenv = b.env; v.cut0 = cut; }
@@ -17466,10 +17466,10 @@ if (NATIVE.on && typeof GPNative.leadHold === "function") {
   const bv0 = buildVoice;
   buildVoice = function (kind, midi, cut, t, frac, snd) {
     try {
-      if (kind === "lead" && SND.path === "finger" && audio && realLead() && !patFor("lead")) {
+      if (kind === "lead" && SND.path === "finger" && audio && realLead() && (!patFor("lead") || typeof GPNative.arpSet === "function")) {
         const id = nid++, second = !!buildingSecond, age = NATIVE.ts ? performance.now() - NATIVE.ts : -1;
         GPNative.leadHold(id, midi, cut, second ? 1 : 0, age >= 0 && age < 500 ? age : -1); L5.held++; NATIVE.perNote = true;
-        const osc = node({ frequency: param((f, at, tc) => { L5.glides++; GPNative.leadGlide(id, ftom(f), tc, msOf(at)); }), detune: param() });
+        const osc = node({ frequency: param((f, at, tc) => { if (window.NARP && NARP.has("l" + id)) return; L5.glides++; GPNative.leadGlide(id, ftom(f), tc, msOf(at)); }), detune: param() });
         return { kind, midi, parts: [[osc, 0]], nl: id,
           filt: node({ frequency: param((c, at, tc) => GPNative.leadBright(id, c, tc, msOf(at))), Q: param() }),
           g: node({ gain: param((x, at, tc) => { if (x === 0) GPNative.leadLetGo(id, tc, msOf(at)); }) }) };
@@ -17489,6 +17489,54 @@ if (NATIVE.on && typeof GPNative.leadHold === "function") {
     try { r.nativeLeadSound = { on: realLead(), sound: $("wave").value, second: lead.snd2, held: L5.held, glides: L5.glides, pageVoices: L5.page, arpOnPage: !!patFor("lead") }; } catch (_) {}
     return r;
   };
+}
+
+/* ---------- 5.83: the ARP buttons play in the engine (app 0.3.1+, or ?engine on the web) ----------
+   A held lead or bass note with its ARP on: the page works out the arp's notes for each chord (they come from the strips)
+   and sends them; the engine keeps the arp's time on the band's clock (or its own when the band is stopped), picks each
+   note (up, down, up-down, random, walk), swings it with the drums and gates it, so a slow page can't make it late. */
+if (NATIVE.on && typeof GPNative.arpSet === "function") {
+  const NARP = window.NARP = new Map(), A6 = window.NATARP = { sets: 0, offs: 0 };
+  const ap0 = armPattern;
+  armPattern = function (v) { if (v && (v.nl || v.natBass)) return; return ap0.apply(this, arguments); };   // the engine runs these
+  const chordFor = (place, lift) => {
+    const p = progDegs(), base = homeBase() + lift;
+    return p ? progChordAt(p[mod(place, p.length)], base) : { tones: [0, 7, 12], drone: true, base, name: "" };
+  };
+  function arpMsg(v, kind, id, style) {
+    const lifts = [...new Set([0, keyLift.now, keyLift.target, gameLiftAmt()])], p = progDegs(), L = p ? p.length : 1;
+    const notesFor = ch => {
+      if (kind === 0) return arpNotes("lead", v.lane, v.midi, v.kbv, style, undefined, ch);
+      const ns = bassNotesFor(ch), lane = Math.min(v.lane, ns.length - 1);
+      return arpNotes("bass", lane, ns[lane], false, style, ns, ch);
+    };
+    const table = lifts.map(l => Array.from({ length: L }, (_, i) => notesFor(chordFor(i, l)).map(m => +m.toFixed(3))));
+    const stopped = (kind === 0 ? arpNotes("lead", v.lane, v.midi, v.kbv, style, undefined, null) : arpNotes("bass", v.lane, v.midi, false, style, undefined, null)).map(m => +m.toFixed(3));
+    return { kind, id, style, beats: gamePat(kind === 0 ? "lead" : "bass", true).beats, lifts, table, stopped };
+  }
+  setInterval(() => {
+    if (!audio) return;
+    const seen = new Set();
+    for (const v of voices.values()) {
+      const kind = v.nl ? 0 : v.natBass ? 1 : -1; if (kind < 0 || v.released && kind === 1) continue;
+      const id = kind ? v.natB : v.nl, key = (kind ? "b" : "l") + id, cfg = patFor(kind ? "bass" : "lead");
+      if (cfg && cfg.arp) {
+        seen.add(key);
+        try { const j = JSON.stringify(arpMsg(v, kind, id, cfg.arp)); if (NARP.get(key) !== j) { NARP.set(key, j); GPNative.arpSet(j); A6.sets++; } } catch (_) {}
+      }
+    }
+    for (const [key] of NARP) if (!seen.has(key)) {
+      const kind = key[0] === "b" ? 1 : 0, id = +key.slice(1);
+      NARP.delete(key); A6.offs++;
+      try {
+        GPNative.arpSet(JSON.stringify({ kind, id, off: true }));
+        // arp switched off while holding: back to the note under the finger
+        for (const v of voices.values()) if ((kind ? v.natB : v.nl) === id && (kind ? v.natBass : v.nl)) { if (kind) GPNative.bassGlide(id, v.midi, .005, 0); else GPNative.leadGlide(id, v.midi, .005, 0); }
+      } catch (_) {}
+    }
+  }, 40);
+  const d0 = diagReport;
+  diagReport = function () { const r = d0.apply(this, arguments); try { r.nativeArp = { held: NARP.size, sets: A6.sets, offs: A6.offs }; } catch (_) {} return r; };
 }
 
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)

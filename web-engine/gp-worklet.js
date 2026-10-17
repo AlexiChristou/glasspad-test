@@ -46,6 +46,9 @@ class GPCore extends AudioWorkletProcessor {
         const bytes = m[1], p = x.gp_strbuf(bytes.length), mem = new Uint8Array(x.memory.buffer, p, bytes.length + 1);
         mem.set(bytes); mem[bytes.length] = 0; x["gp_" + n](); break;
       }
+      case "loopSetup": { const bytes = m[1], p = x.gp_strbuf(bytes.length), mem = new Uint8Array(x.memory.buffer, p, bytes.length + 1); mem.set(bytes); mem[bytes.length] = 0; x.gp_loopSetup(); break; }
+      case "loopIn": x.gp_loopIn(m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8], m[9], m[10]); break;
+      case "loopCmd": x.gp_loopCmd(m[1], m[2], m[3]); break;
       case "drum2": x.gp_drum2(m[1], m[2], m[3], m[4], this.f(m[5])); break;
       case "bandCmd": x.gp_bandCmd(m[1], m[2], m[3] >= 0 ? this.f(m[3]) : -1); break;
       case "drumMix": case "bassMix": case "padMix": case "leadMix": {
@@ -64,8 +67,9 @@ class GPCore extends AudioWorkletProcessor {
     if (k) { const u = new Float64Array(x.memory.buffer, x.gp_uiBuf(), 5 * k), ev = []; for (let i = 0; i < k; i++) ev.push([u[5 * i], u[5 * i + 1] + this.off, u[5 * i + 2], u[5 * i + 3], u[5 * i + 4]]); this.port.postMessage({ ui: ev }); }
     if ((this.tick += n) >= sampleRate / 4) {
       this.tick = 0;
-      const s = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].map(k => x.gp_stat(k));
-      this.port.postMessage({ stats: { drumHits: s[0], drumLate: s[1], drumLateMaxMs: s[2], bassNotes: s[3], bassLate: s[4], padNotes: s[5], padLate: s[6], padLateMaxMs: s[7], bassPad: s[8], arpLead: s[9], arpBass: s[10], arpMiss: s[11], bandArps: s[12], bandBassHeld: s[13], kitHits: s[14], kitMissing: s[15], kitsLoaded: s[16] } });
+      const s = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21].map(k => x.gp_stat(k));
+      let diary = "[]"; try { const p = x.gp_diary(), n = x.gp_diaryLen(), b = new Uint8Array(x.memory.buffer, p, n); diary = String.fromCharCode.apply(null, b); } catch (_) {}
+      this.port.postMessage({ stats: { diary: JSON.parse(diary), drumHits: s[0], drumLate: s[1], drumLateMaxMs: s[2], bassNotes: s[3], bassLate: s[4], padNotes: s[5], padLate: s[6], padLateMaxMs: s[7], bassPad: s[8], arpLead: s[9], arpBass: s[10], arpMiss: s[11], bandArps: s[12], bandBassHeld: s[13], kitHits: s[14], kitMissing: s[15], kitsLoaded: s[16], loopMode: s[17], loopLayers: s[18], loopEvents: s[19], loopPlayed: s[20], loopNotes: s[21] } });
     }
     return true;
   }

@@ -1432,7 +1432,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.87 TEST · game mode · 17 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.88 TEST · game mode · 17 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1541,7 +1541,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.87 TEST · game mode · 17 Oct 2026</p>
+      <p class="ver">GlassPad 5.88 TEST · game mode · 17 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10213,7 +10213,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.87 TEST</p>
+    <p class="hm-ver">GlassPad 5.88 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14677,7 +14677,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.87 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.88 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -17588,6 +17588,132 @@ if (window.GPNative && (typeof GPNative.kitUse === "function" || GPNative.web)) 
   }, 200);
   const d0 = diagReport;
   diagReport = function () { const r = d0.apply(this, arguments); try { r.nativeKit = { want: drum.kit || "synth", used: NKIT.used, sent: NKIT.sent, loaded: NKIT.loaded, ready: NKIT.ready(drum.kit), err: NKIT.err }; } catch (_) {} return r; };
+}
+/* ---------- 5.88 (app 0.3.7): loops in game mode are recorded and played by the engine ----------
+   With the band in the engine the page's scheduler rests, so its loop never left the count-in. Now the page tells the
+   engine what each finger does while a loop records (strip, height, flags; the engine stamps the moment you heard it)
+   and what the loop's buttons do; the engine plays the loop on the band's own clock, picking each note from the chords
+   playing then (tables below), with the loop's ARPs. The page keeps its own copy only to draw the loop. */
+if (window.GPNative && (typeof GPNative.loopCmd === "function" || GPNative.web)) {
+  if (GPNative.web) {
+    const W = window.GPWEB, send = m => { if (W.node) W.node.port.postMessage(m); else W.q.push(m); };
+    GPNative.loopIn = (...a) => send(["loopIn", ...a]);
+    GPNative.loopCmd = (op, a, b) => send(["loopCmd", op, a, b]);
+    GPNative.loopSetup = j => send(["loopSetup", new TextEncoder().encode(j)]);
+  }
+  const NL = window.NLOOP = { sent: 0, cmds: 0, rid: 0, setups: 0, lastSetup: "", sig: "", vis: -1, mute: "" };
+  const on = () => !!(window.NATBAND && NATBAND.running);
+  const BS = ["finger", "sub", "reese", "fuzz", "acid", "pluck"];
+  const kindOf = v => v.kind === "lead" ? 0 : 1;
+  const native = v => !!(v && (v.nl || v.natBass));
+  // what each finger does while the loop records
+  const cap0 = loopCapture;
+  loopCapture = function (v) {
+    const r = cap0.apply(this, arguments);
+    try {
+      if (on() && native(v) && v.rec && v.rec.ev) {
+        const ev = v.rec.ev, p = ev.pts[0], k = kindOf(v), kb = p[3] !== undefined;
+        const snd = k ? BS.indexOf(ev.snd) : LEAD_SNDS.indexOf(ev.snd);
+        v.__lrid = ++NL.rid;
+        GPNative.loopIn(0, v.__lrid, k, p[1], p[2], kb ? p[3] : -1, (ev.second ? 1 : 0) | (ev.garp ? 2 : 0) | (kb ? 4 : 0), snd, snd >= 0 ? sndTrim(v.kind, ev.snd) : -1, keyLift.now);
+        NL.sent++; v.__lpts = 1;
+      }
+    } catch (_) {}
+    return r;
+  };
+  const trk0 = loopTrack;
+  loopTrack = function (v) {
+    const r = trk0.apply(this, arguments);
+    try {
+      if (v.__lrid && v.rec && v.rec.ev.pts.length > (v.__lpts || 0)) {
+        const p = v.rec.ev.pts[v.rec.ev.pts.length - 1]; v.__lpts = v.rec.ev.pts.length;
+        GPNative.loopIn(1, v.__lrid, kindOf(v), p[1], p[2], p[3] !== undefined ? p[3] : -1, 0, -1, -1, 0); NL.sent++;
+      }
+    } catch (_) {}
+    return r;
+  };
+  const fin0 = loopFinish;
+  loopFinish = function (v) {
+    try { if (v.__lrid) { GPNative.loopIn(2, v.__lrid, kindOf(v), 0, 0, -1, 0, -1, -1, 0); v.__lrid = 0; NL.sent++; } } catch (_) {}
+    return fin0.apply(this, arguments);
+  };
+  // the loop's buttons
+  const cmd = (op, a = 0, b = 0) => { try { GPNative.loopCmd(op, a, b); NL.cmds++; } catch (_) {} };
+  const arm0 = armLoop;
+  armLoop = function () { const r = arm0.apply(this, arguments); cmd(1, loop.startAbs, loop.steps); return r; };
+  const press0 = loopRecPress;
+  loopRecPress = function () {
+    const was = loop.state, r = press0.apply(this, arguments);
+    ({ armed: () => cmd(6), recording: () => cmd(2), playing: () => cmd(3), stopped: () => cmd(4), overdub: () => cmd(7) }[was] || (() => {}))();
+    return r;
+  };
+  const dub0 = loopOverdub;
+  loopOverdub = function () { const was = loop.state, r = dub0.apply(this, arguments); if (was !== "overdub" && loop.state === "overdub") cmd(5); return r; };
+  const undo0 = loopUndo;
+  loopUndo = function () { const r = undo0.apply(this, arguments); cmd(8); return r; };
+  const clear0 = loopClear;
+  loopClear = function () { const r = clear0.apply(this, arguments); cmd(6); return r; };
+  // the notes of every strip for every chord the band can play (lead, bass), and the ARP's notes per strip
+  const chordFor = (place, lift) => { const p = progDegs(), base = homeBase() + lift; return p ? progChordAt(p[mod(place, p.length)], base) : { tones: [0, 7, 12], drone: true, base, name: "" }; };
+  const r3 = a => a.map(m => +(+m).toFixed(3));
+  const leadArr = ch => { const Ls = leadMode() === "fixed" || !ch ? lanes : leadLanesFor(ch); return r3([leadLaneMidi(-1, Ls), ...Ls.map(l => l.midi), leadLaneMidi(Ls.length, Ls)]); };
+  const bassArr = ch => { const ns = bassNotesFor(ch); return r3([ns[0], ...ns, ns[ns.length - 1]]); };
+  function tab(arr, lifts, L) { return { lifts, t: lifts.map(l => Array.from({ length: L }, (_, i) => arr(chordFor(i, l)))), tonic: arr(tonicChord()) }; }
+  function loopTables() {
+    const lifts = [...new Set([0, keyLift.now, keyLift.target, gameLiftAmt()])], p = progDegs(), L = p ? p.length : 1;
+    const arpLanes = kind => {
+      const cfg = gamePat(kind, true); if (!cfg || !cfg.arp) return { lanes: [] };
+      const n = kind === "lead" ? lanes.length : bassLanes.length, out = [];
+      for (let k = 0; k < n; k++) out.push(tab(ch => {
+        if (kind === "lead") { const Ls = leadMode() === "fixed" ? lanes : leadLanesFor(ch); const kk = Math.min(k, Ls.length - 1); return r3(arpNotes("lead", kk, Ls[kk].midi, false, cfg.arp, undefined, ch)); }
+        const ns = bassNotesFor(ch), lane = Math.min(k, ns.length - 1); return r3(arpNotes("bass", lane, ns[lane], false, cfg.arp, ns, ch));
+      }, lifts, L));
+      return { style: cfg.arp, beats: cfg.beats, lanes: out };
+    };
+    return {
+      lead: { lanes: tab(leadArr, lifts, L), n: lanes.length, relTc: relTcFor("lead"), arp: arpLanes("lead") },
+      bass: { lanes: tab(bassArr, lifts, L), n: bassLanes.length, relTc: relTcFor("bass"), arp: arpLanes("bass") },
+      edge: EDGE / Math.max(1, W / Math.max(1, lanes.length)), glide: !!state.glide, bassCut: (BASS[bass.sound] || BASS.finger).cut };
+  }
+  // only rebuilt when something they depend on changes (they take a moment to work out)
+  const sigNow = () => [gameKey(), keyLift.now, keyLift.target, gameLiftAmt(), pad.prog, leadMode(), lanes.length, lanes[0] && lanes[0].midi, lanes[lanes.length - 1] && lanes[lanes.length - 1].midi,
+    bassLanes.length, bass.sound, bass.layout, bassOct, leadOct, !!state.glide, rootSel.value, W, tone.release, bassTone.release, String(game.arpL), String(game.arpB)].join("|");
+  setInterval(() => {
+    try {
+      if (!audio || !game.on) return;
+      const sig = sigNow(); if (sig === NL.sig) return; NL.sig = sig;
+      const j = JSON.stringify(loopTables()); if (j !== NL.lastSetup) { NL.lastSetup = j; GPNative.loopSetup(j); NL.setups++; }
+    } catch (e) { NL.err = String(e); }
+    try { const m = (loop.mute.lead ? 1 : 0) + "" + (loop.mute.bass ? 1 : 0); if (m !== NL.mute) { NL.mute = m; cmd(9, 0, loop.mute.lead ? 1 : 0); cmd(9, 1, loop.mute.bass ? 1 : 0); } } catch (_) {}
+  }, 250);
+  // the page's loopStep for the eyes only (the engine plays the sound): the loop's state on its bars, and the ghost of
+  // each note it plays, on the engine's clock (the page's clock is the engine's, mirrored)
+  setInterval(() => {
+    try {
+      if (!audio || !on() || !T.playing) { NL.vis = -1; return; }
+      const dur = stepDur(), top = T.abs - 1;
+      if (NL.vis < 0 || NL.vis > top) NL.vis = top - 1;
+      while (NL.vis < top) {
+        const k = ++NL.vis, t = T.next - (T.abs - k) * dur;
+        if (loop.state === "armed" && k >= loop.startAbs) { loop.state = "recording"; uiQueue.push({ t, loopUI: true }); }
+        if (loop.state === "recording" && k >= loop.recEnd) { loop.state = "playing"; loop.cur = null; uiQueue.push({ t, loopUI: true }); }
+        if (loop.state !== "playing" && loop.state !== "overdub") continue;
+        const items = loopIndex().get(mod(k - loop.startAbs, loop.steps)); if (!items) continue;
+        for (const it of items) {
+          if (loop.mute[it.ev.part]) continue;
+          const ev = evOnScreen(it.ev), te = t + Math.max(.3, ev.dur) * dur;
+          loop.ghosts.push({ kind: ev.part, pts: ev.pts, t, te, dur });
+        }
+      }
+    } catch (_) {}
+  }, 12);
+  const d0 = diagReport;
+  diagReport = function () {
+    const r = d0.apply(this, arguments);
+    try { const n = JSON.parse(GPNative.info()); r.nativeLoop = { page: { state: loop.state, layers: loop.layers.map(l => l.events.length), sent: NL.sent, cmds: NL.cmds, setups: NL.setups, err: NL.err || null },
+      engine: { mode: ["empty", "take", "playing", "stopped", "overdub"][n.loopMode] || n.loopMode, layers: n.loopLayers, notes: n.loopEvents, played: n.loopPlayed, sounded: n.loopNotes } }; } catch (_) {}
+    return r;
+  };
 }
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }

@@ -59,8 +59,8 @@ class GPCore extends AudioWorkletProcessor {
     if (k) { const u = new Float64Array(x.memory.buffer, x.gp_uiBuf(), 5 * k), ev = []; for (let i = 0; i < k; i++) ev.push([u[5 * i], u[5 * i + 1] + this.off, u[5 * i + 2], u[5 * i + 3], u[5 * i + 4]]); this.port.postMessage({ ui: ev }); }
     if ((this.tick += n) >= sampleRate / 4) {
       this.tick = 0;
-      const s = [0, 1, 2, 3, 4, 5, 6, 7, 8].map(k => x.gp_stat(k));
-      this.port.postMessage({ stats: { drumHits: s[0], drumLate: s[1], drumLateMaxMs: s[2], bassNotes: s[3], bassLate: s[4], padNotes: s[5], padLate: s[6], padLateMaxMs: s[7], bassPad: s[8] } });
+      const s = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map(k => x.gp_stat(k));
+      this.port.postMessage({ stats: { drumHits: s[0], drumLate: s[1], drumLateMaxMs: s[2], bassNotes: s[3], bassLate: s[4], padNotes: s[5], padLate: s[6], padLateMaxMs: s[7], bassPad: s[8], arpLead: s[9], arpBass: s[10], arpMiss: s[11], bandArps: s[12], bandBassHeld: s[13] } });
     }
     return true;
   }

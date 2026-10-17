@@ -30,6 +30,10 @@ class GPCore extends AudioWorkletProcessor {
         const bytes = m[1], p = x.gp_strbuf(bytes.length), mem = new Uint8Array(x.memory.buffer, p, bytes.length + 1);
         mem.set(bytes); mem[bytes.length] = 0; x.gp_bandSetup(); break;
       }
+      case "bassHold": x.gp_bassHold(m[1], m[2], m[3]); break;
+      case "bassGlide": x.gp_bassGlide(m[1], m[2], m[3], m[4] >= 0 ? this.f(m[4]) : -1); break;
+      case "bassBright": x.gp_bassBright(m[1], m[2], m[3], m[4] >= 0 ? this.f(m[4]) : -1); break;
+      case "bassLetGo": x.gp_bassLetGo(m[1], m[2], m[3] >= 0 ? this.f(m[3]) : -1); break;
       case "bandCmd": x.gp_bandCmd(m[1], m[2], m[3] >= 0 ? this.f(m[3]) : -1); break;
       case "drumMix": case "bassMix": case "padMix": {
         const a = new Float32Array(x.memory.buffer, x.gp_args(), 64); a.fill(0); a.set(m[1].slice(0, 64));
@@ -47,8 +51,8 @@ class GPCore extends AudioWorkletProcessor {
     if (k) { const u = new Float64Array(x.memory.buffer, x.gp_uiBuf(), 5 * k), ev = []; for (let i = 0; i < k; i++) ev.push([u[5 * i], u[5 * i + 1] + this.off, u[5 * i + 2], u[5 * i + 3], u[5 * i + 4]]); this.port.postMessage({ ui: ev }); }
     if ((this.tick += n) >= sampleRate / 4) {
       this.tick = 0;
-      const s = [0, 1, 2, 3, 4, 5, 6, 7].map(k => x.gp_stat(k));
-      this.port.postMessage({ stats: { drumHits: s[0], drumLate: s[1], drumLateMaxMs: s[2], bassNotes: s[3], bassLate: s[4], padNotes: s[5], padLate: s[6], padLateMaxMs: s[7] } });
+      const s = [0, 1, 2, 3, 4, 5, 6, 7, 8].map(k => x.gp_stat(k));
+      this.port.postMessage({ stats: { drumHits: s[0], drumLate: s[1], drumLateMaxMs: s[2], bassNotes: s[3], bassLate: s[4], padNotes: s[5], padLate: s[6], padLateMaxMs: s[7], bassPad: s[8] } });
     }
     return true;
   }

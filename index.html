@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.96 TEST · game mode · 18 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.97 TEST · game mode · 19 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1547,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.96 TEST · game mode · 18 Oct 2026</p>
+      <p class="ver">GlassPad 5.97 TEST · game mode · 19 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -7484,8 +7484,26 @@ function applyMute(part) {
   const ch = MIX_CH.find(c => c.part === part);
   if (audio) audio[MIX_BUS[part]].gain.setTargetAtTime(mixV(part, +$(ch.src).value), audio.ctx.currentTime, .02);
 }
+// 5.97: engine mix senders (drums, bass, chords, lead) register here; a master change sends them now and during the fade
+const NATMIX = [];
+let natMasterT = 0;
+function natMasterKick(secs) {
+  if (!NATMIX.length) return; const run = () => NATMIX.forEach(f => { try { f(); } catch (_) {} });
+  run(); clearInterval(natMasterT); natMasterT = 0;
+  if (secs > 0) { const end = performance.now() + secs * 1000 + 60; natMasterT = setInterval(() => { run(); if (performance.now() > end) { clearInterval(natMasterT); natMasterT = 0; } }, 40); }
+}
+// 5.97: the master level as last asked for (gain.value lags a change made in the same tick)
+let MGR = null;
+function masterNow() {
+  if (!audio) return MASTER_G * mix.master;
+  if (!MGR) return audio.master.gain.value;
+  const t = audio.ctx.currentTime, m = MGR;
+  if (m.tc) return m.to + (m.from - m.to) * Math.exp(-Math.max(0, t - m.t0) / m.tc);
+  if (t >= m.t1) return m.to; if (t <= m.t0) return m.from;
+  return m.from + (m.to - m.from) * (t - m.t0) / (m.t1 - m.t0);
+}
 function setMaster(v) {
-  mix.master = v; if (audio) audio.master.gain.setTargetAtTime(MASTER_G * v, audio.ctx.currentTime, .03);
+  mix.master = v; if (audio) { const t = audio.ctx.currentTime; MGR = { from: masterNow(), to: MASTER_G * v, t0: t, tc: .03 }; audio.master.gain.setTargetAtTime(MASTER_G * v, t, .03); }
   try { localStorage.setItem("glasspad.master", String(v)); } catch (_) {}
 }
 { let v = 1; try { v = +(localStorage.getItem("glasspad.master") || 1); } catch (_) {} mix.master = Number.isFinite(v) ? v : 1; }
@@ -10248,7 +10266,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.96 TEST</p>
+    <p class="hm-ver">GlassPad 5.97 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -11983,9 +12001,10 @@ try { const v = +localStorage.getItem("glasspad.pvLen"); if (v >= 5 && v <= 15) 
   }
 }
 const pvTarget = () => MASTER_G * mix.master;
-function pvGain(to, secs) {
-  if (!audio) return; const g = audio.master.gain, t = audio.ctx.currentTime;
-  g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(to, t + secs);
+function pvGain(to, secs, from) {   // 5.97: starts from the level last asked for (or an explicit one), not the lagging g.value
+  if (!audio) return; const g = audio.master.gain, t = audio.ctx.currentTime, f = from == null ? masterNow() : from;
+  g.cancelScheduledValues(t); g.setValueAtTime(f, t); g.linearRampToValueAtTime(to, t + secs);
+  MGR = { from: f, to, t0: t, t1: t + secs }; natMasterKick(secs);
 }
 function pvClear() { clearTimeout(hpv.t1); clearTimeout(hpv.t2); hpv.t1 = hpv.t2 = 0; }
 function pvSync() {
@@ -12003,8 +12022,8 @@ function pvStart(load) {
   const go = () => {
     if (load) { try { keepArm(); } catch (_) {} qs.pend = null; load(); }
     const wasOn = T.playing;
-    if (!wasOn) { if (audio) { audio.master.gain.cancelScheduledValues(audio.ctx.currentTime); audio.master.gain.setValueAtTime(0, audio.ctx.currentTime); } setPlaying(true, audio.ctx.currentTime + .05); }
-    pvGain(pvTarget(), wasOn || hpv.sw ? .6 : 2); hpv.sw = false;
+    if (!wasOn) { pvGain(0, 0, 0); setPlaying(true, audio.ctx.currentTime + .05); }   // 5.97: silent before the band starts
+    pvGain(pvTarget(), wasOn || hpv.sw ? .6 : 2, wasOn ? undefined : 0); hpv.sw = false;
     hpv.on = true; pvSync();
     hpv.t1 = setTimeout(() => {
       pvGain(0, 3);
@@ -14712,7 +14731,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.96 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.97 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -17137,13 +17156,13 @@ if (NATIVE.on) {
     if (!audio || !NATIVE.drumOk) return;
     try {
       const P = PFX.drums, A = audio;
-      const m = { bus: A.drums.gain.value, trim: A.drumTrim.gain.value, master: A.master.gain.value, comp: !!P.comp.on, amt: P.comp.amt, punch: P.comp.punch,
+      const m = { bus: A.drums.gain.value, trim: A.drumTrim.gain.value, master: masterNow(), comp: !!P.comp.on, amt: P.comp.amt, punch: P.comp.punch,
         rev: A.pfx.drums.revSend.gain.value, size: S.reverb.size, tone: S.reverb.tone };
       const k = JSON.stringify(m, (_, v) => typeof v === "number" ? +v.toFixed(3) : v);
       if (k !== D.mix) { D.mix = k; GPNative.drumMix(k); }
     } catch (_) {}
   };
-  setInterval(sendMix, 300);
+  setInterval(sendMix, 300); NATMIX.push(sendMix);
   // Settings: a Band switch beside the Lead one
   const lb = $("gNatLead");
   if (lb) {
@@ -17195,7 +17214,7 @@ if (NATIVE.on && NATIVE.heardIn) {
     try {
       const P = PFX.bass, f = P.filter, A = audio, bar = T.meter.steps * 15 / T.bpm, [od, ou] = bassOctGains(), n = x => x ? 1 : 0;
       const m = { snd: Math.max(0, BSNDS.indexOf(bass.sound)), trimSnd: sndTrim("bass", bass.sound), attack: tmap.attack(bassTone.attack), relTc: relTcFor("bass"),
-        oct: n(P.octave.on), od, ou, bus: A.bassBus.gain.value, trim: A.bassTrim.gain.value, master: A.master.gain.value, rev: A.pfx.bass.revSend.gain.value, boost: A.boost.gain.value,
+        oct: n(P.octave.on), od, ou, bus: A.bassBus.gain.value, trim: A.bassTrim.gain.value, master: masterNow(), rev: A.pfx.bass.revSend.gain.value, boost: A.boost.gain.value,
         drive: n(P.drive.on), dAmt: P.drive.amt, dTone: P.drive.tone, comp: n(P.comp.on), cAmt: P.comp.amt, cPunch: P.comp.punch,
         filt: n(f.on), fMode: f.mode === "env" ? 0 : f.mode === "sweep" ? 1 : 2, fCut: f.cut, fDepth: f.depth, fRes: f.res,
         fRateHz: 1 / (SWEEP_BARS[pickIdx(f.speed, SWEEP_BARS.length)][0] * bar), pump: pad.pump || 0, beat: 60 / T.bpm,
@@ -17204,7 +17223,7 @@ if (NATIVE.on && NATIVE.heardIn) {
       if (k !== B.mix) { B.mix = k; GPNative.bassMix(k); }
     } catch (_) {}
   };
-  setInterval(sendMix, 300);
+  setInterval(sendMix, 300); NATMIX.push(sendMix);
   // the Band button says what moved
   NATIVE.bandLabel = () => !NATIVE.bassOk ? "Band: native (drums only, old app)" : !BSNDS.includes(bass.sound) ? "Band: native (drums; your bass sound stays here)" : "Band: native";
   const d0 = diagReport;
@@ -17259,7 +17278,7 @@ if (NATIVE.on && NATIVE.heardIn) {
     if (!audio || !NATIVE.padOk) return;
     try {
       const P = PFX.pad, f = P.filter, tr = P.trem, A = audio, bar = T.meter.steps * 15 / T.bpm, n = x => x ? 1 : 0, timed = tr.sync === "time", Pd = PAD[pad.sound];
-      const m = { bus: A.padBus.gain.value, trim: A.padOut.gain.value, master: A.master.gain.value, mono: Pd && Pd.osc.some(o => o[3]) ? 0 : 1,
+      const m = { bus: A.padBus.gain.value, trim: A.padOut.gain.value, master: masterNow(), mono: Pd && Pd.osc.some(o => o[3]) ? 0 : 1,
         rev: A.pfx.pad.revSend.gain.value, echo: A.pfx.pad.echoSend.gain.value, eSecs: A.echoD.delayTime.value, eFb: A.echoFb.gain.value,
         filt: n(f.on), fMode: f.mode === "env" ? 0 : f.mode === "sweep" ? 1 : 2, fCut: f.cut, fDepth: f.depth, fRes: f.res,
         fRateHz: 1 / (SWEEP_BARS[pickIdx(f.speed, SWEEP_BARS.length)][0] * bar),
@@ -17270,7 +17289,7 @@ if (NATIVE.on && NATIVE.heardIn) {
       if (k !== C.mix) { C.mix = k; GPNative.padMix(k); }
     } catch (_) {}
   };
-  setInterval(sendMix, 300);
+  setInterval(sendMix, 300); NATMIX.push(sendMix);
   // the Band button says what moved
   const BSNDS = ["finger", "sub", "reese", "fuzz", "acid", "pluck"];
   NATIVE.bandLabel = () => !NATIVE.bassOk ? "Band: native (drums only, old app)" : !NATIVE.padOk ? "Band: native (drums + bass; chords need the new app)"
@@ -17502,7 +17521,7 @@ function leadMixArr() {
   return [...busArr(w1, S.octave, A.bus.gain.value, A.balLead.gain.value, S, true),
     ...busArr(w2 === "off" ? w1 : w2, PFX.lead2.octave, A.bus2.gain.value, A.bal2.gain.value, PFX.lead2, false),
     tmap.attack(tone.attack), relTcFor("lead"), tmap.res(tone.res), tmap.detune(tone.detune), tone.vib ? tmap.vib(tone.vib) : 0, n(state.autoVib),
-    A.master.gain.value, echoSecs(), S.echo.fb * .65].map(x => +(+x).toFixed(5));
+    masterNow(), echoSecs(), S.echo.fb * .65].map(x => +(+x).toFixed(5));
 }
 if (NATIVE.on && typeof GPNative.leadHold === "function") {
   const L5 = window.NATLEAD = { held: 0, glides: 0, mix: "", page: 0 };
@@ -17530,10 +17549,11 @@ if (NATIVE.on && typeof GPNative.leadHold === "function") {
     return bv0.apply(this, arguments);
   };
   // the lead's mixer follows the page
-  setInterval(() => {
+  const leadSend = () => {
     if (!audio || !GPNative.leadMix) return;
     try { const k = JSON.stringify(leadMixArr()); if (k !== L5.mix) { L5.mix = k; GPNative.leadMix(k); } } catch (_) {}
-  }, 300);
+  };
+  setInterval(leadSend, 300); NATMIX.push(leadSend);
   const d0 = diagReport;
   diagReport = function () {
     const r = d0.apply(this, arguments);

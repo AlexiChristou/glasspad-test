@@ -14,6 +14,12 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
+  /* 5.92: nothing shows until game mode is set up (no flash of the old screen) */
+  html:not(.gp-ready) body { background: #05060b !important; }
+  html:not(.gp-ready) body > * { visibility: hidden !important; }
+</style>
+<script>setTimeout(() => document.documentElement.classList.add("gp-ready"), 4000);</script>
+<style>
   /* base the artifact viewer used to provide */
   :root { color-scheme: dark; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); box-sizing: border-box; height: 100%; }
   *, *::before, *::after { box-sizing: border-box; }
@@ -1432,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.91 TEST · game mode · 18 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.92 TEST · game mode · 18 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1541,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.91 TEST · game mode · 18 Oct 2026</p>
+      <p class="ver">GlassPad 5.92 TEST · game mode · 18 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10236,7 +10242,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.91 TEST</p>
+    <p class="hm-ver">GlassPad 5.92 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14700,7 +14706,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.91 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.92 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -16708,23 +16714,23 @@ function patSwing(t, u, cfg) {
     return c;
   };
 }
-// pad edge: Auto (new default) = glow line with no picture, soft with one
+// pad edge: Auto (new default) = lines with no picture (5.92; was a glow line), soft with one
 game.edgeSet = "auto";
 try { const v = localStorage.getItem("glasspad.edge2"); if (["auto", "lines", "soft", "glow"].includes(v)) game.edgeSet = v; } catch (_) {}
 if (game.edgeSet !== "auto") game.edge = game.edgeSet;
 {
   const e0 = edgeLines;
   edgeLines = function () {
-    if (game.edgeSet === "auto") { const want = game.imgOn ? "soft" : "glow"; if (game.edge !== want) { game.edge = want; gEdgeApply(); } }
+    if (game.edgeSet === "auto") { const want = game.imgOn ? "soft" : "lines"; if (game.edge !== want) { game.edge = want; gEdgeApply(); } }
     return e0.apply(this, arguments);
   };
   const seg = $("gEdge");
   seg.insertAdjacentHTML("afterbegin", `<button data-v="auto">Auto</button>`);
-  try { seg.closest(".gr").querySelector("small").textContent = "Auto: a glow line when there's no picture, soft with one. Or always lines, soft or a glow line"; } catch (_) {}
+  try { seg.closest(".gr").querySelector("small").textContent = "Auto: lines when there's no picture, soft with one. Or always lines, soft or a glow line"; } catch (_) {}
   seg.addEventListener("click", e => {
     const x = e.target.closest("button"); if (!x) return;
     game.edgeSet = x.dataset.v; try { localStorage.setItem("glasspad.edge2", game.edgeSet); } catch (_) {}
-    if (game.edgeSet === "auto") { e.stopImmediatePropagation(); game.edge = game.imgOn ? "soft" : "glow"; gEdgeK = ""; gEdgeApply(); gameSheetSync(); }
+    if (game.edgeSet === "auto") { e.stopImmediatePropagation(); game.edge = game.imgOn ? "soft" : "lines"; gEdgeK = ""; gEdgeApply(); gameSheetSync(); }
   }, true);
   const g0 = gameSheetSync;
   gameSheetSync = function () { g0.apply(this, arguments); $("gEdge").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === game.edgeSet)); };
@@ -17885,8 +17891,118 @@ if (window.GPNative && (typeof GPNative.sampSetup === "function" || GPNative.web
   const d0 = diagReport;
   diagReport = function () { const r = d0.apply(this, arguments); try { const n = JSON.parse(GPNative.info()); r.nativeMySounds = { ready: NS.ok, clipsSent: NS.clips, setups: NS.setups, err: NS.err, engine: { notes: n.sampNotes, clips: n.clipsLoaded, slots: n.slots } }; } catch (_) {} return r; };
 }
+/* ---------- 5.92: his notes of 18 Oct, batch A ----------
+   1. Surprise me → ✎ EDIT keeps the roll: its band, chords, key, speed and effects become the theme's feel ("Surprise",
+      stored in the theme as t.sur so it comes back after a restart), and its lead, 2nd sound, bass and colours fill the rest.
+      With no photo it has no picture, like Surprise me.
+   2. Both ARPs rest while Edit is open (so taps and riffs there sound plain) and come back when you leave.
+   3. Back from Edit to the pad keeps the band playing if it was playing when you went in (the pad's own setup goes back on).
+   4. A theme coming in starts with both ARPs off and its own Mix levels (levels, mutes and Space are no longer kept per
+      theme; the Soloing pick still is). */
+{
+  // ----- 1. Surprise me as a feel -----
+  const SURF = window.SURF = { ids: [] };
+  const surReg = (id, p, cols, name) => {
+    for (const set of [QSTYLES_SYNTH, QSTYLES_ORIGINAL]) set[id] = { name: "Surprise", p: JSON.parse(JSON.stringify(p)), cols: [...cols], isNew: false, mine: true, sur: name };
+    // its "picture" on Home and in Edit is its strips in its colours (the pad itself has none, like Surprise me)
+    try { const u = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(stripSvg(hmColsOf(cols), "hero")); GAME_IMGS[id] = { port: [u, .6], land: [u, .6] }; } catch (_) { delete GAME_IMGS[id]; }
+    if (!FEELS.some(f => f.id === id)) { FEELS.push({ id, name: "Surprise", line: name, sur: true }); SURF.ids.push(id); }
+  };
+  const isSur = t => !!(t && t.sur && t.sur.id && t.sur.id === t.band);
+  const reg1 = myRegister;
+  myRegister = function (t) {
+    if (isSur(t)) surReg(t.sur.id, t.sur.p, t.sur.cols, t.sur.name);
+    const r = reg1.apply(this, arguments);
+    if (isSur(t) && !t.pic) delete GAME_IMGS[t.id];
+    return r;
+  };
+  for (const t of MY.list) if (isSur(t)) try { myRegister(t); } catch (_) {}
+  // the feel list shows only this theme's Surprise (first), not every one ever made
+  const fh0 = mkFeelHTML;
+  mkFeelHTML = function () {
+    const keep = FEELS.slice(), cur = mk.t && mk.t.band;
+    const mineSur = FEELS.find(f => f.sur && f.id === cur);
+    FEELS.length = 0; if (mineSur) FEELS.push(mineSur); for (const f of keep) if (!f.sur) FEELS.push(f);
+    try { return fh0.apply(this, arguments); } finally { FEELS.length = 0; FEELS.push(...keep); }
+  };
+  const ep1 = mkEditPlaying;
+  mkEditPlaying = function () {
+    if (gameKey() !== "surprise") return ep1.apply(this, arguments);
+    let p = qs.mix && qs.mix.p; if (!p) try { p = makePreset(capture()); } catch (_) {}
+    if (!p) return ep1.apply(this, arguments);
+    const cols = (qs.cols && qs.cols.length === 3 ? qs.cols : null) || (qs.mix && qs.mix.cols) || ["Violet", "Cyan", "Neon pink"];
+    const name = qs.name && qs.name !== "Manual" ? qs.name : "Surprise", fid = "sur" + Date.now().toString(36);
+    surReg(fid, p, cols, name);
+    mkOpen(null);
+    Object.assign(mk.t, { band: fid, feelSet: true, cols: [...cols], lead: p.wave && p.wave !== "sampler" ? p.wave : "supersaw",
+      lead2: (p.lead && p.lead.snd2 && p.lead.snd2 !== "sampler") ? p.lead.snd2 : "off", vol2: (p.lead && p.lead.vol2) ?? 1,
+      bass: (p.bass && p.bass.sound && p.bass.sound !== "sampler") ? p.bass.sound : "finger", fromName: name, name,
+      sur: { id: fid, p: JSON.parse(JSON.stringify(p)), cols: [...cols], name } });
+    delete mk.t.unset;
+    mkAfterOpen();
+  };
+  // Home's big picture for one of these themes: its colours and strips, like Surprise me
+  const surNoPic = id => { const t = MY.list.find(x => x.id === id); return isSur(t) && !t.pic ? t : null; };
+  const withPic = (t, f) => { if (!t) return f(); GAME_IMGS[t.id] = GAME_IMGS[t.band]; try { return f(); } finally { delete GAME_IMGS[t.id]; } };
+  const hs1 = hmShow;
+  hmShow = function (id) {
+    const t = surNoPic(id), r = withPic(t, () => hs1.apply(this, arguments));
+    if (t) try { hmHeroSurprise(true, t.name, t.cols); } catch (_) {}
+    return r;
+  };
+  const ho1 = homeOpen;
+  homeOpen = function (fromPad) {
+    const l = fromPad ? null : readLast(), id = fromPad ? gameKey() : (l && l.qs && (l.qs.base || l.qs.id)), t = surNoPic(id);
+    const r = withPic(t, () => ho1.apply(this, arguments));
+    if (t) try { hmHeroSurprise(true, t.name, t.cols); } catch (_) {}
+    return r;
+  };
+  const mr1 = mkRender;
+  mkRender = function () {
+    const r = mr1.apply(this, arguments);
+    const t = mk.t; if (isSur(t) && !t.pic) { const b = $("mkRows").querySelector('.mk-step[data-k="photo"] b'); if (b) b.textContent = "No photo · its colours and strips"; }
+    return r;
+  };
+
+  // ----- 2 + 3. Edit: ARPs rest; back to the pad keeps playing -----
+  const ED = window.ED92 = { open: false, b: false, l: false, qs: null, playing: false };
+  const arpTo = (b, l) => { try { if (!!game.arpB !== b) $("gArpB").click(); if (!!game.arpL !== l) $("gArpL").click(); } catch (_) {} };
+  const op1 = mkOpen;
+  mkOpen = function () {
+    if (!ED.open) { ED.open = true; ED.b = !!game.arpB; ED.l = !!game.arpL; ED.playing = T.playing;
+      ED.qs = { id: qs.id, name: qs.name, cols: qs.cols, mix: qs.mix, base: qs.base, kept: qs.kept }; }
+    const r = op1.apply(this, arguments);
+    arpTo(false, false);
+    return r;
+  };
+  const cl1 = mkClose;
+  mkClose = function (toHome) {
+    if (!ED.open) return cl1.apply(this, arguments);
+    const restoring = !!mkpv.prev, keep = !toHome && ED.playing && T.playing, sp = setPlaying;
+    if (keep) setPlaying = function (on) { if (on) return sp.apply(this, arguments); };
+    let r; try { r = cl1.apply(this, arguments); } finally { if (keep) setPlaying = sp; }
+    if (restoring && ED.qs) { Object.assign(qs, ED.qs); try { renderStyleChip(); } catch (_) {} }
+    ED.open = false; arpTo(ED.b, ED.l);
+    return r;
+  };
+
+  // ----- 4. a theme coming in: ARPs off, its own Mix levels -----
+  const ls1 = loadStyle;
+  loadStyle = function (st) {
+    const r = ls1.apply(this, arguments);
+    if (game.on && !ED.open) arpTo(false, false);
+    return r;
+  };
+  const so0 = smOnLoad;
+  smOnLoad = function () {
+    const k = smKey(), s = SM.store[k];
+    if (s) SM.store[k] = { follow: s.follow, layout: s.layout };
+    try { return so0.apply(this, arguments); } finally { if (s) SM.store[k] = s; }
+  };
+}
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }
+requestAnimationFrame(() => document.documentElement.classList.add("gp-ready"));
 
 requestAnimationFrame(draw);
 </script>

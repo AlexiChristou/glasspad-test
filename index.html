@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.94 TEST · game mode · 18 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.95 TEST · game mode · 18 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1547,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.94 TEST · game mode · 18 Oct 2026</p>
+      <p class="ver">GlassPad 5.95 TEST · game mode · 18 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10248,7 +10248,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.94 TEST</p>
+    <p class="hm-ver">GlassPad 5.95 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -12004,14 +12004,14 @@ function pvStart(load) {
     if (load) { try { keepArm(); } catch (_) {} qs.pend = null; load(); }
     const wasOn = T.playing;
     if (!wasOn) { if (audio) { audio.master.gain.cancelScheduledValues(audio.ctx.currentTime); audio.master.gain.setValueAtTime(0, audio.ctx.currentTime); } setPlaying(true, audio.ctx.currentTime + .05); }
-    pvGain(pvTarget(), wasOn ? .6 : 2);
+    pvGain(pvTarget(), wasOn || hpv.sw ? .6 : 2); hpv.sw = false;
     hpv.on = true; pvSync();
     hpv.t1 = setTimeout(() => {
       pvGain(0, 3);
       hpv.t2 = setTimeout(() => { hpv.on = false; if (T.playing) setPlaying(false); setTimeout(() => pvGain(pvTarget(), .05), 250); pvSync(); }, 3100);
     }, hpv.len * 1000);
   };
-  if (T.playing && load) { pvGain(0, .35); hpv.t1 = setTimeout(go, 380); } else go();
+  if (T.playing && load) { pvGain(0, .35); hpv.t1 = setTimeout(() => { hpv.sw = true; if (T.playing) setPlaying(false); go(); }, 380); } else go();   // 5.95: stop, then the new theme from its start
 }
 function pvStop() {
   pvClear(); hpv.on = false;
@@ -14712,7 +14712,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.94 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.95 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -16815,6 +16815,9 @@ $("mkPlayIt").addEventListener("click", () => {
 
 /* ---------- 5.80 (web): with ?engine in the address, Chrome runs the band on the same C++ engine as the app ----------
    (WebAssembly in an AudioWorklet: web-engine/gpcore.wasm + gp-worklet.js). It looks to the page like the app's bridge. */
+// 5.95: in the app, Settings → Sound engine picks App (the phone's own engine) or Web (the browser's sound, exactly as
+// the web app plays it). Web is the default while the engine is being put right. GPNOFF = the page leaves the engine alone.
+window.GPNOFF = (() => { try { return !!window.GPNative && !window.GPNative.web && (localStorage.getItem("glasspad.engine") || "web") !== "app"; } catch (_) { return false; } })();
 if (!window.GPNative && /[?&]engine\b/.test(location.search) && window.AudioWorkletNode) {
   const W = window.GPWEB = { node: null, q: [], ui: [], stats: {}, ctx: null };
   const send = m => { if (W.node) W.node.port.postMessage(m); else W.q.push(m); };
@@ -16860,7 +16863,7 @@ if (!window.GPNative && /[?&]engine\b/.test(location.search) && window.AudioWork
 
 /* ---------- 5.75: native step 1. Inside the GlassPad Android app (window.GPNative) the lead plays on the phone's own engine ---------- */
 // Only in the app: in Chrome nothing changes. Step 1 = a plain test lead (saw), the band still plays here.
-const NATIVE = { on: !!(window.GPNative && GPNative.noteOn), lead: true, sink: null, ts: 0, perNote: false };
+const NATIVE = { on: !!(window.GPNative && GPNative.noteOn) && !window.GPNOFF, lead: true, sink: null, ts: 0, perNote: false };
 try { NATIVE.lead = localStorage.getItem("glasspad.nativeLead") !== "0"; } catch (_) {}
 const natLead = () => NATIVE.on && NATIVE.lead && game.on && ($("wave").value !== "sampler" || !!(window.NSAMP && NSAMP.ready(0))) && (lead.snd2 !== "sampler" || !!(window.NSAMP && NSAMP.ready(1)));   // (5.91: "My sounds" too, once the engine has them)
 function natSink() { if (!NATIVE.sink || NATIVE.sink.context !== audio.ctx) { NATIVE.sink = audio.ctx.createGain(); NATIVE.sink.gain.value = 0; } return NATIVE.sink; }
@@ -16984,7 +16987,7 @@ $("mkCam").addEventListener("change", () => {
     // first thing in Settings, outside the creator-only Test box
     const sheet = $("gSheet").querySelector(".gtest"); sheet.before(row);
     if (!NATIVE.on) {
-      const show = () => { if (!$("gSheet").hidden) $("gNat").textContent = `In the app, but the page can't reach the engine (${why()}). UA: ${navigator.userAgent.slice(-60)}`; };
+      const show = () => { if (!$("gSheet").hidden) $("gNat").textContent = window.GPNOFF ? "Not in use: Sound engine is set to Web" : `In the app, but the page can't reach the engine (${why()}). UA: ${navigator.userAgent.slice(-60)}`; };
       setInterval(show, 1000); show();
     }
   }
@@ -17595,7 +17598,7 @@ if (NATIVE.on && typeof GPNative.arpSet === "function") {
    Ferros and LinnDrum were the reason a theme fell back to "Band: page". The page now sends a kit to the engine once
    (the kit file as it is, plus KIT_MAPS / KIT_GAINS), then says which kit the drums use. NKIT.ready(id) is true once the
    engine has it; until then the page plays the kit itself, exactly as before. */
-if (window.GPNative && (typeof GPNative.kitUse === "function" || GPNative.web)) {
+if (window.GPNative && !window.GPNOFF && (typeof GPNative.kitUse === "function" || GPNative.web)) {
   if (GPNative.web) {   // the web engine (?engine): the same calls into the worklet
     const W = window.GPWEB, send = m => { if (W.node) W.node.port.postMessage(m); else W.q.push(m); };
     const DR = ["kick", "dum", "tek", "bkick", "k808", "shaker", "gsnare", "snare", "clap", "hat", "ohat", "crash", "rim"];
@@ -17633,7 +17636,7 @@ if (window.GPNative && (typeof GPNative.kitUse === "function" || GPNative.web)) 
    engine what each finger does while a loop records (strip, height, flags; the engine stamps the moment you heard it)
    and what the loop's buttons do; the engine plays the loop on the band's own clock, picking each note from the chords
    playing then (tables below), with the loop's ARPs. The page keeps its own copy only to draw the loop. */
-if (window.GPNative && (typeof GPNative.loopCmd === "function" || GPNative.web)) {
+if (window.GPNative && !window.GPNOFF && (typeof GPNative.loopCmd === "function" || GPNative.web)) {
   if (GPNative.web) {
     const W = window.GPWEB, send = m => { if (W.node) W.node.port.postMessage(m); else W.q.push(m); };
     GPNative.loopIn = (...a) => send(["loopIn", ...a]);
@@ -17846,7 +17849,7 @@ if (window.GPNative && GPNative.web) GPNative.meter = () => window.GPWEB && GPWE
    The engine gets each recording once (as it plays: trimmed, tuned, faded) and, for the lead, the 2nd finger and the bass,
    which recordings it plays from and how (note length, repeat while held, in turn / shuffled, the octave they sit in).
    A finger on a My sounds strip then plays in the engine like any other sound (the page still picks which recording). */
-if (window.GPNative && (typeof GPNative.sampSetup === "function" || GPNative.web)) {
+if (window.GPNative && !window.GPNOFF && (typeof GPNative.sampSetup === "function" || GPNative.web)) {
   if (GPNative.web) {
     const W = window.GPWEB, send = m => { if (W.node) W.node.port.postMessage(m); else W.q.push(m); };
     GPNative.leadHoldS = (id, m, cut, bus, idx) => send(["leadHoldS", id, m, cut, bus, idx]);
@@ -18006,6 +18009,23 @@ if (window.GPNative && (typeof GPNative.sampSetup === "function" || GPNative.web
     if (s) SM.store[k] = { follow: s.follow, layout: s.layout };
     try { return so0.apply(this, arguments); } finally { if (s) SM.store[k] = s; }
   };
+}
+/* ---------- 5.95: Settings → Sound engine (App / Web), in the app only ---------- */
+if (window.GPNative && !window.GPNative.web) {
+  const row = document.createElement("div"); row.className = "gr";
+  row.innerHTML = `<div><label>Sound engine</label><small>Web = the browser's sound, as the web app (default). App = the phone's own engine (less delay, being tested). Changing it restarts the page</small></div><div class="gseg" id="gEng"><button data-v="web">Web</button><button data-v="app">App</button></div>`;
+  const sheet = $("gSheet").querySelector(".gtest"); sheet.before(row);
+  const cur = window.GPNOFF ? "web" : "app";
+  row.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === cur));
+  $("gEng").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b || b.dataset.v === cur) return;
+    try { localStorage.setItem("glasspad.engine", b.dataset.v); } catch (_) {}
+    try { if (T.playing) setPlaying(false); GPNative.allOff(); } catch (_) {}
+    toast(b.dataset.v === "app" ? "Switching to the app's engine…" : "Switching to the web sound…");
+    setTimeout(() => location.reload(), 400);
+  });
+  const d0 = diagReport;
+  diagReport = function () { const r = d0.apply(this, arguments); try { r.soundEngine = window.GPNOFF ? "web" : "app"; } catch (_) {} return r; };
 }
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }

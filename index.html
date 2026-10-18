@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.93 TEST · game mode · 18 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 5.94 TEST · game mode · 18 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1547,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.93 TEST · game mode · 18 Oct 2026</p>
+      <p class="ver">GlassPad 5.94 TEST · game mode · 18 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -6603,6 +6603,12 @@ const rootFx = { key: "", roots: [], prev: [], at: -1e9, nextAt: 0, next: null, 
 const rootPcOf = ch => ch ? mod12(cbase(ch) + ch.tones[0]) : null;
 const rootLanes = pc => pc === null ? [] : lanes.map((l, i) => Math.abs(mod12(l.midi) - pc) < .01 ? i : -1).filter(i => i >= 0);
 // 5.19: when the root isn't on the strips (F in C major pentatonic), the ring stands in on the chord's 5th, or its 3rd
+// 5.94: the root of a chord still to come, on the strips as they will be then (Follow, Home first and Safe notes re-lay
+// the strips for each chord; with the strips of now, e.g. Sunset's F showed on another strip than it lands on)
+function rootTargetsAhead(ch) {
+  const m = leadMode(); if (!ch || m === "fixed" || m === "parts") return rootTargets(ch);
+  const keep = lanes; try { lanes = leadLanesFor(ch); return rootTargets(ch); } catch (_) { return rootTargets(ch); } finally { lanes = keep; }
+}
 function rootTargets(ch) {
   const pc = rootPcOf(ch), r = rootLanes(pc);
   if (r.length || !ch) return { lanes: r, alt: false };
@@ -6632,7 +6638,7 @@ function drawRoots(now, LH, lw) {
     R.nextAt = now; R.next = null; R.left = 99;
     try {
       const cur = rootPcOf(chordAtAbs(T.abs));
-      for (let k = 1; k <= 64; k++) { const c = chordAtAbs(T.abs + k), rp = rootPcOf(c); if (rp !== cur) { R.next = rootTargets(c).lanes; R.left = k; break; } }
+      for (let k = 1; k <= 64; k++) { const c = chordAtAbs(T.abs + k), rp = rootPcOf(c); if (rp !== cur) { R.next = rootTargetsAhead(c).lanes; R.left = k; break; } }
     } catch (_) {}
     R.span = Math.max(4, R.left + (T.abs - R.absAt));
   }
@@ -10242,7 +10248,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.93 TEST</p>
+    <p class="hm-ver">GlassPad 5.94 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14706,7 +14712,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.93 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.94 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {

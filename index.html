@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 5.99 TEST · game mode · 19 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.00 TEST · game mode · 19 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1547,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 5.99 TEST · game mode · 19 Oct 2026</p>
+      <p class="ver">GlassPad 6.00 TEST · game mode · 19 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10266,7 +10266,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 5.99 TEST</p>
+    <p class="hm-ver">GlassPad 6.00 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14731,7 +14731,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 5.99 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.00 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -18062,6 +18062,165 @@ if (window.GPNative && !window.GPNative.web) {
   document.head.appendChild(st);
   const fix = () => { const sv = document.querySelector("#gEdit svg"); if (sv && sv.getAttribute("viewBox") !== "3 0 18 24") sv.setAttribute("viewBox", "3 0 18 24"); };
   fix(); setTimeout(fix, 500);
+}
+/* ---------- 6.00: Creator tools for themes (Creator mode only) ----------
+   ⚙ → Creator: Theme to edit, sound pages over the pad, Notes, Copy as preset. Edit gets the sound buttons too.
+   The sound pages are the Full Studio part pages opened over the game pad (no switch to Pro, so the theme never reloads).
+   Copy as preset = the theme as it plays now; Saving a remix doesn't keep Studio tweaks, the copy does. */
+const CRT = { sp: false };
+const CRT_PARTS = [["lead", "Lead"], ["lead2", "2nd lead"], ["bass", "Bass"], ["chords", "Chords"], ["drums", "Drums"], ["mix", "Mix"]];
+function creThemes() {
+  const b = HM_THEMES.filter(id => QSTYLES_SYNTH[id]).map(id => [id, QSTYLES_SYNTH[id].name]);
+  const y = (MY.list || []).filter(t => QSTYLES_SYNTH[t.id]).map(t => [t.id, (t.name || "My theme") + " (yours)"]);
+  return b.concat(y);
+}
+function creNotesAll() { try { return JSON.parse(localStorage.getItem("glasspad.creNotes") || "{}"); } catch (_) { return {}; } }
+function creNotesKey() {   // a remix you're trying keeps its notes under its own name, not "__mkplay"
+  try { const id = gameKey(); if (id === "__mkplay" && MKP.pending) return "mk:" + (MKP.pending.t.name || MKP.pending.t.band || "new"); return id; } catch (_) { return "?"; }
+}
+function creSound(p) {
+  $("gSheet").hidden = true;
+  if (!$("mk").hidden) {   // in Edit: put what's chosen on the pad first (Play it), then the page
+    const t = mk.t;
+    if (t && t.feelSet !== false) $("mkPlayIt").click();
+    setTimeout(() => { if (!$("mk").hidden) mkClose(false); if (!T.playing) setPlaying(true); creSoundOpen(p); }, 450);
+    return;
+  }
+  creSoundOpen(p);
+}
+function creSoundOpen(p) {
+  ensureAudio();
+  spOpen(p === "lead2" ? "lead" : p); CRT.sp = true;
+  if (p === "lead" || p === "lead2") { try { fxPart = p; renderFxParts(); renderBoard(); } catch (_) {} }
+  if (p === "lead2") setTimeout(() => { const w = $("wave2"); if (w) (w.closest(".group") || w).scrollIntoView({ block: "center" }); }, 60);
+}
+// a page opened from here goes back to the pad (not Studio home)
+$("spBack").addEventListener("click", e => { if (!CRT.sp || !game.on) return; e.stopImmediatePropagation(); CRT.sp = false; spClose(true); }, true);
+$("spPad").addEventListener("click", () => { CRT.sp = false; }, true);
+{ const sg = setGame; setGame = function (on) { CRT.sp = false; return sg.apply(this, arguments); }; }
+function creEdit(id) {
+  if (!id || !QSTYLES_SYNTH[id]) return;
+  ensureAudio(); $("gSheet").hidden = true;
+  try { if (CRT.sp) { CRT.sp = false; spClose(true); } } catch (_) {}
+  if (!$("mk").hidden) mkClose(false);
+  if (!game.on) setGame(true);
+  if (T.playing) setPlaying(false);
+  try { keepArm(); } catch (_) {} qs.pend = null; keepPend = null;
+  loadStyle(styleOf(id));
+  homeClose();
+  setPlaying(true, audio.ctx.currentTime + .05);
+  try { setLayout("pad"); } catch (_) {}
+  mkEditPlaying();
+}
+// the bar counter check: each counter move vs the heard downbeat, and how often it stops moving
+const BCK = { downs: [], diffs: [], last: -2, lastAt: 0, stuck: 0, stuckNow: false, moves: 0 };
+{
+  const p0 = uiQueue.push.bind(uiQueue);
+  uiQueue.push = function (...a) { for (const e of a) if (e && e.down && e.s === 0 && typeof e.t === "number") { BCK.downs.push(e.t); if (BCK.downs.length > 64) BCK.downs.shift(); } return p0(...a); };
+  (function f() {
+    requestAnimationFrame(f);
+    if (!game.on || !T.playing || !audio) { BCK.last = -2; BCK.stuckNow = false; return; }
+    const g = $("gSeq"); if (!g) return;
+    const i = [...g.children].findIndex(x => x.classList.contains("now")), now = audio.ctx.currentTime;
+    if (i !== BCK.last) {
+      if (BCK.last >= 0 && i >= 0 && BCK.downs.length) {   // (not the first move after Play: the intro)
+        const near = BCK.downs.reduce((a, d) => Math.abs(d - now) < Math.abs(a - now) ? d : a, BCK.downs[0]);
+        BCK.diffs.push(Math.round((now - near) * 1000)); if (BCK.diffs.length > 24) BCK.diffs.shift(); BCK.moves++;
+      }
+      BCK.last = i; BCK.lastAt = now; BCK.stuckNow = false; return;
+    }
+    const bar = stepDur() * T.meter.steps;
+    if (!BCK.stuckNow && now - BCK.lastAt > bar * 1.6 && passBars() > 1) { BCK.stuckNow = true; BCK.stuck++; }
+  })();
+}
+function bckReport() {
+  const d = BCK.diffs, n = d.length, avg = n ? Math.round(d.reduce((a, b) => a + b, 0) / n) : null;
+  return { moves: BCK.moves, stuck: BCK.stuck, avgMs: avg, worstMs: n ? d.reduce((a, b) => Math.abs(b) > Math.abs(a) ? b : a, 0) : null, recentMs: d.slice(-12), note: "ms = counter move minus the band's downbeat (+ = counter late)" };
+}
+{ const dr0 = diagReport; diagReport = function () { const r = dr0.apply(this, arguments); try { r.barCounter = bckReport(); } catch (_) {} return r; }; }
+// loop notes: bar.beat and the loop's length
+{
+  const ln0 = loopNotesForCopy;
+  loopNotesForCopy = function () {
+    const out = ln0.apply(this, arguments);
+    try {
+      const st = T.meter.steps, bs = st / Math.max(1, T.meter.pulses.length);
+      for (const e of out) {
+        const bar = Math.floor(e.start / st) + 1, inBar = e.start - (bar - 1) * st, beat = Math.floor(inBar / bs) + 1, sub = Math.round((inBar - (beat - 1) * bs) * 100) / 100;
+        e.at = `bar ${bar} beat ${beat}` + (sub ? ` +${sub}/${bs}` : "");
+      }
+    } catch (_) {}
+    return out;
+  };
+}
+function crePreset() {
+  const nk = creNotesKey(), id = (() => { try { return gameKey(); } catch (_) { return nk; } })(), st = QSTYLES_SYNTH[id] || {};
+  let edit = null; try { edit = id === "__mkplay" && MKP.pending ? MKP.pending.t : (isMine(id) ? MY.list.find(x => x.id === id) : null); } catch (_) {}
+  let nat = null; try { if (window.GPNative && GPNative.info) { const j = JSON.parse(GPNative.info()); nat = { reopens: j.reopens ?? null, glitches: j.glitches ?? null }; } } catch (_) {}
+  const key = id;
+  return "GLASSPAD PRESET " + JSON.stringify({
+    v: document.querySelector(".panel-ver").textContent, id, name: st.name || null, base: qs.base || qs.id, from: edit && (edit.band || edit.fromName) || null,
+    notes: creNotesAll()[nk] || "",
+    game: { band: game.band, lift: (typeof GAME_LIFT !== "undefined" && (GAME_LIFT[qs.base || qs.id] ?? (edit && GAME_LIFT[edit.band]))) ?? null, bassTheme: (typeof GAME_BASS_THEME !== "undefined" && (GAME_BASS_THEME[key] || (edit && GAME_BASS_THEME[edit.band]))) || null, arpBass: game.arpB, arpLead: game.arpL, cols: st.cols || null },
+    edit: edit ? { ...edit, pic: edit.pic ? "(photo)" : null } : null,
+    loop: { bars: loop.bars, stepsPerBar: T.meter.steps, sig: T.meter.sig || null, notes: loopNotesForCopy() },
+    barCounter: bckReport(), native: nat, soundEngine: window.GPNOFF ? "web" : "app",
+    setup: capture() });
+}
+async function creCopy() {
+  const txt = crePreset(); let ok = false;
+  try { await navigator.clipboard.writeText(txt); ok = true; } catch (_) {}
+  const ta = $("copyText"); if (ta) { ta.value = txt; ta.hidden = ok; if (!ok) { ta.focus(); ta.select(); } }
+  toast(ok ? "Preset copied: paste it into your notes" : "Couldn't copy by itself: the text is selected, copy it from there");
+}
+function creRowsHtml(withPicker) {
+  const th = creThemes(), cur = (() => { try { const id = gameKey(); return id === "__mkplay" && MKP.pending ? MKP.pending.t.band : id; } catch (_) { return ""; } })();
+  return (withPicker ? `<div class="cre-r"><label for="crePick">Theme to edit</label><div class="cre-pk"><select id="crePick">${th.map(([i, n]) => `<option value="${i}"${i === cur ? " selected" : ""}>${escH(n)}</option>`).join("")}</select><button id="creGo">Edit</button></div></div>` : "")
+    + `<div class="cre-r"><label>Sound pages</label><div class="cre-b">${CRT_PARTS.map(([p, n]) => `<button data-cs="${p}">${n}</button>`).join("")}</div></div>`;
+}
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  .cre-box { border: 1px solid #f2b04a55; border-radius: 12px; padding: 8px 10px 10px; margin: 6px 0 10px; }
+  .cre-box h4 { margin: 0 0 6px; font: 600 11px/1.4 "Exo 2", sans-serif; letter-spacing: .16em; color: #f2b04a; }
+  .cre-r { display: flex; flex-direction: column; gap: 5px; margin: 6px 0; }
+  .cre-r label { font-size: 12px; color: #c9cfdb; }
+  .cre-pk { display: flex; gap: 6px; } .cre-pk select { flex: 1; min-width: 0; }
+  .cre-b { display: flex; flex-wrap: wrap; gap: 6px; }
+  .cre-b button, .cre-pk button, #creCopy { padding: 6px 10px; border-radius: 9px; border: 1px solid #f2b04a88; background: #f2b04a14; color: #f5e3c4; font-size: 12.5px; }
+  #creNotes { width: 100%; box-sizing: border-box; min-height: 64px; border-radius: 9px; background: #0006; color: #eef2fb; border: 1px solid #ffffff2a; padding: 6px 8px; font: 13px/1.35 "IBM Plex Sans", sans-serif; resize: vertical; }
+  #mkCre { margin: 12px 16px 96px; } #mkCre[hidden] { display: none !important; }`;
+  document.head.appendChild(st);
+  // ⚙ → Creator box, first thing in the creator-only Test box
+  const box = document.createElement("div"); box.className = "cre-box"; box.id = "creBox";
+  const g = document.querySelector("#gSheet .gtest"); if (g) { const h = g.querySelector("h3"); (h || g.firstChild) ? (h ? h.after(box) : g.prepend(box)) : g.appendChild(box); }
+  const fill = () => {
+    const id = creNotesKey();
+    box.innerHTML = `<h4>CREATOR · THEMES</h4>` + creRowsHtml(true)
+      + `<div class="cre-r"><label for="creNotes">Notes for this theme (go into the copy)</label><textarea id="creNotes" placeholder="What you'd change that the app can't yet: bass line, SHIFT, intro, ending…">${escH(creNotesAll()[id] || "")}</textarea></div>`
+      + `<div class="cre-r"><button id="creCopy">Copy as preset</button></div>`;
+  };
+  box.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.cs) return creSound(b.dataset.cs);
+    if (b.id === "creGo") return creEdit($("crePick").value);
+    if (b.id === "creCopy") return creCopy();
+  });
+  box.addEventListener("input", e => { if (e.target.id !== "creNotes") return; const a = creNotesAll(); a[creNotesKey()] = e.target.value; try { localStorage.setItem("glasspad.creNotes", JSON.stringify(a)); } catch (_) {} });
+  // refresh when the sheet opens (the theme may have changed)
+  new MutationObserver(() => { if (!$("gSheet").hidden && CRE.on && document.activeElement?.id !== "creNotes") fill(); }).observe($("gSheet"), { attributes: true, attributeFilter: ["hidden"] });
+  fill();
+  // Edit: the same sound buttons and picker, Creator mode only
+  const m = document.createElement("div"); m.className = "cre-box"; m.id = "mkCre"; m.hidden = true;
+  $("mkRows").after(m);   // under the steps (the bottom bar with Play it / Save is pinned)
+  m.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.cs) return creSound(b.dataset.cs);
+    if (b.id === "creGo") return creEdit($("crePickMk").value);
+  });
+  const mkSync = () => { m.hidden = !CRE.on; if (CRE.on) m.innerHTML = `<h4>CREATOR</h4>` + creRowsHtml(true).replace('id="crePick"', 'id="crePickMk"').replace('for="crePick"', 'for="crePickMk"'); };
+  new MutationObserver(() => { if (!$("mk").hidden) mkSync(); }).observe($("mk"), { attributes: true, attributeFilter: ["hidden"] });
+  const cs0 = creSync; creSync = function () { const r = cs0.apply(this, arguments); try { mkSync(); fill(); } catch (_) {} return r; };
 }
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }

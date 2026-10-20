@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.10 TEST · game mode · 20 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.11 TEST · game mode · 20 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1547,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.10 TEST · game mode · 20 Oct 2026</p>
+      <p class="ver">GlassPad 6.11 TEST · game mode · 20 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -7665,7 +7665,7 @@ async function startAudioRec() {
   arec.node.port.onmessage = e => { if (Array.isArray(e.data)) { arec.chunks.push(e.data); arec.frames += e.data[0].length; } else if (e.data === "flushed" && arec.onFlushed) arec.onFlushed(); };
   // the tap needs to be pulled by the output to run, so it feeds a silent gain
   arec.sink = ctx.createGain(); arec.sink.gain.value = 0;
-  recIn(arec.node); arec.node.connect(arec.sink).connect(ctx.destination);
+  recInAudio(arec.node); arec.node.connect(arec.sink).connect(ctx.destination);
   arec.on = true; arec.t0 = performance.now();
   if (!T.playing) bandFresh = true;   // the next Play counts in, so the recording starts with a lead-in
   $("audioPlayer").hidden = true; $("audioSave").hidden = true; $("audioShare").hidden = true;
@@ -7698,7 +7698,7 @@ async function stopAudioRec() {
   arec.url = URL.createObjectURL(arec.blob);
   const pl = $("audioPlayer"); pl.src = arec.url; pl.hidden = false;
   $("audioSave").hidden = false;
-  $("audioShare").hidden = !(navigator.canShare && navigator.canShare({ files: [recFile()] }));
+  $("audioShare").hidden = !(appFileOk() || (navigator.canShare && navigator.canShare({ files: [recFile()] })));
   $("audioHint").textContent = "Listen back, then save it to your phone or share it.";
   $("sum-export").textContent = `${fmtTime(secs)} take ready`;
   recUI();
@@ -7747,6 +7747,7 @@ $("recAudioTop").addEventListener("click", toggleAudioRec);
 // Save: straight into the phone's Downloads
 $("audioSave").addEventListener("click", () => {
   if (!arec.blob) return;
+  if (appFileOk()) { appFileOut(recFile(), "save").then(n => { $("audioHint").textContent = n ? "Saved " + n + " to your Downloads." : "Couldn't save that. Try again."; }); return; }
   const f = recFile(), url = URL.createObjectURL(f), a = document.createElement("a");
   a.href = url; a.download = f.name; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 30000);
@@ -7755,6 +7756,7 @@ $("audioSave").addEventListener("click", () => {
 // Share: the phone's share menu (WhatsApp, email, Drive…)
 $("audioShare").addEventListener("click", async () => {
   if (!arec.blob) return;
+  if (appFileOk()) { const ok = await appFileOut(recFile(), "share", "GlassPad jam", "Made with GlassPad " + GP_LINK); if (!ok) $("audioHint").textContent = "Couldn't open sharing. Save it instead."; return; }
   try { await navigator.share({ files: [recFile()], title: "GlassPad jam" }); }
   catch (e) { if (!e || e.name !== "AbortError") $("audioHint").textContent = "Sharing didn't work here. Save it instead, then share it from your Downloads."; }
 });
@@ -10266,7 +10268,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.10 TEST</p>
+    <p class="hm-ver">GlassPad 6.11 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14731,7 +14733,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.10 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.11 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -18974,7 +18976,7 @@ function recSrc() {
     RECM.pull = ctx.createGain(); RECM.pull.gain.value = 0; RECM.mix.connect(RECM.pull).connect(ctx.destination);   // (keeps it running for a video; silent)
     if (eng === "web") { RECM.dly.delayTime.value = 0; RECM.lagMs = 0; RECM.tailMs = 0; GPWEB.node.connect(RECM.mix); }
     else {
-      const TARGET = .15; let outMs = 30; try { const d = JSON.parse(GPNative.info()); if (d.delayMs > 0) outMs = d.delayMs; } catch (_) {}
+      const TARGET = .5; let outMs = 30; try { const d = JSON.parse(GPNative.info()); if (d.delayMs > 0) outMs = d.delayMs; } catch (_) {}
       RECM.rate = +GPNative.recStart() || 48000;
       // the engine's sound reaches the recorder ~TARGET (+ a few ms for the fetch) after it was made; the page's is made
       // (page latency − engine latency) later than the engine's for the same moment heard: delay the page's by the rest
@@ -19054,6 +19056,111 @@ const TSPLIT = window.TSPLIT = { rows: [],
       return ` · touch → heard ${f(t.totalMs)} ms = ${p ? `to the page ${f(p.toPageMs)} + page ${f(p.pageMs)}` : `page ${f(t.pageMs)}`} + bridge ${f(t.bridgeMs)} + wait ${f(t.waitMs)} + out ${f(t.outMs)} (${t.n} notes)`;
     } catch (_) { return ""; }
   } };
+/* ---------- 6.11 (app 0.3.27): audio takes collect the engine's sound; Save and Share in the app ----------
+   Audio takes (app 0.3.26+): the engine's copy is pulled every 100 ms into a list (the engine keeps 5 s, so a busy page
+   only makes the pull late, never lossy) and joined to the page's own sound after Stop, lined up by sample count and the
+   two latencies, before the MP3 is made. Nothing is streamed live, so a busy page can't make it stutter. */
+const RECA = window.RECA = { on: false, chunks: [], rate: 48000, frames: 0, dEP: 0, timer: 0, done: null, stat: null };
+function recInAudio(node) {
+  if (recEng() !== "app" || RECM.users) { recIn(node); return; }
+  const ctx = audio.ctx; audio.out.connect(node); node._gpSrc = audio.out;
+  let outMs = 30; try { const d = JSON.parse(GPNative.info()); if (d.delayMs > 0) outMs = d.delayMs; } catch (_) {}
+  const pageMs = ((ctx.baseLatency || 0) + (ctx.outputLatency || 0)) * 1000, t1 = performance.now();
+  const rate = +GPNative.recStart() || 48000, e0 = performance.now();
+  // the engine's first copied sample is heard ≈ e0 + 2 + the app's output delay; the tap's first sample ≈ t1 + the page's latency
+  Object.assign(RECA, { on: true, chunks: [], rate, frames: 0, dEP: (e0 + 2 + outMs) - (t1 + pageMs), done: null });
+  RECM.err = null; RECM.takes++; clearInterval(RECA.timer); RECA.timer = setInterval(recaPull, 100);
+}
+function recaPull() {
+  if (!RECA.on) return;
+  if (!arec.on) { clearInterval(RECA.timer); RECA.on = false; try { GPNative.recStop(); } catch (_) {} return; }   // (the take was dropped some other way)
+  for (let k = 0; k < 10; k++) {
+    let b; try { b = GPNative.recPull(); } catch (e) { RECM.err = String(e && e.message || e); return; }
+    if (!b) return;
+    const bin = atob(b), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    RECA.chunks.push(new Int16Array(u.buffer, 0, u.length >> 1)); RECA.frames += u.length >> 2; RECM.pulls++; RECM.kB += u.length / 1024;
+    if (u.length < 48000 * 4) return;   // the ring is empty
+  }
+}
+// Stop: take the last of the engine's copy, close it, keep it for the MP3
+{
+  const sa = stopAudioRec;
+  stopAudioRec = async function () {
+    if (arec.on && RECA.on) {
+      clearInterval(RECA.timer); recaPull(); let lost = 0;
+      try { const d = JSON.parse(GPNative.info()); lost = d.rec ? d.rec.lostMs : 0; } catch (_) {}
+      try { GPNative.recStop(); } catch (_) {}
+      RECA.on = false; RECA.done = { chunks: RECA.chunks, rate: RECA.rate, dEP: RECA.dEP, lost }; RECA.chunks = [];
+    }
+    return sa.apply(this, arguments);
+  };
+}
+// the page's tap chunks + the engine's → what the MP3 is made from
+function recaMix(chunks, sr, d) {
+  let N = 0; for (const c of d.chunks) N += c.length >> 1;
+  let eL = new Int16Array(N), eR = new Int16Array(N), k = 0;
+  for (const c of d.chunks) for (let i = 0; i < c.length; i += 2) { eL[k] = c[i]; eR[k++] = c[i + 1]; }
+  if (Math.abs(d.rate - sr) > 1) {   // the app's rate vs the page's: a straight-line resample
+    const n = Math.floor(N * sr / d.rate), q = d.rate / sr, L2 = new Int16Array(n), R2 = new Int16Array(n);
+    for (let i = 0; i < n; i++) { const p = i * q, j = Math.floor(p), f = p - j, j2 = Math.min(N - 1, j + 1); L2[i] = eL[j] + (eL[j2] - eL[j]) * f; R2[i] = eR[j] + (eR[j2] - eR[j]) * f; }
+    eL = L2; eR = R2; N = n;
+  }
+  let P = 0, pk = 0; for (const [l, r] of chunks) { P += l.length; for (let i = 0; i < l.length; i += 3) { const a = Math.abs(l[i]), b = Math.abs(r[i]); if (a > pk) pk = a; if (b > pk) pk = b; } }
+  const pageOn = pk > 60;   // the page played nothing of its own: the take is the engine's sound alone
+  const off = pageOn ? Math.round(d.dEP * sr / 1000) : 0, eOff = Math.max(0, off), pOff = Math.max(0, -off);
+  const total = Math.max(pageOn ? P + pOff : 0, N + eOff);
+  let pL = null, pR = null;
+  if (pageOn) { pL = new Int16Array(P); pR = new Int16Array(P); let o = 0; for (const [l, r] of chunks) { pL.set(l, o); pR.set(r, o); o += l.length; } }
+  const out = [], CH = 65536, cl = x => x > 32767 ? 32767 : x < -32768 ? -32768 : x;
+  for (let f0 = 0; f0 < total; f0 += CH) {
+    const n = Math.min(CH, total - f0), l = new Int16Array(n), r = new Int16Array(n);
+    for (let i = 0; i < n; i++) {
+      const f = f0 + i, e = f - eOff, p = f - pOff;
+      let a = e >= 0 && e < N ? eL[e] : 0, b = e >= 0 && e < N ? eR[e] : 0;
+      if (pageOn && p >= 0 && p < P) { a += pL[p]; b += pR[p]; }
+      l[i] = cl(a); r[i] = cl(b);
+    }
+    out.push([l, r]);
+  }
+  RECA.stat = { frames: N, ms: Math.round(N * 1000 / sr), lostMs: d.lost, page: pageOn, pageMs: Math.round(P * 1000 / sr), alignMs: +d.dEP.toFixed(1) };
+  return out;
+}
+{
+  const e0 = encodeMp3;
+  encodeMp3 = function (chunks, sr, onP) {
+    const d = RECA.done; RECA.done = null;
+    if (d && d.chunks.length) { try { chunks = recaMix(chunks, sr, d); } catch (e) { RECM.err = "mix: " + (e && e.message || e); } }
+    return e0.call(this, chunks, sr, onP);
+  };
+  const d0 = diagReport;
+  diagReport = function () { const r = d0.apply(this, arguments); try { if (r.recEngine) r.recEngine.audioTake = RECA.stat; } catch (_) {} return r; };
+}
+/* Save and Share inside the app: the page hands the file over in 384 KB pieces; the app writes it to Downloads (Save) or
+   opens the Android share menu with it (Share). A browser / an older app: the page's own way, as before. */
+function appFileOk() { try { return !!(window.GPNative && !GPNative.web && GPNative.fileOpen && GPNative.fileChunk && GPNative.fileSave && GPNative.fileShare); } catch (_) { return false; } }
+async function appFileOut(file, mode, title, text) {
+  try {
+    if (!GPNative.fileOpen(file.name, file.type || "application/octet-stream")) return "";
+    const CH = 3 * 128 * 1024;
+    for (let o = 0; o < file.size; o += CH) {
+      const u = new Uint8Array(await file.slice(o, o + CH).arrayBuffer());
+      let t = ""; for (let i = 0; i < u.length; i += 0x8000) t += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+      if (!GPNative.fileChunk(btoa(t))) return "";
+    }
+    return mode === "save" ? (GPNative.fileSave() || "") : (GPNative.fileShare(title || "GlassPad", text || "") ? "ok" : "");
+  } catch (_) { return ""; }
+}
+{
+  const save0 = rcSave, share0 = rcShare;
+  rcSave = async function (t) {
+    if (!appFileOk()) return save0.apply(this, arguments);
+    toast("Saving…"); const n = await appFileOut(rcFile(t), "save"); toast(n ? "Saved to your Downloads" : "Couldn't save that. Try again.");
+  };
+  rcShare = async function (t) {
+    if (!appFileOk()) return share0.apply(this, arguments);
+    const ok = await appFileOut(rcFile(t), "share", t.name, "Made with GlassPad " + GP_LINK); if (!ok) toast("Couldn't open sharing. Try Save.");
+  };
+}
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }
 requestAnimationFrame(() => document.documentElement.classList.add("gp-ready"));

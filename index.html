@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.04 TEST · game mode · 19 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.05 TEST · game mode · 20 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1547,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.04 TEST · game mode · 19 Oct 2026</p>
+      <p class="ver">GlassPad 6.05 TEST · game mode · 20 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10266,7 +10266,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.04 TEST</p>
+    <p class="hm-ver">GlassPad 6.05 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -13372,7 +13372,7 @@ $("sp").addEventListener("click", () => { if (SPN.part === "chords") setTimeout(
 const JAM = { stack: [], cur: null, popping: false, edit: null, t: 0 };
 function studioNew() { try { return localStorage.getItem("glasspad.studioNew") !== "old"; } catch (_) { return true; } }
 function smoothKeep() { try { return localStorage.getItem("glasspad.smoothKeep") === "keep"; } catch (_) { return false; } }
-const jamOn = () => studioNew() && !game.on;
+const jamOn = () => studioNew() && (!game.on || !!(window.CTH && CTH.id && CRE.on));   // 6.05: a theme being edited
 /* ----- Smooth that keeps its changes: only what clashes moves, and it stays moved until something else clashes ----- */
 const STK = { steps: null, sig: "", key: "", reset() { this.steps = null; this.sig = ""; } };
 function stickyBend(steps, ct, ch) {
@@ -14731,7 +14731,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.04 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.05 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -18447,6 +18447,167 @@ function crbFill() {
     return "";
   };
   if (NATIVE && NATIVE.bandLabel) { const bl0 = NATIVE.bandLabel; NATIVE.bandLabel = () => { const r = bl0(); if (r !== "Band: page") return r; const y = why(); return y ? `Band: page (${y})` : r; }; }
+}
+/* ---------- 6.05: themes are edited in Studio (Creator mode only) ----------
+   Studio home → THEMES → the theme's page (the jam page + Chords 2, Strips and a THEME section), over the game pad so
+   the game band plays (bass lines, BAND, SHIFT, Chords 2). Save theme keeps everything (glasspad.creThemes[id].setup)
+   and the game plays the saved one while Creator mode is on. The pad's Edit comes back here; ‹ goes to Studio home. */
+const CTH = window.CTH = { id: null };
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  #creBox, #creBox2, #mkCre { display: none !important; }
+  .th-l { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
+  .th-l button { padding: 9px 14px; border-radius: 12px; border: 1px solid #4fc7b4aa; background: #4fc7b414; color: #eef2fb; font: 600 14px/1.2 "IBM Plex Sans", sans-serif; display: flex; gap: 6px; align-items: baseline; }
+  .th-l button small { font: 500 10.5px "IBM Plex Mono", monospace; color: #4fc7b4; letter-spacing: .04em; }
+  #thNotes { flex: 1; min-width: 0; min-height: 64px; box-sizing: border-box; border-radius: 12px; background: #0006; color: #eef2fb; border: 1px solid #ffffff2a; padding: 8px 10px; font: 13px/1.35 "IBM Plex Sans", sans-serif; resize: vertical; }
+  .th-hint { font-size: 11.5px; opacity: .75; margin: 2px 0 6px; }`;
+  document.head.appendChild(st);
+}
+const thName = id => { const t = creThemes().find(([i]) => i === id); return t ? t[1].replace(/ \(yours\)$/, "") : id; };
+function themePage() {
+  $("gSheet").hidden = true;
+  JAM.stack = []; JAM.cur = null; JAM.edit = null;
+  JAM.popping = true; spOpen("jam"); JAM.popping = false;
+}
+function themeOpen(id) {
+  if (!id || !QSTYLES_SYNTH[id]) return;
+  ensureAudio(); CTH.id = null;
+  spClose(true); stClose();
+  if (!$("mk").hidden) try { mkClose(false); } catch (_) {}
+  if (!game.on) setGame(true);
+  if (T.playing) setPlaying(false);
+  try { keepArm(); } catch (_) {} qs.pend = null; keepPend = null;
+  loadStyle(styleOf(id));
+  homeClose(); try { setLayout("pad"); } catch (_) {}
+  CTH.id = id; themePage();
+}
+function themeLeave() { CTH.id = null; spClose(true); stClose(); if (T.playing) setPlaying(false); setGame(false); stOpen(); }
+function themeSave() {
+  const k = CTH.id; if (!k) return;
+  if (CRT_B.on) return toast("Go back to section A first (Back to A), then save");
+  const o = crbOf(k); o.setup = capture(); crbSave();
+  try { if (SM.store[k]) { delete SM.store[k]; localStorage.setItem("glasspad.solomix", JSON.stringify(SM.store)); } } catch (_) {}
+  toast(`Saved ${thName(k)}: the game plays it like this (Creator mode)`);
+}
+function themeBuiltIn() {
+  const k = CTH.id; if (!k) return;
+  if (!confirm(`Put ${thName(k)} back to built-in? Your saved sounds, bass lines, SHIFT and section B for it go (notes stay).`)) return;
+  if (CRT_B.on) crbTryB(false);
+  delete CRB[k]; crbSave(); creApply();
+  const pl = T.playing; if (pl) setPlaying(false);
+  CTH.id = null; loadStyle(styleOf(k)); CTH.id = k;
+  themePage(); toast(`${thName(k)}: built-in again`);
+}
+// a theme loads its saved version in Creator mode; another theme ends the editing
+{
+  const ls0 = loadStyle;
+  loadStyle = function (st) {
+    if (CTH.id && st && st.id !== CTH.id) CTH.id = null;
+    const o = CRE.on && st && CRB[st.id];
+    if (o && o.setup) { try { st = { ...st, p: makePreset(o.setup) }; } catch (_) {} }
+    return ls0.call(this, st);
+  };
+}
+// Studio home: the themes
+{
+  const bh0 = buildJamHome;
+  buildJamHome = function () {
+    const r = bh0.apply(this, arguments);
+    if (!CRE.on) return r;
+    try {
+      const first = $("spBody").querySelector(".jh-lbl"), w = document.createElement("div"); w.id = "thList";
+      w.innerHTML = `<div class="jh-lbl">THEMES · TAP TO EDIT</div><div class="th-l">${creThemes().map(([i, n]) => `<button type="button" data-th="${i}">${escH(n)}${CRB[i] && CRB[i].setup ? "<small>SAVED</small>" : ""}</button>`).join("")}</div>`;
+      first.before(w);
+      w.addEventListener("click", e => { const b = e.target.closest("[data-th]"); if (b) themeOpen(b.dataset.th); });
+    } catch (e) { console.warn(e); }
+    return r;
+  };
+}
+function thList(title, items, cur, pick) {
+  spnListOpen(title, ls => {
+    ls.innerHTML = items.map(([v, t, sub]) => `<div class="it${String(v) === String(cur) ? " on" : ""}" data-v="${v}"><button class="nm"><span class="t">${escH(t)}</span>${sub ? `<span class="s" style="display:block;font-size:11px;opacity:.7">${escH(sub)}</span>` : ""}</button></div>`).join("");
+    ls.onclick = e => { const row = e.target.closest("[data-v]"); if (!row) return; spnListClose(); pick(row.dataset.v); jamSync(); };
+  });
+}
+// the theme page: the jam page plus Chords 2, Strips and THEME
+{
+  const bj0 = buildJam;
+  buildJam = function () {
+    const r = bj0.apply(this, arguments);
+    if (!CTH.id) return r;
+    try {
+      const k = CTH.id;
+      JAM.title = () => { $("spTitle").innerHTML = `<small>THEME</small>${escH(thName(CTH.id || k))}`; }; JAM.title();
+      if (JAM.saveBtn) { const sv = JAM.saveBtn, nb = sv.cloneNode(true); sv.replaceWith(nb); JAM.saveBtn = nb; nb.hidden = false; nb.textContent = "Save theme"; nb.addEventListener("click", themeSave); }
+      const secs = [...$("spBody").querySelectorAll(":scope > .spn-sec")], by = t => secs.find(x => (x.querySelector(".spn-h b") || {}).textContent === t);
+      const openC2 = () => { jamGo("chords"); setTimeout(() => { const b = $("p2On"), sec = b && b.closest(".spn-sec"); if (sec) sec.scrollIntoView({ block: "start" }); }, 120); };
+      const cs = by("CHORDS");
+      if (cs) jamRow(cs, "Chords 2", { val: () => PAD2.on ? [($("p2Sound").selectedOptions[0] || {}).textContent || PAD2.sound, $("sum-pad2").textContent] : ["Off", "a second chord part"], pick: openC2, edit: openC2 });
+      const bs = by("BASS");
+      if (bs) jamRow(bs, "Strips", { val: () => [jamTxt("bassLayout").replace(/ \(.*\)$/, ""), ""], pick: () => jamOptList("BASS STRIPS", "bassLayout") });
+      const s = spnSec(secs.length + 1, "THEME");
+      spnNote(s, "How the band plays this theme in the game. Save theme (top) keeps everything on this page.");
+      for (const lv of [0, 1, 2]) {
+        jamRow(s, "Bass " + CRB_LV[lv], {
+          val: () => [crbBassTxt(CTH.id || k, lv).replace(/^Yours: /, "My loop: "), game.band === lv ? "the BAND level now" : ""],
+          pick: () => thList("BASS · BAND " + CRB_LV[lv].toUpperCase(), [["use", "Use my loop", "the first bar of the bass in your loop"], ["built", "Built-in", "the theme's own line"]], (((CRB[k] || {}).bass || {})[lv]) ? "use" : "built", v => {
+            if (v === "use") {
+              const line = crbFromLoop(); if (!line) return toast("No bass notes in the loop's first bar yet: record a bar on the bass strips first");
+              const o = crbOf(k); o.bass = o.bass || {}; o.bass[lv] = line; crbSave(); creApply(); toast(`Bass line set for BAND ${CRB_LV[lv]}: clear the loop to hear it`);
+            } else { const o = crbOf(k); if (o.bass) delete o.bass[lv]; crbSave(); creApply(); }
+          }),
+        });
+      }
+      const hint = document.createElement("div"); hint.className = "th-hint spn-note"; hint.textContent = "Bass lines: on the pad, loop one bar on the bass strips with the band playing, then come back here and pick Use my loop.";
+      s.appendChild(hint);
+      jamRow(s, "SHIFT", {
+        val: () => { const v = GAME_LIFT[k] ?? 2, d = CRB_ORIG.lift[k] ?? 2; return [(v > 0 ? "+" : "") + v + " semitones", v === d ? "built-in" : "built-in " + (d > 0 ? "+" : "") + d]; },
+        pick: () => thList("SHIFT MOVES THE KEY BY", Array.from({ length: 13 }, (_, i) => i - 5).map(v => [v, (v > 0 ? "+" : "") + v, v === (CRB_ORIG.lift[k] ?? 2) ? "built-in" : ""]), GAME_LIFT[k] ?? 2, v => {
+          const o = crbOf(k); v = +v; if (v === (CRB_ORIG.lift[k] ?? 2)) delete o.lift; else o.lift = v; crbSave(); creApply();
+        }),
+      });
+      const progs = () => [...$("prog").options].filter(o => !o.hidden && o.value !== "mine").map(o => [o.value, o.textContent]);
+      const sb = jamRow(s, "Section B", {
+        val: () => { const b = (CRB[k] || {}).progB, o = b && progs().find(x => x[0] === b); return [o ? o[1] : "None", CRT_B.on ? "playing B now" : b ? "Try B plays it now" : "chords for a later SHIFT"]; },
+        pick: () => thList("SECTION B CHORDS", [["", "None"]].concat(progs()), (CRB[k] || {}).progB || "", v => { if (CRT_B.on) crbTryB(false); const o = crbOf(k); if (v) o.progB = v; else delete o.progB; crbSave(); }),
+        edit: () => { crbTryB(!CRT_B.on); jamSync(); },
+      });
+      const sy = sb.sync; sb.sync = () => { sy(); const e = sb.querySelector(".ed"); if (e) e.textContent = CRT_B.on ? "Back to A" : "Try B"; };
+      sb.sync();
+      const nr = document.createElement("div"); nr.className = "jam-row";
+      nr.innerHTML = `<span class="l">Notes</span><textarea id="thNotes" placeholder="Ideas for this theme: intro, ending, bass…"></textarea>`;
+      s.appendChild(nr);
+      const ta = $("thNotes"); ta.value = creNotesAll()[k] || "";
+      ta.addEventListener("input", () => { const a = creNotesAll(); a[k] = ta.value; try { localStorage.setItem("glasspad.creNotes", JSON.stringify(a)); } catch (_) {} });
+      const bt = document.createElement("div"); bt.className = "jam-btns";
+      bt.innerHTML = `<button type="button" class="spn-wide" id="thCopy">Copy as preset</button><button type="button" class="spn-wide" id="thBuilt">Back to built-in</button>`;
+      s.appendChild(bt);
+      $("thCopy").addEventListener("click", () => creCopy());
+      $("thBuilt").addEventListener("click", themeBuiltIn);
+    } catch (e) { console.warn(e); }
+    return r;
+  };
+}
+{
+  const js0 = jamSync;
+  jamSync = function () { const r = js0.apply(this, arguments); if (CTH.id && SPN.part === "jam" && JAM.saveBtn) { JAM.saveBtn.hidden = false; if (JAM.saveBtn.textContent !== "Save theme") JAM.saveBtn.textContent = "Save theme"; } return r; };
+  // ‹ on the theme page → Studio home (the part pages still go back to the theme page)
+  const jb0 = jamBack;
+  jamBack = function () { if (CTH.id && JAM.cur === "jam" && !JAM.stack.length) { themeLeave(); return; } return jb0.apply(this, arguments); };
+  // the pad's Edit comes back to the theme page
+  document.addEventListener("click", e => {
+    if (!CTH.id || !CRE.on || !game.on || !e.target.closest || !e.target.closest("#gEdit")) return;
+    e.stopImmediatePropagation(); e.preventDefault(); themePage();
+  }, true);
+  // Creator mode off ends it
+  const cs0 = creSync; creSync = function () { if (!CRE.on) CTH.id = null; return cs0.apply(this, arguments); };
+  // the copy says whether it's the saved version
+  const cp0 = crePreset;
+  crePreset = function () {
+    const t = cp0.apply(this, arguments), pre = "GLASSPAD PRESET ";
+    try { const j = JSON.parse(t.slice(pre.length)), k = crbKey(); j.saved = !!(CRB[k] && CRB[k].setup); return pre + JSON.stringify(j); } catch (_) { return t; }
+  };
 }
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }

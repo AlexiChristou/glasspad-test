@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.09 TEST · game mode · 20 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.10 TEST · game mode · 20 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1547,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.09 TEST · game mode · 20 Oct 2026</p>
+      <p class="ver">GlassPad 6.10 TEST · game mode · 20 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -7665,7 +7665,7 @@ async function startAudioRec() {
   arec.node.port.onmessage = e => { if (Array.isArray(e.data)) { arec.chunks.push(e.data); arec.frames += e.data[0].length; } else if (e.data === "flushed" && arec.onFlushed) arec.onFlushed(); };
   // the tap needs to be pulled by the output to run, so it feeds a silent gain
   arec.sink = ctx.createGain(); arec.sink.gain.value = 0;
-  audio.out.connect(arec.node); arec.node.connect(arec.sink).connect(ctx.destination);
+  recIn(arec.node); arec.node.connect(arec.sink).connect(ctx.destination);
   arec.on = true; arec.t0 = performance.now();
   if (!T.playing) bandFresh = true;   // the next Play counts in, so the recording starts with a lead-in
   $("audioPlayer").hidden = true; $("audioSave").hidden = true; $("audioShare").hidden = true;
@@ -7679,7 +7679,7 @@ async function stopAudioRec() {
   // collect the last bit still in the tap, then unplug it
   await new Promise(res => { arec.onFlushed = res; arec.node.port.postMessage("flush"); setTimeout(res, 400); });
   arec.onFlushed = null;
-  try { audio.out.disconnect(arec.node); } catch (_) {}
+  recOff(arec.node);
   try { arec.node.disconnect(); arec.sink.disconnect(); } catch (_) {}
   arec.node = null;
   if (!arec.frames) { arec.busy = false; recUI(); $("audioHint").textContent = "Nothing was recorded. Try again."; return; }
@@ -10266,7 +10266,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.09 TEST</p>
+    <p class="hm-ver">GlassPad 6.10 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -11361,10 +11361,10 @@ async function startVideoRec() {
   c.width = Math.round(innerWidth * k / 2) * 2; c.height = Math.round(innerHeight * k / 2) * 2;
   vrec.comp = c; vrec.k = k; vrec.on = true; vrec.chunks = [];
   vrecFrame();
-  const vs2 = c.captureStream(30), dest = audio.ctx.createMediaStreamDestination(); audio.out.connect(dest); vrec.dest = dest;
+  const vs2 = c.captureStream(30), dest = audio.ctx.createMediaStreamDestination(); recIn(dest); vrec.dest = dest;
   const stream = new MediaStream([...vs2.getVideoTracks(), ...dest.stream.getAudioTracks()]);
   try { vrec.mr = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 4e6, audioBitsPerSecond: 160e3 }); }
-  catch (_) { vrec.on = false; cancelAnimationFrame(vrec.raf); try { audio.out.disconnect(dest); } catch (_) {} toast("Couldn't start the video here. Try Audio."); return; }
+  catch (_) { vrec.on = false; cancelAnimationFrame(vrec.raf); recOff(dest); toast("Couldn't start the video here. Try Audio."); return; }
   vrec.mr.ondataavailable = e => { if (e.data && e.data.size) vrec.chunks.push(e.data); };
   vrec.mr.start(1000); vrec.t0 = performance.now();
   if (!T.playing) bandFresh = true;
@@ -11375,7 +11375,7 @@ function stopVideoRec() {
   const mr = vrec.mr, secs = (performance.now() - vrec.t0) / 1000;
   mr.onstop = async () => {
     vrec.on = false; cancelAnimationFrame(vrec.raf); clearInterval(vrec.tick);
-    try { audio.out.disconnect(vrec.dest); } catch (_) {}
+    recOff(vrec.dest);
     const blob = new Blob(vrec.chunks, { type: (mr.mimeType || "video/webm").split(";")[0] }); vrec.chunks = [];
     vrecUI();
     if (!blob.size) { toast("Nothing was recorded. Try again."); return; }
@@ -14731,7 +14731,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.09 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.10 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -16925,7 +16925,7 @@ if (NATIVE.on) {
     if ($("gSheet").hidden) return;
     try {
       const d = JSON.parse(GPNative.info());
-      $("gNat").textContent = !d.ok ? "Not running" : `Out ${d.delayMs} ms · touch → sound ${d.touchMs.toFixed(1)} ms (max ${d.touchMaxMs.toFixed(1)}, ${d.touches}) · total ≈ ${Math.round(d.delayMs + d.touchMs)} ms · ${d.glitches} glitch${d.glitches === 1 ? "" : "es"} · load ${d.loadPct}% (peak ${d.peakPct}%) · buffer ${d.bufferMs.toFixed(1)} ms · ${d.api} ${d.sharing}`;
+      $("gNat").textContent = !d.ok ? "Not running" : `Out ${d.delayMs} ms · touch → sound ${d.touchMs.toFixed(1)} ms (max ${d.touchMaxMs.toFixed(1)}, ${d.touches}) · total ≈ ${Math.round(d.delayMs + d.touchMs)} ms · ${d.glitches} glitch${d.glitches === 1 ? "" : "es"} · load ${d.loadPct}% (peak ${d.peakPct}%) · buffer ${d.bufferMs.toFixed(1)} ms · ${d.api} ${d.sharing}` + (window.TSPLIT ? TSPLIT.line(d) : "");
     } catch (_) {}
   }, 500);
   // Copy setup gets the native numbers too
@@ -17077,7 +17077,7 @@ $("mkCam").addEventListener("change", () => {
 // touch → sound for lead notes only, page and native timed the same way (from the finger landing)
 {
   const st = { page: { n: 0, sum: 0, max: 0 } };
-  area.addEventListener("pointerdown", e => { NATIVE.ts = e.timeStamp; }, { capture: true, passive: true });
+  area.addEventListener("pointerdown", e => { NATIVE.ts = e.timeStamp; NATIVE.seen = performance.now(); }, { capture: true, passive: true });
   const sv = startVoice;
   startVoice = function (key, x, y, type, kind) {
     const v = sv.apply(this, arguments);
@@ -17541,6 +17541,7 @@ if (NATIVE.on && typeof GPNative.leadHold === "function") {
     try {
       if (kind === "lead" && SND.path === "finger" && audio && realLead() && (!patFor("lead") || typeof GPNative.arpSet === "function")) {
         const id = nid++, second = !!buildingSecond, age = NATIVE.ts ? performance.now() - NATIVE.ts : -1;
+        if (window.TSPLIT) TSPLIT.note();
         if ((second ? lead.snd2 : $("wave").value) === "sampler") GPNative.leadHoldS(id, midi, cut, second ? 1 : 0, NSAMP.pick("lead", frac, second), age >= 0 && age < 500 ? age : -1);
         else GPNative.leadHold(id, midi, cut, second ? 1 : 0, age >= 0 && age < 500 ? age : -1);
         L5.held++; NATIVE.perNote = true; if (window.NARPtick) queueMicrotask(NARPtick);
@@ -18912,6 +18913,147 @@ if (window.NATBAND) {
   const rc0 = refreshChordNow;
   refreshChordNow = function () { try { if (NATBAND.running && ownChords()) return; } catch (_) {} return rc0.apply(this, arguments); };
 }
+/* ---------- 6.10 (app 0.3.26): Rec on the pad hears the engine ----------
+   The recorders (audio takes and videos) record recIn(): the engine's own sound plus the page's. In the app (0.3.26+)
+   the engine copies what it plays while Rec runs; the page fetches it every 40 ms and plays it through a small worklet
+   into the recorder only (never the speakers), kept ~150 ms ahead so a busy moment never makes a gap; the page's own
+   sound is delayed by the same amount so both line up as you heard them. On Stop the last ~0.2 s still on its way is
+   waited for. With the web engine its node joins the mix directly. Old app / Web sound: the page's sound, as before. */
+const RECM = window.RECM = { ctx: null, mode: "", mix: null, dly: null, feed: null, users: 0, timer: 0, rate: 0, pend: [],
+  pulls: 0, kB: 0, under: 0, fillMs: 0, lagMs: 0, tailMs: 0, err: null, takes: 0 };
+const REC_FEED = `class Feed extends AudioWorkletProcessor {
+  constructor(o) { super(); const p = o.processorOptions; this.k = p.rate / sampleRate; this.T = Math.round(p.target * p.rate);
+    this.q = []; this.n = 0; this.pos = 0; this.prime = true; this.under = 0; this.c = 0;
+    this.port.onmessage = e => { const a = e.data; if (a && a.length) { this.q.push(a); this.n += a.length >> 1; } }; }
+  // keep only the newest T frames (as it starts, and after a long hold-up), so it lines up with the page's sound
+  trim() { let x = this.n - this.pos - this.T; while (x > 0 && this.q.length) { const m = (this.q[0].length >> 1) - Math.floor(this.pos); if (m > x) { this.pos += x; break; } x -= m; this.n -= this.q[0].length >> 1; this.q.shift(); this.pos = 0; } }
+  at(f, ch) { let o = 0; while (o < this.q.length && f >= (this.q[o].length >> 1)) { f -= this.q[o].length >> 1; o++; } return o < this.q.length ? this.q[o][2 * f + ch] : 0; }
+  process(_, outs) {
+    const L = outs[0][0], R = outs[0][1] || outs[0][0], len = L.length;
+    if (++this.c % 190 === 0) this.port.postMessage({ fill: (this.n - this.pos) / (this.k * sampleRate) * 1000, under: this.under });
+    if (this.prime) { if (this.n - this.pos < this.T) { L.fill(0); if (R !== L) R.fill(0); return true; } this.prime = false; this.trim(); }
+    // far too much waiting (the page was held up for a long time): back to the target in one go (rare)
+    else if (this.n - this.pos > 3 * this.T) this.trim();
+    // stay near the target: a hair faster when it builds up, slower when it runs low (at most 0.3 %, not heard)
+    const e = (this.n - this.pos - this.T) / this.T, k = this.k * (1 + Math.max(-.003, Math.min(.003, e * .003)));
+    for (let i = 0; i < len; i++) {
+      if (this.n - this.pos < 2) { for (; i < len; i++) { L[i] = 0; R[i] = 0; } this.prime = true; this.under++; break; }
+      const f = Math.floor(this.pos), fr = this.pos - f;
+      const a0 = this.at(f, 0), a1 = this.at(f + 1, 0), b0 = this.at(f, 1), b1 = this.at(f + 1, 1);
+      L[i] = (a0 + (a1 - a0) * fr) / 32768; if (R !== L) R[i] = (b0 + (b1 - b0) * fr) / 32768;
+      this.pos += k;
+    }
+    while (this.q.length && this.pos >= (this.q[0].length >> 1)) { const m = this.q[0].length >> 1; this.pos -= m; this.n -= m; this.q.shift(); }
+    return true;
+  }
+}
+registerProcessor("glasspad-feed", Feed);`;
+// which engine plays now: "app" (0.3.26+), "web" (the browser's engine), "" (the page's own sound only)
+function recEng() {
+  try {
+    if (!window.GPNative || !audio || !audio.ctx || window.GPNOFF || !NATIVE.on) return "";
+    if (GPNative.web) return window.GPWEB && GPWEB.node && GPWEB.node.context === audio.ctx ? "web" : "";
+    return typeof GPNative.recPull === "function" && typeof GPNative.recStart === "function" ? "app" : "";
+  } catch (_) { return ""; }
+}
+function recPullNow() {
+  try {
+    const b = GPNative.recPull(); if (!b) return;
+    const bin = atob(b), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    const a = new Int16Array(u.buffer, 0, u.length >> 1); RECM.pulls++; RECM.kB += u.length / 1024;
+    if (RECM.feed) RECM.feed.port.postMessage(a, [a.buffer]); else RECM.pend.push(a);
+  } catch (e) { RECM.err = String(e && e.message || e); }
+}
+// where a recorder takes its sound from (called as it starts)
+function recSrc() {
+  const ctx = audio.ctx, eng = recEng();
+  if (!eng) return audio.out;
+  if (RECM.users++ === 0) {
+    RECM.ctx = ctx; RECM.mode = eng; RECM.err = null; RECM.pend = []; RECM.feed = null; RECM.takes++;
+    RECM.mix = ctx.createGain(); RECM.dly = ctx.createDelay(1); audio.out.connect(RECM.dly).connect(RECM.mix);
+    RECM.pull = ctx.createGain(); RECM.pull.gain.value = 0; RECM.mix.connect(RECM.pull).connect(ctx.destination);   // (keeps it running for a video; silent)
+    if (eng === "web") { RECM.dly.delayTime.value = 0; RECM.lagMs = 0; RECM.tailMs = 0; GPWEB.node.connect(RECM.mix); }
+    else {
+      const TARGET = .15; let outMs = 30; try { const d = JSON.parse(GPNative.info()); if (d.delayMs > 0) outMs = d.delayMs; } catch (_) {}
+      RECM.rate = +GPNative.recStart() || 48000;
+      // the engine's sound reaches the recorder ~TARGET (+ a few ms for the fetch) after it was made; the page's is made
+      // (page latency − engine latency) later than the engine's for the same moment heard: delay the page's by the rest
+      const pageMs = ((ctx.baseLatency || 0) + (ctx.outputLatency || 0)) * 1000;
+      RECM.lagMs = Math.max(0, Math.min(900, TARGET * 1000 + 5 - outMs + pageMs)); RECM.dly.delayTime.value = RECM.lagMs / 1000;
+      RECM.tailMs = Math.round(TARGET * 1000 + 80);
+      RECM.timer = setInterval(recPullNow, 40); recPullNow();
+      const mk = () => {
+        if (RECM.ctx !== ctx || !RECM.users) return;
+        const f = new AudioWorkletNode(ctx, "glasspad-feed", { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2], processorOptions: { rate: RECM.rate, target: TARGET } });
+        f.port.onmessage = e => { if (e.data) { RECM.fillMs = Math.round(e.data.fill); RECM.under = e.data.under; } };
+        f.connect(RECM.mix); RECM.feed = f; for (const a of RECM.pend.splice(0)) f.port.postMessage(a, [a.buffer]);
+      };
+      if (RECM.feedCtx === ctx) mk();
+      else {
+        const url = URL.createObjectURL(new Blob([REC_FEED], { type: "application/javascript" }));
+        ctx.audioWorklet.addModule(url).then(() => { URL.revokeObjectURL(url); RECM.feedCtx = ctx; mk(); }).catch(e => { RECM.err = "feed: " + (e && e.message || e); });
+      }
+    }
+  }
+  return RECM.mix;
+}
+function recIn(node) { const s = recSrc(); s.connect(node); node._gpSrc = s; }
+function recOff(node) {
+  const s = node && node._gpSrc; if (!s) { try { audio.out.disconnect(node); } catch (_) {} return; }
+  try { s.disconnect(node); } catch (_) {} node._gpSrc = null;
+  if (s !== RECM.mix || --RECM.users > 0) return;
+  RECM.users = 0; clearInterval(RECM.timer); RECM.timer = 0;
+  if (RECM.mode === "app") try { GPNative.recStop(); } catch (_) {}
+  try { audio.out.disconnect(RECM.dly); } catch (_) {}
+  try { if (RECM.feed) RECM.feed.disconnect(); } catch (_) {}
+  try { if (RECM.mode === "web" && GPWEB.node) GPWEB.node.disconnect(RECM.mix); } catch (_) {}
+  try { RECM.dly.disconnect(); RECM.mix.disconnect(); RECM.pull.disconnect(); } catch (_) {}
+  RECM.feed = null; RECM.pend = []; RECM.mix = null;
+}
+// Stop: wait for the last of the engine's sound still on its way to the recorder
+{
+  const sa = stopAudioRec;
+  stopAudioRec = async function () {
+    if (arec.on && RECM.users && RECM.mode === "app" && !arec.tailing) { arec.tailing = true; await new Promise(r => setTimeout(r, RECM.tailMs)); arec.tailing = false; }
+    return sa.apply(this, arguments);
+  };
+  const sv = stopVideoRec;
+  stopVideoRec = function () {
+    if (vrec.on && RECM.users && RECM.mode === "app") { if (vrec.tailing) return; vrec.tailing = true; setTimeout(() => { vrec.tailing = false; sv.apply(this, arguments); }, RECM.tailMs); return; }
+    return sv.apply(this, arguments);
+  };
+}
+// Copy setup: how the last recording got the engine's sound
+{
+  const d0 = diagReport;
+  diagReport = function () {
+    const r = d0.apply(this, arguments);
+    try { r.recEngine = { now: recEng() || "page only", recording: RECM.users > 0, mode: RECM.mode, takes: RECM.takes, fetches: RECM.pulls, kB: Math.round(RECM.kB), waitingMs: RECM.fillMs, gaps: RECM.under, pageDelayMs: Math.round(RECM.lagMs), err: RECM.err }; } catch (_) {}
+    try { if (TSPLIT.rows.length) r.touchSplitPage = TSPLIT.sum(); } catch (_) {}
+    return r;
+  };
+}
+/* Where the touch delay goes (Creator only, nothing changes): the page notes, per lead note, how long the finger took to
+   reach the page (Android + the web view) and how long the page took to call the engine; the app (0.3.26+) adds the
+   bridge, the wait for the next audio block and the output. Copy setup: native.touchSplit + touchSplitPage. */
+const TSPLIT = window.TSPLIT = { rows: [],
+  note() {
+    if (!CRE.on || !NATIVE.ts || !NATIVE.seen) return;
+    const now = performance.now(), toPage = NATIVE.seen - NATIVE.ts, work = now - NATIVE.seen;
+    if (toPage < 0 || toPage > 500 || work < 0 || work > 500) return;
+    this.rows.push([toPage, work]); if (this.rows.length > 32) this.rows.shift();
+  },
+  sum() {
+    const med = c => { const v = this.rows.map(r => r[c]).sort((a, b) => a - b); return v.length ? +v[v.length >> 1].toFixed(1) : null; };
+    return { notes: this.rows.length, toPageMs: med(0), pageMs: med(1), last: this.rows.slice(-8).map(r => r.map(x => +x.toFixed(1))) };
+  },
+  line(d) {
+    try {
+      if (!CRE.on || !d || !d.touchSplit || !d.touchSplit.n) return "";
+      const t = d.touchSplit, p = this.rows.length ? this.sum() : null, f = x => x == null || x < 0 ? "?" : Math.round(x);
+      return ` · touch → heard ${f(t.totalMs)} ms = ${p ? `to the page ${f(p.toPageMs)} + page ${f(p.pageMs)}` : `page ${f(t.pageMs)}`} + bridge ${f(t.bridgeMs)} + wait ${f(t.waitMs)} + out ${f(t.outMs)} (${t.n} notes)`;
+    } catch (_) { return ""; }
+  } };
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }
 requestAnimationFrame(() => document.documentElement.classList.add("gp-ready"));

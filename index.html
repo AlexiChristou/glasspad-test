@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.05 TEST · game mode · 20 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.06 TEST · game mode · 20 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1547,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.05 TEST · game mode · 20 Oct 2026</p>
+      <p class="ver">GlassPad 6.06 TEST · game mode · 20 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -6278,7 +6278,7 @@ area.addEventListener("pointerdown", e => {
   hideTip();
   if (!audio || e.target.closest("#start") || e.target.closest("#picker") || e.target.closest("#kbNav") || e.target.closest("#gapBar") || e.target.closest(".pad-chip") || e.target.closest("#keyChip") || e.target.closest("#gDock")) return;
   e.preventDefault();
-  if (game.on) gameTouched(e);
+  if (game.on) gameTouched(e); else if (window.stuTouch) stuTouch(e);
   if (active.has(e.pointerId)) endPointer(e.pointerId, true);
   const [x, y] = pos(e);
   const kind = bass.on && y >= leadH() ? "bass" : "lead";
@@ -10266,7 +10266,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.05 TEST</p>
+    <p class="hm-ver">GlassPad 6.06 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14731,7 +14731,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.05 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.06 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -16884,7 +16884,7 @@ if (!window.GPNative && /[?&]engine\b/.test(location.search) && window.AudioWork
 // Only in the app: in Chrome nothing changes. Step 1 = a plain test lead (saw), the band still plays here.
 const NATIVE = { on: !!(window.GPNative && GPNative.noteOn) && !window.GPNOFF, lead: true, sink: null, ts: 0, perNote: false };
 try { NATIVE.lead = localStorage.getItem("glasspad.nativeLead") !== "0"; } catch (_) {}
-const natLead = () => NATIVE.on && NATIVE.lead && game.on && ($("wave").value !== "sampler" || !!(window.NSAMP && NSAMP.ready(0))) && (lead.snd2 !== "sampler" || !!(window.NSAMP && NSAMP.ready(1)));   // (5.91: "My sounds" too, once the engine has them)
+const natLead = () => NATIVE.on && NATIVE.lead && (game.on || stuEng()) && ($("wave").value !== "sampler" || !!(window.NSAMP && NSAMP.ready(0))) && (lead.snd2 !== "sampler" || !!(window.NSAMP && NSAMP.ready(1)));   // (5.91: "My sounds" too, once the engine has them)
 function natSink() { if (!NATIVE.sink || NATIVE.sink.context !== audio.ctx) { NATIVE.sink = audio.ctx.createGain(); NATIVE.sink.gain.value = 0; } return NATIVE.sink; }
 if (NATIVE.on) {
   const sv0 = startVoice;
@@ -17316,7 +17316,7 @@ if (NATIVE.on && typeof GPNative.bandSetup === "function") {
   if (GPNative.web) { NATIVE.band = true; NATIVE.lead = typeof GPNative.leadHold === "function"; }   // the web: the band, and (5.82) the lead
   NATIVE.heardIn = GPNative.web ? (t => (t - audio.ctx.currentTime) * 1000) : NATIVE.heardIn;
   const PS = ["strings", "glass", "organ", "choir", "pluck", "saws", "synth", "warm", "stab"], BSNDS = ["finger", "sub", "reese", "fuzz", "acid", "pluck"];
-  const engineBand = () => game.on && NATIVE.band && !isSong() && !isManual() && (!drum.kit || drum.kit === "synth" || !!(window.NKIT && NKIT.ready(drum.kit))) && (BSNDS.includes(bass.sound) || bass.sound === "sampler" && !!(window.NSAMP && NSAMP.ready(2))) && PS.includes(pad.sound);
+  const engineBand = () => (game.on || stuEng()) && NATIVE.band && !isSong() && !isManual() && (!drum.kit || drum.kit === "synth" || !!(window.NKIT && NKIT.ready(drum.kit))) && (BSNDS.includes(bass.sound) || bass.sound === "sampler" && !!(window.NSAMP && NSAMP.ready(2))) && PS.includes(pad.sound);
   // the band's setup: everything the engine needs to play this theme (the drum tables per BAND level, chords, bass lines, SHIFT)
   function bandSetup() {
     const m = T.meter, S = m.steps, LV = ["low", "normal", "high"], K = KIT[drum.style] || {}, bt = beatOn();
@@ -17332,7 +17332,7 @@ if (NATIVE.on && typeof GPNative.bandSetup === "function") {
     const P = PAD[pad.sound] || PAD.strings, p = progDegs(), home = homeBase();
     return { v: 1, bpm: T.bpm, swing: drum.swing, steps: S, pulses: m.pulses, drumsOn: !!drum.on, beat: bt, fills: drum.fills || 0,
       kitKick: bt ? "" : K.kick || "", kitSnare: bt ? "" : K.snare || "", fillSnare: K.snare || "snare", crash: bt ? "crash2" : "crash", crashKick: bk.kick || "kick",
-      pat, beatFill, band: game.band,
+      pat, beatFill, band: game.on ? game.band : 1,
       chords: { on: !!pad.on, every: pad.every, home, prog: p ? p.map(it => { const c = progChordAt(it, home); return { tones: c.tones, base: c.base, ...(c.rootRel != null ? { rootRel: c.rootRel } : {}) }; }) : null,
         rhythm: pad.rhythm, arp: pad.arp, arpRate: pad.arpRate, arpStyle: pad.arpStyle, strum: !!pad.strum, sound: Math.max(0, PS.indexOf(pad.sound)), trim: sndTrim("pad", pad.sound),
         info: { f: P.f[1], lp: P.f[0] === "lowpass", a: P.a, g: P.g, r: P.r, smooth: !!P.smooth }, feel: { on: { ...FEEL.on }, amt: FEEL.any ? FEEL.amt : 0 }, rhy },
@@ -17344,7 +17344,7 @@ if (NATIVE.on && typeof GPNative.bandSetup === "function") {
   const sendSetup = force => {
     try { const j = JSON.stringify(bandSetup()); if (force || j !== NB.lastSetup) { NB.lastSetup = j; GPNative.bandSetup(j); NB.sent++; } } catch (e) { NB.err = String(e); }
   };
-  setInterval(() => { if (audio && game.on && NATIVE.band) sendSetup(false); }, 300);
+  setInterval(() => { if (audio && (game.on || stuEng()) && NATIVE.band) sendSetup(false); }, 300);
   // the engine's events → the page's own (as the page's scheduler would have queued them), and its clock state mirrored
   const evT = ms => audio.ctx.currentTime + ms / 1000;
   const chordOf = (k, lift) => {
@@ -17460,7 +17460,7 @@ window.BDIARY = [];
 const bdiary = (what, id, v) => { const d = window.BDIARY; d.push([+(performance.now() / 1000).toFixed(2), what, id, v]); if (d.length > 40) d.shift(); };
 if (NATIVE.on && typeof GPNative.bassHold === "function") {
   const BSNDS = ["finger", "sub", "reese", "fuzz", "acid", "pluck"];
-  const natBassPad = () => game.on && NATIVE.band && NATIVE.bassOk && (BSNDS.includes(bass.sound) || bass.sound === "sampler" && !!(window.NSAMP && NSAMP.ready(2))) && (!game.arpB || typeof GPNative.arpSet === "function");
+  const natBassPad = () => (game.on || stuEng() && !RHYTHMS[bassPat.style]) && NATIVE.band && NATIVE.bassOk && (BSNDS.includes(bass.sound) || bass.sound === "sampler" && !!(window.NSAMP && NSAMP.ready(2))) && (!game.arpB || typeof GPNative.arpSet === "function");
   const B5 = window.NATBASS = { held: 0, glides: 0, made: 0, lead: 0 };
   let nid = 1;
   const nop = () => {}, msOf = t => { const d = (t - audio.ctx.currentTime) * 1000; return d > 2 ? d : 0; };
@@ -17584,7 +17584,8 @@ if (NATIVE.on && typeof GPNative.arpSet === "function") {
     };
     const table = lifts.map(l => Array.from({ length: L }, (_, i) => notesFor(chordFor(i, l)).map(m => +m.toFixed(3))));
     const stopped = (kind === 0 ? arpNotes("lead", v.lane, v.midi, v.kbv, style, undefined, null) : arpNotes("bass", v.lane, v.midi, false, style, undefined, null)).map(m => +m.toFixed(3));
-    return { kind, id, style, beats: gamePat(kind === 0 ? "lead" : "bass", true).beats, lifts, table, stopped };
+    const cf = game.on ? gamePat(kind === 0 ? "lead" : "bass", true) : patFor(kind === 0 ? "lead" : "bass");
+    return { kind, id, style, beats: (cf && cf.beats) || .5, lifts, table, stopped };
   }
   const NARPtick = window.NARPtick = () => {
     if (!audio) return;
@@ -17743,7 +17744,7 @@ if (window.GPNative && !window.GPNOFF && (typeof GPNative.loopCmd === "function"
     bassLanes.length, bass.sound, bass.layout, bassOct, leadOct, !!state.glide, rootSel.value, W, tone.release, bassTone.release, String(game.arpL), String(game.arpB)].join("|");
   setInterval(() => {
     try {
-      if (!audio || !game.on) return;
+      if (!audio || !(game.on || stuEng())) return;
       const sig = sigNow(); if (sig === NL.sig) return; NL.sig = sig;
       const j = JSON.stringify(loopTables()); if (j !== NL.lastSetup) { NL.lastSetup = j; GPNative.loopSetup(j); NL.setups++; }
     } catch (e) { NL.err = String(e); }
@@ -17909,7 +17910,7 @@ if (window.GPNative && !window.GPNOFF && (typeof GPNative.sampSetup === "functio
   NS.ready = slot => !!NS.ok[slot];
   const sync = () => {
     try {
-      if (!audio || !game.on) return;
+      if (!audio || !(game.on || stuEng())) return;
       const want = [$("wave").value === "sampler", lead.snd2 === "sampler", bass.sound === "sampler"];
       const slots = [want[0] ? slotOf(0, "lead", false) : { slot: 0, on: false }, want[1] ? slotOf(1, "lead", true) : { slot: 1, on: false }, want[2] ? slotOf(2, "bass", false) : { slot: 2, on: false }];
       const j = JSON.stringify({ bandCut: BASS.sampler.cut * 2.2, slots });
@@ -18425,10 +18426,10 @@ function crbFill() {
   const appVer = () => { try { const m = String(GPNative.version()).match(/(\d+)\.(\d+)\.(\d+)/); return m ? +m[1] * 1e6 + +m[2] * 1e3 + +m[3] : 0; } catch (_) { return 0; } };
   window.pad2Why = () => {
     if (!PAD2.on) return "";
-    if (!game.on) return "Studio pad: Chords 2 only plays on the game pad.";
     if (!window.GPNative) return "Chords 2 needs the App sound (in the app, or ?engine in Chrome).";
     if (window.GPNOFF) return "Web sound: Chords 2 needs the App sound (Settings → Sound engine).";
     if (!GPNative.web && appVer() < 3022) return "This app is older than 0.3.22: install the latest APK to hear Chords 2.";
+    if (!game.on && !stuEng()) return stuWhy() ? `Studio pad: ${stuWhy()}, so Chords 2 can't play.` : "Studio pad: Chords 2 can't play here.";
     if (T.playing && window.NATBAND && !NATBAND.running) return "The band is on the page for this theme, so Chords 2 can't play.";
     return "";
   };
@@ -18439,7 +18440,7 @@ function crbFill() {
   // Settings: "Band: page (why)"
   const BS = ["finger", "sub", "reese", "fuzz", "acid", "pluck"];
   const why = () => {
-    if (!game.on) return "Studio pad";
+    if (!game.on && !stuEng()) return stuWhy() || "Studio pad";
     if (isSong() || isManual()) return "your own chords";
     if (drum.kit && drum.kit !== "synth" && !(window.NKIT && NKIT.ready(drum.kit))) return "sample kit";
     if (!(BS.includes(bass.sound) || bass.sound === "sampler" && window.NSAMP && NSAMP.ready(2))) return "your bass sound";
@@ -18607,6 +18608,38 @@ function thList(title, items, cur, pick) {
   crePreset = function () {
     const t = cp0.apply(this, arguments), pre = "GLASSPAD PRESET ";
     try { const j = JSON.parse(t.slice(pre.length)), k = crbKey(); j.saved = !!(CRB[k] && CRB[k].setup); return pre + JSON.stringify(j); } catch (_) { return t; }
+  };
+}
+/* ---------- 6.06 (app 0.3.23): the Studio pad plays the engine band, like the game ----------
+   With the App sound, the Studio pad now uses the engine as the game pad does: the band (the theme's bass lines,
+   Chords 2, the drums at BAND Normal), your lead and bass notes, ARPs, loops and My sounds. KEY ▲▼ lifts the engine
+   band (bandLift), landing where the page's own lift would. It stays on the page's band (as before) with your own
+   chords, a song, or a drummer's groove, and with an app older than 0.3.23. */
+function stuWhy() {
+  if (isSong() || isManual()) return "your own chords";
+  if (drum.on && drum.groove && T.meter.steps === 16 && GROOVES[drum.groove]) return "drummer's groove";
+  if (window.GPNative && !GPNative.web && typeof GPNative.bandLift !== "function") return "app older than 0.3.23";
+  return "";
+}
+function stuEng() { return !game.on && NATIVE.on && !!window.GPNative && (GPNative.web || typeof GPNative.bandLift === "function") && !stuWhy(); }
+if (NATIVE.on && window.NATBAND) {
+  const NB = window.NATBAND;
+  if (GPNative.web) GPNative.bandLift = n => { const W = window.GPWEB; const m = ["bandCmd", 7, n, -1]; if (W.node) W.node.port.postMessage(m); else W.q.push(m); };
+  // KEY ▲▼ on the Studio pad: the engine band goes to the same key
+  const lk0 = liftKey;
+  liftKey = function () {
+    const r = lk0.apply(this, arguments);
+    try { if (!game.on && (NB.running || stuEng()) && typeof GPNative.bandLift === "function") GPNative.bandLift(keyLift.target); } catch (_) {}
+    return r;
+  };
+  // a finger on the bass pad: the built-in bass waits (as gameTouched does in the game)
+  window.stuTouch = e => {
+    try {
+      if (!NB.running || !audio || !bass.on) return;
+      const [, y] = pos(e); if (y < leadH()) return;
+      game.bassPids.add(e.pointerId); game.lastBassUp = audio.ctx.currentTime;
+      if (!NB.held) { NB.held = true; GPNative.bassTouch(1); }
+    } catch (_) {}
   };
 }
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)

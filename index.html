@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.07 TEST · game mode · 20 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.08 TEST · game mode · 20 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1547,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.07 TEST · game mode · 20 Oct 2026</p>
+      <p class="ver">GlassPad 6.08 TEST · game mode · 20 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -6894,7 +6894,7 @@ function draw() {
   placeChips(LH);
   drawLs(now, LH);
 
-  if (game.on) gameFx(now, LH); else drawLiftFx(now, LH);
+  if (game.on) gameFx(now, LH); else if (window.stuDraw) stuDraw(now, LH); else drawLiftFx(now, LH);
   mcFill();
 
   // song count-in: 4 3 2 1 on the pad
@@ -10266,7 +10266,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.07 TEST</p>
+    <p class="hm-ver">GlassPad 6.08 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -12006,7 +12006,7 @@ function pvGain(to, secs, from) {   // 5.97: starts from the level last asked fo
   g.cancelScheduledValues(t); g.setValueAtTime(f, t); g.linearRampToValueAtTime(to, t + secs);
   MGR = { from: f, to, t0: t, t1: t + secs }; natMasterKick(secs);
 }
-function pvClear() { clearTimeout(hpv.t1); clearTimeout(hpv.t2); hpv.t1 = hpv.t2 = 0; }
+function pvClear() { clearTimeout(hpv.t1); clearTimeout(hpv.t2); clearTimeout(hpv.t3); hpv.t1 = hpv.t2 = hpv.t3 = 0; }
 function pvSync() {
   const b = $("hmPv"), locked = $("home").querySelector(".hm-hero").classList.contains("lockd");
   b.hidden = locked; b.innerHTML = T.playing ? SV.stop : SV.play; b.setAttribute("aria-label", T.playing ? "Stop" : "Listen");
@@ -12027,7 +12027,7 @@ function pvStart(load) {
     hpv.on = true; pvSync();
     hpv.t1 = setTimeout(() => {
       pvGain(0, 3);
-      hpv.t2 = setTimeout(() => { hpv.on = false; if (T.playing) setPlaying(false); setTimeout(() => pvGain(pvTarget(), .05), 250); pvSync(); }, 3100);
+      hpv.t2 = setTimeout(() => { hpv.on = false; if (T.playing) setPlaying(false); hpv.t3 = setTimeout(() => pvGain(pvTarget(), .05), 1500); pvSync(); }, 3100);   // 6.08: 1.5 s (tails)
     }, hpv.len * 1000);
   };
   if (T.playing && load) { pvGain(0, .35); hpv.t1 = setTimeout(() => { hpv.sw = true; if (T.playing) setPlaying(false); go(); }, 380); } else go();   // 5.95: stop, then the new theme from its start
@@ -12035,7 +12035,7 @@ function pvStart(load) {
 function pvStop() {
   pvClear(); hpv.on = false;
   if (!T.playing) return pvSync();
-  pvGain(0, .35); hpv.t2 = setTimeout(() => { setPlaying(false); setTimeout(() => pvGain(pvTarget(), .05), 200); pvSync(); }, 400);
+  pvGain(0, .35); hpv.t2 = setTimeout(() => { setPlaying(false); hpv.t3 = setTimeout(() => pvGain(pvTarget(), .05), 1500); pvSync(); }, 400);
 }
 function hmShow(id, locked) {
   const h = $("home"), hero = h.querySelector(".hm-hero"), key = GAME_IMGS[id] ? id : gameKey();
@@ -14731,7 +14731,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.07 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.08 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -17316,23 +17316,25 @@ if (NATIVE.on && typeof GPNative.bandSetup === "function") {
   if (GPNative.web) { NATIVE.band = true; NATIVE.lead = typeof GPNative.leadHold === "function"; }   // the web: the band, and (5.82) the lead
   NATIVE.heardIn = GPNative.web ? (t => (t - audio.ctx.currentTime) * 1000) : NATIVE.heardIn;
   const PS = ["strings", "glass", "organ", "choir", "pluck", "saws", "synth", "warm", "stab"], BSNDS = ["finger", "sub", "reese", "fuzz", "acid", "pluck"];
+  window.engineBandOk = () => engineBand();
   const engineBand = () => (game.on || stuEng()) && NATIVE.band && !isSong() && !isManual() && (!drum.kit || drum.kit === "synth" || !!(window.NKIT && NKIT.ready(drum.kit))) && (BSNDS.includes(bass.sound) || bass.sound === "sampler" && !!(window.NSAMP && NSAMP.ready(2))) && PS.includes(pad.sound);
   // the band's setup: everything the engine needs to play this theme (the drum tables per BAND level, chords, bass lines, SHIFT)
   function bandSetup() {
     const m = T.meter, S = m.steps, LV = ["low", "normal", "high"], K = KIT[drum.style] || {}, bt = beatOn();
     const bk = bt ? (BEAT_KITS[drum.beat.kit] || BEAT_KITS.synth)[1] : {};
     const hits = a => a.map(([i, v, o]) => [i, +v.toFixed(5), o || 0]);
-    const b0 = T.bar, g0 = game.band;
+    const b0 = T.bar, g0 = game.band, go0 = game.on;
     let pat, beatFill, rhy;
     try {
+      game.on = true;   // 6.08: the game's BAND tables, on the Studio pad too
       pat = [0, 1, 2].map(l => [0, 1].map(p => { T.bar = p; return Array.from({ length: S }, (_, s) => hits(drumKind(s, GAME_KIND[l]))); }));
       beatFill = [0, 1, 2].map(l => Array.from({ length: S }, (_, s) => { const f = bt ? beatFillAt(s, LV[l]) : null; return f ? hits(f) : null; }));
       rhy = [0, 1, 2].map(l => [0, 1].map(q => { T.bar = q; game.band = l; rhythmCache = {}; return rhythmHits(pad.rhythm).map(h => ({ s: h.s, len: h.len, vel: h.vel, next: !!h.next })); }));
-    } finally { T.bar = b0; game.band = g0; rhythmCache = {}; }
+    } finally { T.bar = b0; game.band = g0; game.on = go0; rhythmCache = {}; }
     const P = PAD[pad.sound] || PAD.strings, p = progDegs(), home = homeBase();
     return { v: 1, bpm: T.bpm, swing: drum.swing, steps: S, pulses: m.pulses, drumsOn: !!drum.on, beat: bt, fills: drum.fills || 0,
       kitKick: bt ? "" : K.kick || "", kitSnare: bt ? "" : K.snare || "", fillSnare: K.snare || "snare", crash: bt ? "crash2" : "crash", crashKick: bk.kick || "kick",
-      pat, beatFill, band: game.on ? game.band : 1,
+      pat, beatFill, band: game.band,
       chords: { on: !!pad.on, every: pad.every, home, prog: p ? p.map(it => { const c = progChordAt(it, home); return { tones: c.tones, base: c.base, ...(c.rootRel != null ? { rootRel: c.rootRel } : {}) }; }) : null,
         rhythm: pad.rhythm, arp: pad.arp, arpRate: pad.arpRate, arpStyle: pad.arpStyle, strum: !!pad.strum, sound: Math.max(0, PS.indexOf(pad.sound)), trim: sndTrim("pad", pad.sound),
         info: { f: P.f[1], lp: P.f[0] === "lowpass", a: P.a, g: P.g, r: P.r, smooth: !!P.smooth }, feel: { on: { ...FEEL.on }, amt: FEEL.any ? FEEL.amt : 0 }, rhy },
@@ -17368,7 +17370,8 @@ if (NATIVE.on && typeof GPNative.bandSetup === "function") {
         case 4: { let best = -1, bd = 99; bassLanes.forEach((l, i) => { if (Math.abs(mod12(l.midi) - mod12(v)) < .01) { const d = Math.abs(l.midi - v); if (d < bd) { bd = d; best = i; } } }); if (best >= 0) uiQueue.push({ t, gameBass: best }); break; }
         case 5: uiQueue.push({ t, part: { part: "verse", pos: 0, t0: t, secs: passBars() * passesPerPart() * T.meter.steps * dur, lift: a } }); break;
         case 6: if (a === 1) { keyLift.target = b; keyLift.pend = { from: audAbs(), land: v }; } else if (a === 0) { keyLift.target = b; keyLift.pend = null; } break;
-        case 9: if (T.playing) { NB.quiet = true; T.noFlush = true; try { setPlaying(false); } finally { T.noFlush = false; NB.quiet = false; } } break;
+        case 9: if (NB.ownStops > 0) { NB.ownStops--; break; }   // 6.08: the echo of the page's own Stop
+                if (T.playing) { NB.quiet = true; T.noFlush = true; try { setPlaying(false); } finally { T.noFlush = false; NB.quiet = false; } } break;
       }
     }
   }
@@ -17388,7 +17391,7 @@ if (NATIVE.on && typeof GPNative.bandSetup === "function") {
         NB.intro = false; NB.starts++;
       }
     } else {
-      if (NB.running && !NB.quiet) { try { GPNative.bandStop(); } catch (_) {} }
+      if (NB.running && !NB.quiet) { try { GPNative.bandStop(); NB.ownStops = (NB.ownStops || 0) + 1; } catch (_) {} }
       NB.running = false;
       if (NB.saved) { NB.saved = null; NATIVE.band = true; }
     }
@@ -18477,7 +18480,7 @@ function themeOpen(id) {
   ensureAudio(); CTH.id = null;
   spClose(true); stClose();
   if (!$("mk").hidden) try { mkClose(false); } catch (_) {}
-  if (!game.on) setGame(true);
+  if (game.on) setGame(false);   // 6.08: the Studio pad (BAND and SHIFT are on it now)
   if (T.playing) setPlaying(false);
   try { keepArm(); } catch (_) {} qs.pend = null; keepPend = null;
   loadStyle(styleOf(id));
@@ -18488,7 +18491,7 @@ function themeLeave() { CTH.id = null; spClose(true); stClose(); if (T.playing) 
 function themeSave() {
   const k = CTH.id; if (!k) return;
   if (CRT_B.on) return toast("Go back to section A first (Back to A), then save");
-  const o = crbOf(k); o.setup = capture(); crbSave();
+  const o = crbOf(k); o.setup = capture(); if (o.setup.parts) o.setup.parts.auto = false; crbSave();
   try { if (SM.store[k]) { delete SM.store[k]; localStorage.setItem("glasspad.solomix", JSON.stringify(SM.store)); } } catch (_) {}
   toast(`Saved ${thName(k)}: the game plays it like this (Creator mode)`);
 }
@@ -18756,6 +18759,122 @@ if (NATIVE.on && window.GPNative) {
   };
   const d0 = diagReport;
   diagReport = function () { const r = d0.apply(this, arguments); try { r.nativeRiff = { notes: ER.notes, onPage: ER.page, clips: ER.clips, clicks: ER.clicks }; } catch (_) {} return r; };
+}
+/* ---------- 6.08: fixes (Home Mine, Save & play, preview ends, themes on the Studio pad with BAND/SHIFT, sound names) ---------- */
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  /* 1. Mine with nothing made yet */
+  #home .hm-empty { display: none; }
+  #home.hmempty .hm-empty { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; padding: 0 24px; }
+  #home .hm-empty b { font: 700 20px var(--display); color: #fff; letter-spacing: .02em; }
+  #home .hm-empty span { font: 400 14px/1.35 "IBM Plex Sans", sans-serif; color: #c9cfdb; } #home .hm-empty span b { font: inherit; font-weight: 600; }
+  #home.hmempty .hm-hero img { opacity: .18; } #home.hmempty .hm-heroin, #home.hmempty .hm-hero button { display: none !important; }
+  #home.hmempty #hmRowWrap { visibility: hidden; }
+  #home.hmempty #hmMine { animation: hmPulse 1.6s ease-in-out infinite; border-color: var(--hacc) !important; }
+  @keyframes hmPulse { 0%, 100% { box-shadow: 0 0 0 1px var(--hacc), 0 0 8px 0 var(--hacc); } 50% { box-shadow: 0 0 0 2px var(--hacc), 0 0 24px 6px var(--hacc); } }
+  /* 4. the Studio pad: ‹ · BAND · KEY · SHIFT (no mic) */
+  body.studio:not(.game) #gMic { display: none !important; }
+  body.studio:not(.game) #gBand, body.studio:not(.game) #gShift { box-sizing: border-box; margin: 0 !important; display: flex; align-items: center; justify-content: center; gap: 5px; border-radius: 999px; border: 1.5px solid var(--amber) !important;
+    background: rgba(10,12,20,.6); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); color: #eef1f7; font: 600 11px var(--display); letter-spacing: .1em; padding: 0 8px; flex: none; }
+  body.studio:not(.game) #gBand em { font: 600 11px var(--display); font-style: normal; letter-spacing: .1em; color: #eef1f7; padding: 0; margin: 0 3px 0 0; align-self: center; }
+  body.studio:not(.game) #gBand b { width: 5px; align-self: flex-end; margin-bottom: 11px; }
+  body.studio:not(.game) #gBand b:nth-of-type(1) { height: 7px; } body.studio:not(.game) #gBand b:nth-of-type(2) { height: 11px; } body.studio:not(.game) #gBand b:nth-of-type(3) { height: 16px; }
+  body.studio:not(.game) #gShift span { font-size: 11px; letter-spacing: .1em; gap: 5px !important; display: inline-flex; align-items: center; white-space: nowrap; }
+  body.studio:not(.game) #styleRow #gShift span b.sar { width: 13px; height: 11px; }
+  body.studio:not(.game) #gBand.stu-off, body.studio:not(.game) #gShift.stu-off { opacity: .35; pointer-events: none; }
+  @media (orientation: portrait) {
+    body.studio:not(.game) #styleRow #gBand, body.studio:not(.game) #styleRow #gShift { position: absolute; top: calc(50% - 19px); height: 38px; width: calc((100% - 190px) / 2); z-index: 2; }
+    body.studio:not(.game) #styleRow #gBand { left: 68px; } body.studio:not(.game) #styleRow #gShift { right: 22px; left: auto; }
+    body.studio:not(.game) #styleRow .stp-key.stu { left: calc(76px + (100% - 190px) / 2); transform: translateY(-50%); width: 84px; height: 38px; padding: 0 4px; gap: 0; justify-content: space-between; }
+    body.studio:not(.game) #styleRow .stp-key.stu button { width: 26px; height: 26px; font-size: 10px; }
+    body.studio:not(.game) #styleRow .stp-key.stu .stp-kv { min-width: 24px; }
+    body.studio:not(.game) #styleRow .stp-key.stu .stp-lab { font-size: 7px; }
+    body.studio:not(.game) #styleRow .stp-key.stu b { font-size: 16px; }
+    body.studio:not(.game) #styleRow .stp-key.stu b::after { content: none; }
+  }
+  @media (orientation: landscape) {
+    body.studio:not(.game) .stp-dock #gBand, body.studio:not(.game) .stp-dock #gShift { height: 46px; width: 84px; border-radius: 16px; position: static; transform: none; }
+  }`;
+  document.head.appendChild(st);
+}
+// 1. Home: Themes | Mine always; Mine empty → a message in the preview box and Make your own pulses
+{
+  const hero = document.querySelector("#home .hm-hero");
+  if (hero) { const m = document.createElement("div"); m.className = "hm-empty"; m.innerHTML = `<b>No themes created yet!</b><span>Tap <b>Make your own</b> below to make your first one.</span>`; hero.appendChild(m); }
+  const hs0 = hmShowRow;
+  hmShowRow = function (v) {
+    const has = MY.list.length > 0 || userPresets.length > 0, empty = v === "mine" && !has;
+    const r = hs0.apply(this, arguments);
+    try {
+      const seg = document.querySelector(".hm-seg"); if (seg) seg.hidden = false;
+      $("home").classList.toggle("hmempty", empty);
+      if (empty) {
+        hm.row = "mine";
+        document.querySelectorAll(".hm-seg button").forEach(x => x.setAttribute("aria-pressed", x.dataset.v === "mine"));
+        $("hmThLbl").textContent = "none yet";
+        if (hpv.on || T.playing) { try { pvStop(); } catch (_) {} }
+      }
+    } catch (_) {}
+    return r;
+  };
+  const sg = document.querySelector(".hm-seg"); if (sg) sg.hidden = false;
+}
+// 5. a saved sound's name shows only while the part plays exactly that sound (a theme or setup brings its own sounds)
+{
+  const ls0 = loadStyle;
+  loadStyle = function () {
+    const r = ls0.apply(this, arguments);
+    try {
+      for (const k of ["lead", "lead2", "bass", "pad"]) { const x = sndList(k).find(y => spnSame(y.data, sndGrab(k))); SPN.sndName[k] = x ? x.name : null; }
+      spnSndKeep();
+    } catch (_) {}
+    return r;
+  };
+}
+// 4. the Studio pad: BAND and SHIFT (the game's own buttons, moved in), either side of a smaller KEY; the mic goes
+const STU = window.STU = { shown: false, shift: false };
+{
+  const gB = $("gBand"), gS = $("gShift"), homeB = [gB.parentNode, gB.nextSibling], homeS = [gS.parentNode, gS.nextSibling];
+  const back = (el, [p, nx]) => { if (el.parentNode !== p) { if (nx && nx.parentNode === p) p.insertBefore(el, nx); else p.appendChild(el); } };
+  const place = () => {
+    const K = $("stpKey"), on = !game.on && document.body.classList.contains("studio") && !!K && !!K.parentNode;
+    STU.shown = on;
+    if (!on) { back(gB, homeB); back(gS, homeS); if (K) K.classList.remove("stu"); return; }
+    const p = K.parentNode;
+    if (gB.parentNode !== p || gB.nextSibling !== K) p.insertBefore(gB, K);
+    if (gS.parentNode !== p || K.nextSibling !== gS) K.after(gS);
+    K.classList.add("stu");
+    let ok = false; try { ok = !!(window.engineBandOk && engineBandOk()); } catch (_) {}
+    gB.classList.toggle("stu-off", !ok); gS.classList.toggle("stu-off", !ok);
+  };
+  const ss0 = stpSync;
+  stpSync = function () { const r = ss0.apply(this, arguments); try { place(); } catch (_) {} return r; };
+  const sg0 = setGame;
+  setGame = function () { const r = sg0.apply(this, arguments); try { place(); gameRenderBand(); } catch (_) {} return r; };
+  setInterval(() => { try { place(); } catch (_) {} }, 600);
+  // SHIFT tapped on the Studio pad: its charge shows (KEY ▲▼ keeps the Studio pad's own line)
+  document.addEventListener("click", e => { if (!game.on && e.target.closest && e.target.closest("#gShift")) STU.shift = true; }, true);
+  const ge0 = gameExtras; gameExtras = function () { if (!game.on) return; return ge0.apply(this, arguments); };
+  window.stuDraw = (now, LH) => {
+    if (!STU.shown) return drawLiftFx(now, LH);
+    if (STU.shift && !keyLift.pend && !game.local) STU.shift = false;
+    const kp = keyLift.pend;
+    try {
+      if (STU.shift) { keyLift.pend = null; drawLiftFx(now, LH); keyLift.pend = kp; gameFx(now, LH); }
+      else { drawLiftFx(now, LH); keyLift.pend = null; gameFx(now, LH); }
+    } finally { keyLift.pend = kp; }
+  };
+}
+// 4. the theme page: the Studio pad's ‹ comes back to it
+document.addEventListener("click", e => {
+  if (!CTH.id || !CRE.on || game.on || !e.target.closest || !e.target.closest("#stProBtn")) return;
+  e.stopImmediatePropagation(); e.preventDefault(); themePage();
+}, true);
+// 2. Save & play / Play it: the Play button always says Stop when the theme starts
+{
+  const mf0 = mkFinish;
+  mkFinish = function () { const r = mf0.apply(this, arguments); try { if (T.playing) document.querySelectorAll(".playBtn").forEach(b => { b.setAttribute("aria-pressed", true); b.textContent = "■ Stop"; }); } catch (_) {} return r; };
 }
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }

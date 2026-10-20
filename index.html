@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.06 TEST · game mode · 20 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.07 TEST · game mode · 20 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1547,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.06 TEST · game mode · 20 Oct 2026</p>
+      <p class="ver">GlassPad 6.07 TEST · game mode · 20 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10266,7 +10266,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.06 TEST</p>
+    <p class="hm-ver">GlassPad 6.07 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14731,7 +14731,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.06 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.07 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -17908,6 +17908,7 @@ if (window.GPNative && !window.GPNOFF && (typeof GPNative.sampSetup === "functio
     try { const pool = samplesFor(kind) || []; const c = pickSample(frac ?? .5, pool, kind); return Math.max(0, Math.min(7, pool.indexOf(c))); } catch (_) { return 0; } finally { buildingSecond = was; }
   };
   NS.ready = slot => !!NS.ok[slot];
+  NS.slotOf = slotOf; NS.idOf = idOf;   // 6.07: riffs and recordings played once
   const sync = () => {
     try {
       if (!audio || !(game.on || stuEng())) return;
@@ -18641,6 +18642,120 @@ if (NATIVE.on && window.NATBAND) {
       if (!NB.held) { NB.held = true; GPNative.bassTouch(1); }
     } catch (_) {}
   };
+}
+/* ---------- 6.07 (app 0.3.24): riffs, recordings played once and count-in clicks in the engine ----------
+   With the App sound, a riff's notes (Sound lab, the sound picker, Make your own) go to the engine with their own sound,
+   timed on its clock; ▶ on a recording plays it from the engine; the count-in before a loop clicks in the engine when
+   the engine plays the band. A sound the engine hasn't got (or an app older than 0.3.24) plays on the page as before. */
+if (NATIVE.on && window.GPNative) {
+  if (GPNative.web) {
+    const W = window.GPWEB;
+    GPNative.evAt = (type, id, midi, cut, vel, tDown, ms) => {
+      const m = ["evAt", type, id, midi, cut, vel, tDown, ms > 0 && W.ctx ? Math.round((W.ctx.currentTime + ms / 1000) * W.ctx.sampleRate) : -1];
+      if (W.node) W.node.port.postMessage(m); else W.q.push(m);
+    };
+  }
+  const ER = window.NRIFF = { notes: 0, page: 0, clips: 0, clicks: 0, id: 0, k: 0, t0: null, slots: "" };
+  const can = () => typeof GPNative.evAt === "function";
+  const RIFF0 = 1 << 22, BSN = ["finger", "sub", "reese", "fuzz", "acid", "pluck"];
+  const msAt = t => NATIVE.heardIn ? NATIVE.heardIn(t) : (t - audio.ctx.currentTime) * 1000;
+  // which engine sound plays this riff note: { fl, tD } or null (the page plays it)
+  const recSlot = (slot, kind, second) => {
+    if (!window.NSAMP || !NSAMP.slotOf) return null;
+    const was = RIFF_OVR.on; RIFF_OVR.on = true;
+    try { const x = NSAMP.slotOf(slot, kind, !!second); return x && x.on ? x : null; } catch (_) { return null; } finally { RIFF_OVR.on = was; }
+  };
+  const plan = (kind, snd, second) => {
+    if (kind === "lead") {
+      if (LEAD_SNDS.includes(snd)) return { fl: second ? 1 : 0, tD: 1 + LEAD_SNDS.indexOf(snd) + 16 * Math.round(sndTrim("lead", snd) * 1000) };
+      if (snd === "sampler") { const x = recSlot(3, "lead", second); if (x) return { fl: (second ? 1 : 0) | 2, slot: x }; }
+      return null;
+    }
+    if (BSN.includes(snd)) return { fl: 0, tD: 1 + BSN.indexOf(snd) + 16 * Math.round(sndTrim("bass", snd) * 1000) };
+    if (snd === "sampler") { const x = recSlot(4, "bass", false); if (x) return { fl: 2, slot: x }; }
+    return null;
+  };
+  const rn0 = riffNote;
+  riffNote = function (kind, snd, midi, at, len, second) {
+    let p = null; try { if (can() && audio) p = plan(kind, snd, second); } catch (_) {}
+    if (!p) { ER.page++; return rn0.apply(this, arguments); }
+    if (p.slot) {   // a riff of recordings: the engine's riff slot gets them (once per riff)
+      const j = JSON.stringify({ bandCut: BASS.sampler.cut * 2.2, slots: [p.slot] });
+      if (j !== ER.slots) { ER.slots = j; try { GPNative.sampSetup(j); } catch (_) {} }
+      p.tD = ER.k++ % Math.max(1, p.slot.clips.length);
+    }
+    const now = audio.ctx.currentTime;
+    if (ER.t0 == null) ER.t0 = now + .06;
+    const t = Math.max(now, (RIFF.base != null ? RIFF.base : ER.t0) + at), id = RIFF0 + (ER.id = (ER.id + 1) % 1000000);
+    const hold = kind === "lead" ? 50 : 52, off = kind === "lead" ? 51 : 53, cut = kind === "lead" ? 2600 : 900, tc = relTcFor(kind);
+    RIFF.timers.push(setTimeout(() => {
+      try {
+        GPNative.evAt(hold, id, midi, cut, p.fl, p.tD, Math.max(0, msAt(t)));
+        GPNative.evAt(off, id, 0, tc, 0, 0, Math.max(1, msAt(t + len)));
+        ER.notes++;
+      } catch (_) {}
+    }, Math.max(0, (t - now - .2) * 1000)));
+  };
+  // a new riff: its own clock; the pedals it plays through reach the engine first
+  const mr0 = mkRiff;
+  mkRiff = function () {
+    ER.t0 = null; ER.slots = "";
+    try { if (can()) for (const f of NATMIX) { try { f(); } catch (_) {} } } catch (_) {}
+    return mr0.apply(this, arguments);
+  };
+  const ms0 = mkRiffStop;
+  mkRiffStop = function () {
+    const r = ms0.apply(this, arguments);
+    try { if (can() && audio) GPNative.evAt(54, 0, 0, .03, 0, 0, 0); } catch (_) {}
+    ER.t0 = null; return r;
+  };
+  // ▶ on a recording: the engine plays it once (the same trimmed, tuned sound), dry, at the page's master level
+  const pc0 = playClipOnce;
+  playClipOnce = function (c) {
+    try {
+      if (can() && window.NSAMP && NSAMP.idOf && c) {
+        ensureAudio(); if (!c.buf) c.buf = clipBuf(c);
+        const id = NSAMP.idOf(c);
+        if (id >= 0) { GPNative.evAt(55, id, 0, 0, audio.master.gain.value, 0, 0); ER.clips++; return; }
+      }
+    } catch (_) {}
+    return pc0.apply(this, arguments);
+  };
+  // the count-in before a loop records (band stopped): clicks in the engine when the engine plays the band
+  const ci0 = countInThenStart;
+  countInThenStart = function () {
+    if (!can()) return ci0.apply(this, arguments);
+    ensureAudio();
+    const { ctx, master } = audio, m = T.meter, dur = stepDur(), t0 = ctx.currentTime + .1;
+    setPlaying(true, t0 + m.steps * dur);
+    const eng = !!(window.NATBAND && NATBAND.running), g = master.gain.value;
+    m.pulses.forEach((p, i) => {
+      const t = t0 + p * dur;
+      if (eng) { GPNative.evAt(56, i === 0 ? 1 : 0, 0, 0, (i === 0 ? .5 : .32) * g, 0, Math.max(0, msAt(t))); ER.clicks++; return; }
+      const o = ctx.createOscillator(), gn = ctx.createGain();
+      o.frequency.value = i === 0 ? 1760 : 1320;
+      gn.gain.setValueAtTime(0, t); gn.gain.linearRampToValueAtTime(i === 0 ? .5 : .32, t + .002);
+      gn.gain.exponentialRampToValueAtTime(.001, t + .06);
+      o.connect(gn).connect(master); o.start(t); o.stop(t + .08); cleanWhenDone([o], [o, gn]);
+      loop.clicks.push(o);
+    });
+  };
+  const sl0 = silenceLoop;
+  silenceLoop = function () { const r = sl0.apply(this, arguments); try { if (can() && audio && ER.clicks) GPNative.evAt(57, 0, 0, 0, 0, 0, 0); } catch (_) {} return r; };
+  // (6.06 fix) the Studio pad's count-in (first Play of a jam): the engine band waits for it, like the page band did
+  const sp6 = setPlaying;
+  setPlaying = function (on, startAt) {
+    let ci = false; try { ci = on && startAt === undefined && !game.on && !isSong() && jamCountIn && bandFresh && stuEng(); } catch (_) {}
+    if (!ci) return sp6.apply(this, arguments);
+    ensureAudio();
+    const m = T.meter, dur = stepDur(), t0 = audio.ctx.currentTime + .08, st = t0 + m.steps * dur;
+    m.pulses.forEach((p, i) => hit(i === 0 ? "ohat" : "hat", t0 + p * dur, i === 0 ? .7 : .55));
+    const r = sp6.call(this, on, st);
+    T.countIn = { start: t0, end: st, beats: m.pulses.map(p => t0 + p * dur) };
+    return r;
+  };
+  const d0 = diagReport;
+  diagReport = function () { const r = d0.apply(this, arguments); try { r.nativeRiff = { notes: ER.notes, onPage: ER.page, clips: ER.clips, clicks: ER.clicks }; } catch (_) {} return r; };
 }
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }

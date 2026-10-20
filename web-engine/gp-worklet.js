@@ -38,6 +38,7 @@ class GPCore extends AudioWorkletProcessor {
       case "leadGlide": x.gp_leadGlide(m[1], m[2], m[3], m[4] >= 0 ? this.f(m[4]) : -1); break;
       case "leadBright": x.gp_leadBright(m[1], m[2], m[3], m[4] >= 0 ? this.f(m[4]) : -1); break;
       case "leadLetGo": x.gp_leadLetGo(m[1], m[2], m[3] >= 0 ? this.f(m[3]) : -1); break;
+      case "evAt": x.gp_evAt(m[1], m[2], m[3], m[4], m[5], m[6], m[7] >= 0 ? this.f(m[7]) : -1); break;   // 0.3.24
       case "arpSet": {
         const bytes = m[1], p = x.gp_strbuf(bytes.length), mem = new Uint8Array(x.memory.buffer, p, bytes.length + 1);
         mem.set(bytes); mem[bytes.length] = 0; x.gp_arpSet(); break;

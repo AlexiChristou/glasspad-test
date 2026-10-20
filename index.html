@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.11 TEST · game mode · 20 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.12 TEST · game mode · 20 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1547,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.11 TEST · game mode · 20 Oct 2026</p>
+      <p class="ver">GlassPad 6.12 TEST · game mode · 20 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10268,7 +10268,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.11 TEST</p>
+    <p class="hm-ver">GlassPad 6.12 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14733,7 +14733,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.11 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.12 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -18974,7 +18974,7 @@ function recSrc() {
     RECM.ctx = ctx; RECM.mode = eng; RECM.err = null; RECM.pend = []; RECM.feed = null; RECM.takes++;
     RECM.mix = ctx.createGain(); RECM.dly = ctx.createDelay(1); audio.out.connect(RECM.dly).connect(RECM.mix);
     RECM.pull = ctx.createGain(); RECM.pull.gain.value = 0; RECM.mix.connect(RECM.pull).connect(ctx.destination);   // (keeps it running for a video; silent)
-    if (eng === "web") { RECM.dly.delayTime.value = 0; RECM.lagMs = 0; RECM.tailMs = 0; GPWEB.node.connect(RECM.mix); }
+    if (eng === "web") { RECM.dly.delayTime.value = 0; RECM.lagMs = 0; RECM.tailMs = 0; RECM.picMs = 0; GPWEB.node.connect(RECM.mix); }
     else {
       const TARGET = .5; let outMs = 30; try { const d = JSON.parse(GPNative.info()); if (d.delayMs > 0) outMs = d.delayMs; } catch (_) {}
       RECM.rate = +GPNative.recStart() || 48000;
@@ -18982,7 +18982,7 @@ function recSrc() {
       // (page latency − engine latency) later than the engine's for the same moment heard: delay the page's by the rest
       const pageMs = ((ctx.baseLatency || 0) + (ctx.outputLatency || 0)) * 1000;
       RECM.lagMs = Math.max(0, Math.min(900, TARGET * 1000 + 5 - outMs + pageMs)); RECM.dly.delayTime.value = RECM.lagMs / 1000;
-      RECM.tailMs = Math.round(TARGET * 1000 + 80);
+      RECM.tailMs = Math.round(TARGET * 1000 + 80); RECM.picMs = Math.max(0, TARGET * 1000 + 5 - outMs);   // 6.12: the video's picture waits this long
       RECM.timer = setInterval(recPullNow, 40); recPullNow();
       const mk = () => {
         if (RECM.ctx !== ctx || !RECM.users) return;
@@ -19097,31 +19097,45 @@ function recaPull() {
 }
 // the page's tap chunks + the engine's → what the MP3 is made from
 function recaMix(chunks, sr, d) {
-  let N = 0; for (const c of d.chunks) N += c.length >> 1;
-  let eL = new Int16Array(N), eR = new Int16Array(N), k = 0;
-  for (const c of d.chunks) for (let i = 0; i < c.length; i += 2) { eL[k] = c[i]; eR[k++] = c[i + 1]; }
-  if (Math.abs(d.rate - sr) > 1) {   // the app's rate vs the page's: a straight-line resample
-    const n = Math.floor(N * sr / d.rate), q = d.rate / sr, L2 = new Int16Array(n), R2 = new Int16Array(n);
-    for (let i = 0; i < n; i++) { const p = i * q, j = Math.floor(p), f = p - j, j2 = Math.min(N - 1, j + 1); L2[i] = eL[j] + (eL[j2] - eL[j]) * f; R2[i] = eR[j] + (eR[j2] - eR[j]) * f; }
-    eL = L2; eR = R2; N = n;
-  }
-  let P = 0, pk = 0; for (const [l, r] of chunks) { P += l.length; for (let i = 0; i < l.length; i += 3) { const a = Math.abs(l[i]), b = Math.abs(r[i]); if (a > pk) pk = a; if (b > pk) pk = b; } }
+  // 6.12: no flat copies. The engine's pieces are read in order (each let go once read) and added into the page's own
+  // recorded pieces in place; only the parts where the page has nothing get new pieces.
+  const E = d.chunks; let N0 = 0; for (const c of E) N0 += c.length >> 1;
+  const q = d.rate / sr, rs = Math.abs(d.rate - sr) > 1, N = rs ? Math.floor((N0 - 1) / q) : N0;
+  let ci = 0, base = 0;
+  const raw = (f, ch) => {   // engine frame f (only moves forward)
+    while (ci < E.length && f >= base + (E[ci].length >> 1)) { base += E[ci].length >> 1; E[ci] = null; ci++; }
+    if (ci >= E.length) return 0;
+    const k = f - base; if (k < (E[ci].length >> 1)) return E[ci][2 * k + ch];
+    return 0;
+  };
+  const peek = (f, ch) => { const k = f - base; if (ci < E.length && k < (E[ci].length >> 1)) return E[ci][2 * k + ch]; const nx = E[ci + 1]; return nx ? nx[2 * (k - (E[ci].length >> 1)) + ch] || 0 : 0; };
+  const eng = (e, out) => {   // the engine at output frame e → out[0], out[1]
+    if (!rs) { out[0] = raw(e, 0); out[1] = raw(e, 1); return; }
+    const p = e * q, j = Math.floor(p), fr = p - j, a0 = raw(j, 0), b0 = raw(j, 1), a1 = peek(j + 1, 0), b1 = peek(j + 1, 1);
+    out[0] = a0 + (a1 - a0) * fr; out[1] = b0 + (b1 - b0) * fr;
+  };
+  let P = 0, pk = 0; for (const [l, r] of chunks) { P += l.length; for (let i = 0; i < l.length; i += 3) { const x = Math.abs(l[i]), y = Math.abs(r[i]); if (x > pk) pk = x; if (y > pk) pk = y; } }
   const pageOn = pk > 60;   // the page played nothing of its own: the take is the engine's sound alone
   const off = pageOn ? Math.round(d.dEP * sr / 1000) : 0, eOff = Math.max(0, off), pOff = Math.max(0, -off);
-  const total = Math.max(pageOn ? P + pOff : 0, N + eOff);
-  let pL = null, pR = null;
-  if (pageOn) { pL = new Int16Array(P); pR = new Int16Array(P); let o = 0; for (const [l, r] of chunks) { pL.set(l, o); pR.set(r, o); o += l.length; } }
-  const out = [], CH = 65536, cl = x => x > 32767 ? 32767 : x < -32768 ? -32768 : x;
-  for (let f0 = 0; f0 < total; f0 += CH) {
-    const n = Math.min(CH, total - f0), l = new Int16Array(n), r = new Int16Array(n);
-    for (let i = 0; i < n; i++) {
-      const f = f0 + i, e = f - eOff, p = f - pOff;
-      let a = e >= 0 && e < N ? eL[e] : 0, b = e >= 0 && e < N ? eR[e] : 0;
-      if (pageOn && p >= 0 && p < P) { a += pL[p]; b += pR[p]; }
-      l[i] = cl(a); r[i] = cl(b);
+  const out = [], CH = 8192, v = [0, 0], cl = x => x > 32767 ? 32767 : x < -32768 ? -32768 : Math.round(x);
+  const engOnly = (f0, f1) => {   // new pieces where only the engine plays
+    for (let f = f0; f < f1; f += CH) {
+      const n = Math.min(CH, f1 - f), l = new Int16Array(n), r = new Int16Array(n);
+      for (let i = 0; i < n; i++) { const e = f + i - eOff; if (e >= 0 && e < N) { eng(e, v); l[i] = cl(v[0]); r[i] = cl(v[1]); } }
+      out.push([l, r]);
     }
-    out.push([l, r]);
-  }
+  };
+  let f = 0;
+  if (pageOn) {
+    if (pOff > 0) { engOnly(0, pOff); f = pOff; }
+    for (const c of chunks) {
+      const [l, r] = c, n = l.length;
+      for (let i = 0; i < n; i++) { const e = f + i - eOff; if (e >= 0 && e < N) { eng(e, v); l[i] = cl(l[i] + v[0]); r[i] = cl(r[i] + v[1]); } }
+      out.push(c); f += n;
+    }
+  } else chunks.length = 0;   // (silent: let them go)
+  engOnly(f, Math.max(f, N + eOff));
+  E.length = 0;
   RECA.stat = { frames: N, ms: Math.round(N * 1000 / sr), lostMs: d.lost, page: pageOn, pageMs: Math.round(P * 1000 / sr), alignMs: +d.dEP.toFixed(1) };
   return out;
 }
@@ -19159,6 +19173,62 @@ async function appFileOut(file, mode, title, text) {
   rcShare = async function (t) {
     if (!appFileOk()) return share0.apply(this, arguments);
     const ok = await appFileOut(rcFile(t), "share", t.name, "Made with GlassPad " + GP_LINK); if (!ok) toast("Couldn't open sharing. Try Save.");
+  };
+}
+/* ---------- 6.12: themes bring their own sounds; the video's picture waits for its sound ----------
+   a) Keep my sounds (5.19) only in Studio's style picker: in game mode and from Home a theme always comes with its own
+      lead and bass (your own themes still play their own recordings). The lead / 2nd finger is never left on
+      My sounds with no recording to play. */
+{
+  const ka = keepArm;
+  keepArm = function () { if (game.on || !$("home").hidden) { keepPend = null; return; } return ka.apply(this, arguments); };
+  const hk = hmKeepSync;
+  hmKeepSync = function () { const r = hk.apply(this, arguments); $("hmKeep").hidden = true; return r; };
+}
+function mySoundsFix() {
+  try {
+    const w = $("wave");
+    if (w.value === "sampler" && !samplesFor("lead").length) { const lw = typeof lastWave === "string" && lastWave !== "sampler" ? lastWave : "sawtooth"; w.value = lw; w.dispatchEvent(new Event("change", { bubbles: true })); }
+    if (lead.snd2 === "sampler") { buildingSecond = true; const has = samplesFor("lead").length; buildingSecond = false; if (!has) { lead.snd2 = "off"; $("wave2").value = "off"; $("wave2").dispatchEvent(new Event("change", { bubbles: true })); } }
+  } catch (_) { buildingSecond = false; }
+}
+{
+  const ls = loadStyle;
+  loadStyle = function () { const r = ls.apply(this, arguments); mySoundsFix(); return r; };
+  const rl = restoreLast;
+  restoreLast = function () { const r = rl.apply(this, arguments); mySoundsFix(); return r; };
+}
+/* b) Video in the app: its sound reaches the recorder ~0.47 s late (the cushion that stops it stuttering), so the picture
+   is drawn ~0.47 s late too: each frame is kept in a small ring (15 frames at 30 a second) and the one from that long
+   ago goes into the video. ~45 MB while a video records; freed after. Web engine / page sound: no wait, as before. */
+{
+  const vf = vrecFrame;
+  vrecFrame = function () {
+    if (!vrec.on || !(vrec.delayMs > 0) || !vrec.comp) { if (!vrec.on) vrec.ring = null; return vf.apply(this, arguments); }
+    const real = vrec.comp, now = performance.now();
+    if (!vrec.ring || vrec.ring.w !== real.width || vrec.ring.h !== real.height) {
+      const n = Math.ceil(vrec.delayMs / 33) + 3; vrec.ring = { w: real.width, h: real.height, i: 0, f: [] };
+      for (let k = 0; k < n; k++) { const c = document.createElement("canvas"); c.width = real.width; c.height = real.height; vrec.ring.f.push({ c, t: -1 }); }
+    }
+    const R = vrec.ring;
+    if (now - (R.last || 0) >= 32) {   // keep this frame
+      R.last = now; const slot = R.f[R.i]; R.i = (R.i + 1) % R.f.length;
+      vrec.comp = slot.c; try { vf.apply(this, arguments); } finally { vrec.comp = real; } slot.t = now;
+    } else vrec.raf = requestAnimationFrame(vrecFrame);
+    // the frame from delayMs ago (or the oldest kept, at the very start)
+    let best = null, oldest = null;
+    for (const x of R.f) { if (x.t < 0) continue; if (!oldest || x.t < oldest.t) oldest = x; if (x.t <= now - vrec.delayMs && (!best || x.t > best.t)) best = x; }
+    const pick = best || oldest;
+    if (pick && pick !== R.shown) { real.getContext("2d").drawImage(pick.c, 0, 0); R.shown = pick; }
+  };
+  const vu = vrecUI;
+  vrecUI = function () { if (!vrec.on) { vrec.ring = null; vrec.delayMs = 0; } return vu.apply(this, arguments); };   // (the video ended: free the frames)
+  const sv = startVideoRec;
+  startVideoRec = async function () {
+    vrec.delayMs = 0; vrec.ring = null;
+    const r = await sv.apply(this, arguments);
+    vrec.delayMs = vrec.on && RECM.users && RECM.mode === "app" ? RECM.picMs || 0 : 0;
+    return r;
   };
 }
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)

@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.13 TEST · game mode · 23 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.14 TEST · game mode · 23 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1547,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.13 TEST · game mode · 23 Oct 2026</p>
+      <p class="ver">GlassPad 6.14 TEST · game mode · 23 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -7126,7 +7126,24 @@ function clipBuf(c) {
   const n = seg.length, fi = Math.min(n, Math.round(.002 * c.sr)), fo = Math.min(n >> 1, Math.round(.025 * c.sr));
   for (let i = 0; i < fi; i++) seg[i] *= i / fi;
   for (let i = 0; i < fo; i++) seg[n - 1 - i] *= i / fo;
-  return makeBuffer(seg, c.sr);
+  return makeBuffer(clipLevel(seg, c.sr), c.sr);   // 6.14
+}
+// 6.14: every recording plays at the same loudness (its sounding part), not the same peak, so a click or a breath
+// can't make it quiet; peaks are held under .95 by a quick gain dip (2 ms ahead, back in ~10 ms). +18 dB at most.
+function clipLevel(seg, sr) {
+  const n = seg.length; if (!n) return seg;
+  const h = Math.max(1, Math.round(sr * .02)), fr = []; let pk = 0;
+  for (let i = 0; i < n; i += h) { let q = 0; const e = Math.min(n, i + h); for (let j = i; j < e; j++) { const v = seg[j]; q += v * v; const a = v < 0 ? -v : v; if (a > pk) pk = a; } fr.push(Math.sqrt(q / (e - i))); }
+  if (pk < 1e-5) return seg;
+  const srt = fr.slice().sort((a, b) => a - b), ref = srt[Math.floor(srt.length * .85)] || srt[srt.length - 1];
+  const act = fr.filter(x => x > ref * .25); if (!act.length || !(ref > 0)) return seg;
+  const rms = Math.sqrt(act.reduce((a, x) => a + Math.min(x, ref * 1.5) ** 2, 0) / act.length);
+  const g = Math.min(8, Math.max(.5, .36 / rms)), ceil = .95, la = Math.round(sr * .002), rel = Math.exp(-1 / (sr * .01));
+  const need = new Float32Array(n); for (let i = 0; i < n; i++) { const a = Math.abs(seg[i]) * g; need[i] = a > ceil ? ceil / a : 1; }
+  const out = new Float32Array(n); let cur = 1;
+  for (let i = 0; i < n; i++) { let m = 1; for (let k = 0; k <= la && i + k < n; k++) if (need[i + k] < m) m = need[i + k];
+    cur = m < cur ? m : 1 - (1 - cur) * rel; if (cur > 1) cur = 1; out[i] = seg[i] * g * cur; }
+  return out;
 }
 function makeBuffer(data, sr) {
   const b = new AudioBuffer({ length: data.length, sampleRate: sr, numberOfChannels: 1 });
@@ -10268,7 +10285,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.13 TEST</p>
+    <p class="hm-ver">GlassPad 6.14 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -10545,6 +10562,10 @@ drawEdge = function (now) {
   .hm-tile .yours { position: absolute; top: 8px; left: 8px; z-index: 1; font: 500 9px var(--mono); letter-spacing: .1em; padding: 2px 6px; border-radius: 6px; background: var(--hacc); color: #07090e; }`;
   document.head.appendChild(st);
 }
+{ const bars = (hs, w, gap) => col => { const H = 20, W = hs.length * w + (hs.length - 1) * gap; let x = 0, r = "";
+    for (const h of hs) { r += `<rect x="${x.toFixed(1)}" y="${((H - h) / 2).toFixed(1)}" width="${w}" height="${h}" rx="${w / 2}" fill="${col}"/>`; x += w + gap; }
+    return `<svg viewBox="0 0 ${W.toFixed(1)} ${H}">${r}</svg>`; };
+  SV.barsL = bars([6, 12, 18, 9, 16, 7, 12], 2, 1.6); SV.barsB = bars([10, 18, 14, 18, 10], 3.2, 2.2); }   // 6.14: lead and bass, striped like My sounds
 SV.mic = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
 SV.rec = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>';
 SV.x = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
@@ -14467,8 +14488,8 @@ let fingerTxt = (t, f) => {
     $("mkRows").innerHTML = [
       step(1, "photo", t.pic ? `<img src="${t.pic}" alt="">` : SV.photo, "PHOTO", t.pic ? "Your photo" : got ? "The feel's picture" : "No photo yet", ""),
       step(2, "cols", `<i style="background:${lead};box-shadow:0 0 6px ${lead}"></i><i style="background:${bassC};box-shadow:0 0 6px ${bassC}"></i><i style="background:${hi};box-shadow:0 0 6px ${hi}"></i>`, "COLOURS", t.cols.join(" · "), ""),
-      step(3, "lead", SV.wave(lead), "LEAD", fingerTxt(t, 1) + fxs("fx1", true), "2nd finger: " + fingerTxt(t, 2) + fxs("fx2", t.lead2 && t.lead2 !== "off")),
-      step(4, "bass", SV.wave(bassC), "BASS", (labRef(t.bass) ? labRef(t.bass).name : t.bassRec ? "My sounds · " + t.bassRec : nameOf(BASS_CHOICES, t.bass)) + fxs("fxB", true), ""),
+      step(3, "lead", SV.barsL(lead), "LEAD", fingerTxt(t, 1) + fxs("fx1", true), "2nd finger: " + fingerTxt(t, 2) + fxs("fx2", t.lead2 && t.lead2 !== "off")),
+      step(4, "bass", SV.barsB(bassC), "BASS", (labRef(t.bass) ? labRef(t.bass).name : t.bassRec ? "My sounds · " + t.bassRec : nameOf(BASS_CHOICES, t.bass)) + fxs("fxB", true), ""),
       got ? step(5, "feel", SV.feel(lead), "FEEL", f.name, `${f.line} · ${Math.round(pb.bpm * (FEEL_SPEED[sp] || 1))} bpm`, {})
           : step(5, "feel", SV.feel(lead), "FEEL", "Pick a feel", "chords, drums and bass line come with it", { hl: true, todo: true }),
       step(6, "chord", SV.chords(hi), "CHORD SOUND", t.chord ? padNm(t.chord) : got ? "The feel's own · " + padNm(pb.pad && pb.pad.sound) : "The feel's own", "", { opt: true }),
@@ -14733,7 +14754,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.13 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.14 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -16961,7 +16982,7 @@ const LASTP = { ok: false };
         const l = readLast();
         if (l && l.qs && l.qs.base === "__mkplay") {
           const id = GAME_IMGS[l.qs.id] ? l.qs.id : "tokyo";
-          hm.heroId = id; $("hmHeroImg").src = hmPic(id);
+          hm.heroId = id; $("hmHeroImg").src = (MKP.pending && MKP.pending.t && MKP.pending.t.pic) || hmPic(id);   // 6.14: your photo while it is still here
           $("hmHeroName").textContent = (l.qs.name || "Your theme").replace(/ \(not saved\)$/, "") + " (not saved)";
           const h = $("home"), c = neonCols(id); neonSet(h, c); h.style.setProperty("--hacc", c.lead); neonStrips(h);
         }
@@ -19277,6 +19298,113 @@ function stallSync() {
     } catch (_) {}
     return r;
   };
+}
+/* ---------- 6.14: his list of 23 Oct (looks, Edit bin, sheets as a card, video pictures, recording stops off the pad) ---------- */
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  .hm-tile.mk { margin: 0; padding: 0; max-width: none; min-height: 0; display: block; gap: 0; }
+  :root { --gpSat: env(safe-area-inset-top, 0px); }
+  body.game:not(.studio) header.bar { position: relative; z-index: 0; background: transparent !important; }
+  body.game:not(.studio) header.bar::before { content: ""; position: absolute; left: 0; right: 0; top: calc(-1 * var(--gpSat)); bottom: 0; z-index: -1; pointer-events: none; background: var(--panel); }
+  body.game.gpic:not(.studio) header.bar::before { background: linear-gradient(180deg, rgba(5,6,10,.55), rgba(5,6,10,.55) var(--gpSat), rgba(5,6,10,0)); }
+  #mkDel { display: none !important; }
+  .mk-top { position: relative; }
+  #mk .mk-top .mk-bin { position: absolute !important; left: auto !important; right: 0 !important; top: 50% !important; transform: translateY(-50%) !important; margin: 0 !important; color: #ff8a96 !important; border-color: rgba(255,107,120,.7) !important; background: rgba(255,77,94,.12) !important; display: grid; place-items: center; }
+  .mk-bin[hidden] { display: none; }
+  .mk-bin svg { width: 17px; height: 17px; }
+  #mkSheet .mks, #mkSheet .mks[style] { left: 50%; right: auto; top: 50%; bottom: auto; width: min(560px, calc(100vw - 24px)); transform: translate(-50%, -50%); max-height: 84vh;
+    border-radius: 22px; border: 1.5px solid var(--mkc); box-shadow: 0 0 22px color-mix(in srgb, var(--mkc) 35%, transparent); padding: 6px 16px 18px; transition: transform .18s ease; }
+  #mkSheet .bk { background: rgba(3,4,8,.75); }
+  #mkSheet .mks-h { width: 40px; height: 4px; padding: 8px 40px; margin: 0 auto -4px; background-clip: content-box; box-sizing: content-box; cursor: grab; }
+  #mkSheet .mks-h, #mkSheet .mks-top { touch-action: none; }
+  #mkSheet .mks .on, #mkSheet .mks [aria-pressed="true"], #mkSheet .mks .main { background: color-mix(in srgb, var(--mkc) 13%, rgba(16,18,28,.9)) !important; color: #fff !important; box-shadow: none !important; border-color: var(--mkc) !important; }
+  #mkSheet .mks .on *, #mkSheet .mks [aria-pressed="true"] * { color: #fff !important; }
+  #mkSheet .mks-done { background: transparent !important; border: 1.5px solid var(--mkc) !important; color: #fff !important; }
+  #mkSheet .mks-top b { text-shadow: none !important; }
+  .rc-media.vid { aspect-ratio: 9 / 14; max-height: 52vh; }
+  .rc-media.vid video { width: 100%; height: 100%; max-height: none; object-fit: contain; }
+  .rc-cover { position: absolute; inset: 0; padding: 0; border: 0; border-radius: 0; background: #000; cursor: pointer; }
+  .rc-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .rc-cover .tg { position: absolute; left: 10px; top: 10px; padding: 3px 8px; border-radius: 8px; background: rgba(5,6,10,.6); color: #fff; font: 600 11px var(--mono); letter-spacing: .1em; }
+  .rc-cover i { position: absolute; left: 50%; top: 50%; width: 72px; height: 72px; margin: -36px 0 0 -36px; border-radius: 50%; display: grid; place-items: center; color: #fff;
+    background: rgba(5,6,10,.55); border: 2px solid var(--rcc); box-shadow: 0 0 22px color-mix(in srgb, var(--rcc) 60%, transparent); backdrop-filter: blur(4px); }
+  .rc-cover i svg { width: 30px; height: 30px; margin-left: 3px; }`;
+  document.head.appendChild(st);
+}
+// 5) the bin at the top of Edit; asks first (the same question as before, now under the title)
+{
+  const top = document.querySelector("#mk .mk-top"), b = document.createElement("button");
+  b.className = "hm-x mk-bin"; b.id = "mkBin"; b.hidden = true; b.setAttribute("aria-label", "Delete this theme"); b.innerHTML = SV.bin;
+  top.appendChild(b);
+  b.addEventListener("click", () => { const a = $("mkAsk"); top.after(a); a.hidden = false; $("mk").scrollTop = 0; });
+  const o0 = mkOpen;
+  mkOpen = function (t) { const r = o0.apply(this, arguments); $("mkBin").hidden = !mk.editing; $("mkAsk").hidden = true; return r; };
+}
+// 7) the sheets: the part's own colour for Lead and Bass; swipe the top line down to close
+const MKS = window.MKS = { k: null };
+function mksTint() { try { if ($("mkSheet").hidden || !mk.t) return; if (MKS.k === "lead" || MKS.k === "bass") $("mkSheet").style.setProperty("--mkc", mkCol(MKS.k === "lead" ? 0 : 1)); } catch (_) {} }
+{
+  const s0 = mkSheet; mkSheet = function (k) { MKS.k = k; const r = s0.apply(this, arguments); mksTint(); return r; };
+  const r0 = mkRender; mkRender = function () { const r = r0.apply(this, arguments); mksTint(); return r; };
+  const box = $("mksBox"); let y0 = null, dy = 0;
+  box.addEventListener("pointerdown", e => {
+    if (!e.target.closest(".mks-h, .mks-top") || e.target.closest("button, input")) return;
+    y0 = e.clientY; dy = 0; try { box.setPointerCapture(e.pointerId); } catch (_) {} box.style.transition = "none";
+  });
+  box.addEventListener("pointermove", e => { if (y0 == null) return; dy = Math.max(0, e.clientY - y0); box.style.transform = `translate(-50%, calc(-50% + ${dy}px))`; });
+  const end = () => { if (y0 == null) return; y0 = null; box.style.transition = ""; box.style.transform = ""; if (dy > 70) mkSheetClose(); };
+  box.addEventListener("pointerup", end); box.addEventListener("pointercancel", end);
+}
+// 8) videos: a picture from the take itself (kept with it), shown with our own ▶ instead of the phone's placeholder
+function vidFrame(blob, secs) {
+  return new Promise(res => {
+    let done = false; const u = URL.createObjectURL(blob), v = document.createElement("video");
+    const fin = x => { if (done) return; done = true; try { v.removeAttribute("src"); v.load(); } catch (_) {} URL.revokeObjectURL(u); res(x); };
+    v.muted = true; v.playsInline = true; v.preload = "auto";
+    v.onloadeddata = () => {
+      v.onseeked = () => { try { const w = 360, h = Math.round(w * v.videoHeight / Math.max(1, v.videoWidth)) || 560, c = document.createElement("canvas"); c.width = w; c.height = h; c.getContext("2d").drawImage(v, 0, 0, w, h); fin(c.toDataURL("image/jpeg", .72)); } catch (_) { fin(null); } };
+      try { v.currentTime = Math.max(.1, Math.min(1.2, (secs || 2) / 2)); } catch (_) { fin(null); }
+    };
+    v.onerror = () => fin(null); setTimeout(() => fin(null), 5000); v.src = u;
+  });
+}
+{
+  const k0 = recKeep;
+  recKeep = async function (blob, type, secs) {
+    const t = await k0.apply(this, arguments);
+    if (t && type === "video") vidFrame(blob, secs).then(p => { if (!p) return; t.poster = p; recPut(t).catch(() => {}); const r = (rc.list || []).find(x => x.id === t.id); if (r) r.poster = p; }).catch(() => {});
+    return t;
+  };
+  const NOPIC = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+  const rr0 = rcRender;
+  rcRender = function () {
+    const r = rr0.apply(this, arguments);
+    try {
+      const o = document.querySelector("#rcList .rc-open"), t = o && rc.list.find(x => x.id === o.dataset.id), v = o && o.querySelector(".rc-media video");
+      if (t && v && !o.querySelector(".rc-cover")) {
+        const m = v.parentElement; m.classList.add("vid"); v.poster = NOPIC; v.controls = false;
+        const c = document.createElement("button"); c.className = "rc-cover"; c.type = "button"; c.setAttribute("aria-label", "Play the video");
+        c.innerHTML = `<img src="${t.poster || hmPic(GAME_IMGS[t.theme] ? t.theme : "tokyo")}" alt=""><span class="tg">VIDEO · ${fmtTime(t.secs || 0)}</span><i>${SV.play}</i>`;
+        m.appendChild(c);
+        c.addEventListener("click", e => { e.stopPropagation(); c.remove(); v.controls = true; v.play().catch(() => {}); });
+      }
+      document.querySelectorAll("#rcList .rc-row").forEach(b => { const x = rc.list.find(y => y.id === b.dataset.id), im = b.querySelector("img"); if (x && x.poster && im) im.src = x.poster; });
+    } catch (_) {}
+    return r;
+  };
+}
+// 9) leaving the pad (Home, Edit, Studio, Recordings, Sound lab, My sounds…) ends the recording; the take is kept
+{
+  const PAGES = ["home", "mk", "rc", "st", "sp", "msx", "lab", "pk2", "vsSheet", "bmSheet"];
+  const check = () => {
+    if (!(vrec.on || arec.on) || vrec.tailing || arec.tailing || arec.busy) return;
+    if (!PAGES.some(id => $(id) && !$(id).hidden)) return;
+    if (vrec.on) stopVideoRec(); else stopAudioRec();
+    toast("Recording stopped and saved");
+  };
+  const mo = new MutationObserver(check);
+  for (const id of PAGES) { const e = $(id); if (e) mo.observe(e, { attributes: true, attributeFilter: ["hidden"] }); }
 }
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }

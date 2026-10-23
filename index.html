@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.14 TEST · game mode · 23 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.15 TEST · game mode · 23 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1547,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.14 TEST · game mode · 23 Oct 2026</p>
+      <p class="ver">GlassPad 6.15 TEST · game mode · 23 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10285,7 +10285,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.14 TEST</p>
+    <p class="hm-ver">GlassPad 6.15 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14754,7 +14754,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.14 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.15 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -16859,7 +16859,7 @@ $("mkPlayIt").addEventListener("click", () => {
    (WebAssembly in an AudioWorklet: web-engine/gpcore.wasm + gp-worklet.js). It looks to the page like the app's bridge. */
 // 5.95: in the app, Settings → Sound engine picks App (the phone's own engine) or Web (the browser's sound, exactly as
 // the web app plays it). Web is the default while the engine is being put right. GPNOFF = the page leaves the engine alone.
-window.GPNOFF = (() => { try { return !!window.GPNative && !window.GPNative.web && (localStorage.getItem("glasspad.engine") || "app") !== "app"; } catch (_) { return false; } })();
+window.GPNOFF = false;   // 6.15: the app plays only the App sound (the Web sound is archived; the website keeps it for now)
 if (!window.GPNative && /[?&]engine\b/.test(location.search) && window.AudioWorkletNode) {
   const W = window.GPWEB = { node: null, q: [], ui: [], stats: {}, ctx: null };
   const send = m => { if (W.node) W.node.port.postMessage(m); else W.q.push(m); };
@@ -17357,7 +17357,7 @@ if (NATIVE.on && typeof GPNative.bandSetup === "function") {
     const P = PAD[pad.sound] || PAD.strings, p = progDegs(), home = homeBase(), OWN = ownChords();
     return { v: 1, bpm: T.bpm, swing: drum.swing, steps: S, pulses: m.pulses, drumsOn: !!drum.on, beat: bt, fills: drum.fills || 0,
       kitKick: bt ? "" : K.kick || "", kitSnare: bt ? "" : K.snare || "", fillSnare: K.snare || "snare", crash: bt ? "crash2" : "crash", crashKick: bk.kick || "kick",
-      pat, beatFill, band: game.band,
+      pat, beatFill, band: game.band, groove: window.grooveSetup ? grooveSetup() : null,   // 6.15
       chords: { on: !!pad.on, every: pad.every, home, ...(OWN ? { own: OWN.map(x => x.len) } : {}), prog: OWN ? OWN.map(x => ({ tones: x.c.tones, base: home, rootRel: x.c.rootRel })) : p ? p.map(it => { const c = progChordAt(it, home); return { tones: c.tones, base: c.base, ...(c.rootRel != null ? { rootRel: c.rootRel } : {}) }; }) : null,
         rhythm: pad.rhythm, arp: pad.arp, arpRate: pad.arpRate, arpStyle: pad.arpStyle, strum: !!pad.strum, sound: Math.max(0, PS.indexOf(pad.sound)), trim: sndTrim("pad", pad.sound),
         info: { f: P.f[1], lp: P.f[0] === "lowpass", a: P.a, g: P.g, r: P.r, smooth: !!P.smooth }, feel: { on: { ...FEEL.on }, amt: FEEL.any ? FEEL.amt : 0 }, rhy },
@@ -18061,8 +18061,8 @@ if (window.GPNative && !window.GPNOFF && (typeof GPNative.sampSetup === "functio
     try { return so0.apply(this, arguments); } finally { if (s) SM.store[k] = s; }
   };
 }
-/* ---------- 5.95: Settings → Sound engine (App / Web), in the app only ---------- */
-if (window.GPNative && !window.GPNative.web) {
+/* ---------- 5.95: Settings → Sound engine (App / Web), in the app only ---------- (6.15: gone, App only) */
+if (false) {
   const row = document.createElement("div"); row.className = "gr";
   row.innerHTML = `<div><label>Sound engine</label><small>App = the phone's own engine (default: less delay). Web = the browser's sound, as the web app. Changing it restarts the page</small></div><div class="gseg" id="gEng"><button data-v="app">App</button><button data-v="web">Web</button></div>`;
   const sheet = $("gSheet").querySelector(".gtest"); sheet.before(row);
@@ -18650,7 +18650,7 @@ function thList(title, items, cur, pick) {
 function stuWhy() {
   if (isSong()) return "a song";
   if (isManual() && !ownEngOk()) return "your own chords (app older than 0.3.25)";
-  if (drum.on && drum.groove && T.meter.steps === 16 && GROOVES[drum.groove]) return "drummer's groove";
+  if (drum.on && drum.groove && T.meter.steps === 16 && GROOVES[drum.groove] && !(window.grooveEng && grooveEng())) return "drummer's groove";
   if (window.GPNative && !GPNative.web && typeof GPNative.bandLift !== "function") return "app older than 0.3.23";
   return "";
 }
@@ -19405,6 +19405,236 @@ function vidFrame(blob, secs) {
   };
   const mo = new MutationObserver(check);
   for (const id of PAGES) { const e = $(id); if (e) mo.observe(e, { attributes: true, attributeFilter: ["hidden"] }); }
+}
+/* ---------- 6.15 (app 0.3.29): the EQ pedal on every part, and the app on the App sound only ---------- */
+// EQ: Low shelf 200 Hz, Mid bell 200 Hz-5 kHz, High shelf 4 kHz (±12 dB each), Low cut Off / 80 / 150 Hz. The engine plays
+// it (eq.h); the page keeps the settings (S.eq for the lead, PFX[part].eq for the others, s.fx.eq for a Sound lab sound).
+const EQ_DEF = { on: false, low: 0, mid: 0, freq: 800, high: 0, cut: 0 };
+const eqC = (v, a, b) => Math.max(a, Math.min(b, v));
+function eqNorm(e) {
+  e = e || {};
+  return { on: !!e.on, low: eqC(+e.low || 0, -12, 12), mid: eqC(+e.mid || 0, -12, 12), freq: eqC(+e.freq || 800, 200, 5000), high: eqC(+e.high || 0, -12, 12), cut: [80, 150].includes(+e.cut) ? +e.cut : 0 };
+}
+const eqEng = () => !!(window.GPNative && !window.GPNOFF && (GPNative.web || typeof GPNative.eqMix === "function"));
+window.grooveEng = () => !!(window.GPNative && !window.GPNOFF && (GPNative.web || typeof GPNative.eqMix === "function"));
+S.eq = eqNorm(S.eq);
+for (const p of ["lead2", "pad", "bass", "drums"]) { PFX_DEF[p].eq = { ...EQ_DEF }; PFX[p].eq = eqNorm(PFX[p].eq); }
+// the curve: the same filters as the engine, worked out at 90 points (20 Hz-20 kHz)
+function eqCoefs(e, sr = 48000) {
+  const out = [], sh = (f, db, hi) => {
+    const A = Math.pow(10, db / 40), w = 2 * Math.PI * f / sr, c = Math.cos(w), q = 2 * Math.sqrt(A) * Math.sin(w) / 2 * Math.SQRT2;
+    return hi ? [A * ((A + 1) + (A - 1) * c + q), -2 * A * ((A - 1) + (A + 1) * c), A * ((A + 1) + (A - 1) * c - q), (A + 1) - (A - 1) * c + q, 2 * ((A - 1) - (A + 1) * c), (A + 1) - (A - 1) * c - q]
+              : [A * ((A + 1) - (A - 1) * c + q), 2 * A * ((A - 1) - (A + 1) * c), A * ((A + 1) - (A - 1) * c - q), (A + 1) + (A - 1) * c + q, -2 * ((A - 1) + (A + 1) * c), (A + 1) + (A - 1) * c - q];
+  };
+  out.push(sh(200, e.low, false));
+  { const A = Math.pow(10, e.mid / 40), w = 2 * Math.PI * e.freq / sr, c = Math.cos(w), al = Math.sin(w) / (2 * .9); out.push([1 + al * A, -2 * c, 1 - al * A, 1 + al / A, -2 * c, 1 - al / A]); }
+  out.push(sh(4000, e.high, true));
+  if (e.cut) { const w = 2 * Math.PI * e.cut / sr, c = Math.cos(w), al = Math.sin(w) / (2 * Math.SQRT1_2); out.push([(1 + c) / 2, -(1 + c), (1 + c) / 2, 1 + al, -2 * c, 1 - al]); }
+  return out;
+}
+function eqDbAt(cs, f, sr = 48000) {
+  const w = 2 * Math.PI * f / sr, c1 = Math.cos(w), c2 = Math.cos(2 * w); let db = 0;
+  for (const [b0, b1, b2, a0, a1, a2] of cs) {
+    const B0 = b0 / a0, B1 = b1 / a0, B2 = b2 / a0, A1 = a1 / a0, A2 = a2 / a0;
+    const num = B0 * B0 + B1 * B1 + B2 * B2 + 2 * (B0 * B1 + B1 * B2) * c1 + 2 * B0 * B2 * c2, den = 1 + A1 * A1 + A2 * A2 + 2 * (A1 + A1 * A2) * c1 + 2 * A2 * c2;
+    db += 10 * Math.log10(Math.max(1e-12, num / den));
+  }
+  return db;
+}
+function eqSvg(e, w = 290, h = 74) {
+  e = eqNorm(e); const cs = eqCoefs(e), X = f => w * Math.log10(f / 20) / 3, Y = db => h / 2 - eqC(db, -14, 14) / 14 * (h / 2 - 5), pts = [];
+  for (let i = 0; i <= 90; i++) { const f = 20 * Math.pow(1000, i / 90); pts.push([(i / 90 * w).toFixed(1), Y(eqDbAt(cs, f)).toFixed(1)]); }
+  const d = "M" + pts.map(p => p.join(" ")).join(" L"), op = e.on ? 1 : .35;
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" width="100%" height="${h}" style="display:block" aria-hidden="true">` +
+    [100, 1000, 10000].map(f => `<line x1="${X(f).toFixed(1)}" y1="0" x2="${X(f).toFixed(1)}" y2="${h}" stroke="rgba(255,255,255,.07)"/>`).join("") +
+    `<line x1="0" y1="${h / 2}" x2="${w}" y2="${h / 2}" stroke="rgba(255,255,255,.18)" stroke-dasharray="3 3"/>` +
+    [[100, "100"], [1000, "1k"], [10000, "10k"]].map(([f, t]) => `<text x="${(X(f) + 3).toFixed(1)}" y="${h - 4}" fill="#6f6890" font-size="8" font-family="IBM Plex Mono, monospace">${t}</text>`).join("") +
+    `<g opacity="${op}"><path d="${d} L${w} ${h / 2} L0 ${h / 2} Z" fill="var(--ec)" opacity=".16"/><path d="${d}" fill="none" stroke="var(--ec)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></g></svg>`;
+}
+const eqDbTxt = v => v === 0 ? "0 dB" : (v > 0 ? "+" : "") + (Math.round(v * 2) / 2) + " dB";
+const eqHzTxt = f => f >= 1000 ? (f / 1000).toFixed(1).replace(/\.0$/, "") + "k Hz" : Math.round(f / 10) * 10 + " Hz";
+const eqFreqV = f => Math.log(f / 200) / Math.log(25), eqVFreq = v => 200 * Math.pow(25, v);
+// a slider's track: from the middle (gains) or from the left (Mid frequency), in the part's colour
+function eqTrk(k, e) {
+  const g = "rgba(255,255,255,.75)", base = "#c9c9cf", col = "var(--ec)";
+  if (k === "freq") { const p = (eqFreqV(e.freq) * 100).toFixed(1); return `linear-gradient(to right, ${col} ${p}%, ${base} ${p}%)`; }
+  const p = (e[k] + 12) / 24 * 100, a = Math.min(50, p).toFixed(1), b = Math.max(50, p).toFixed(1);
+  return `linear-gradient(to right, transparent calc(50% - 1px), ${g} calc(50% - 1px), ${g} calc(50% + 1px), transparent calc(50% + 1px)), linear-gradient(to right, ${base} ${a}%, ${col} ${a}%, ${col} ${b}%, ${base} ${b}%)`;
+}
+function eqBody(e) {
+  const sl = (k, label, txt, min, max, step, v) => `<div class="eq-k"><label>${label}<span data-eqo="${k}">${txt}</span></label><input type="range" class="eqr" data-eq="${k}" min="${min}" max="${max}" step="${step}" value="${v}" style="--trk:${eqTrk(k, e)}" aria-label="${label}"></div>`;
+  return `<div class="eq-gr">${eqSvg(e)}</div>
+    <div class="eq-two">${sl("low", "LOW", eqDbTxt(e.low), -12, 12, .5, e.low)}${sl("high", "HIGH", eqDbTxt(e.high), -12, 12, .5, e.high)}
+      ${sl("mid", "MID", eqDbTxt(e.mid), -12, 12, .5, e.mid)}${sl("freq", "MID FREQ", eqHzTxt(e.freq), 0, 1, .001, eqFreqV(e.freq).toFixed(3))}</div>
+    <div class="eq-cl"><label>LOW CUT</label><div class="eq-seg">${[[0, "OFF"], [80, "80 Hz"], [150, "150 Hz"]].map(([v, l]) => `<button type="button" data-eqcut="${v}" aria-pressed="${e.cut === v}">${l}</button>`).join("")}</div></div>
+    ${eqEng() ? "" : `<span class="eq-note">The EQ is heard with the app's sound.</span>`}`;
+}
+// where a pedal's settings live
+function eqTarget(el) {
+  const k = el && el.dataset.eqfor; if (!k) return null;
+  if (k === "lab") { const s = LAB.cur; if (!s) return null; s.fx.eq = eqNorm(s.fx.eq); return s.fx.eq; }
+  const part = k.slice(7); if (part === "lead") return S.eq = eqNorm(S.eq);
+  return PFX[part] ? (PFX[part].eq = eqNorm(PFX[part].eq)) : null;
+}
+function eqChanged(el) {
+  if (el.dataset.eqfor === "lab") { try { labLive(LAB.cur); labSync(); } catch (_) {} }
+  else { try { renderFxParts(); updateSummaries(); } catch (_) {} }
+  eqSend();
+}
+function eqRefresh(el, e) {   // the curve, the readouts and the tracks, without rebuilding the sliders under the finger
+  el.querySelector(".eq-gr").innerHTML = eqSvg(e);
+  el.querySelectorAll("[data-eqo]").forEach(o => { const k = o.dataset.eqo; o.textContent = k === "freq" ? eqHzTxt(e.freq) : eqDbTxt(e[k]); });
+  el.querySelectorAll("input[data-eq]").forEach(r => r.style.setProperty("--trk", eqTrk(r.dataset.eq, e)));
+  el.querySelectorAll("[data-eqcut]").forEach(b => b.setAttribute("aria-pressed", +b.dataset.eqcut === e.cut));
+}
+document.addEventListener("input", ev => {
+  const r = ev.target; if (!r.matches || !r.matches(".eqp input[data-eq]")) return;
+  const el = r.closest(".eqp"), e = eqTarget(el); if (!e) return;
+  const k = r.dataset.eq; if (k === "freq") e.freq = Math.round(eqVFreq(+r.value)); else e[k] = +r.value;
+  eqRefresh(el, e); eqChanged(el);
+});
+document.addEventListener("dblclick", ev => {   // double-tap a gain slider: back to 0 dB
+  const r = ev.target; if (!r.matches || !r.matches(".eqp input[data-eq]") || r.dataset.eq === "freq") return;
+  const el = r.closest(".eqp"), e = eqTarget(el); if (!e) return; e[r.dataset.eq] = 0; r.value = 0; eqRefresh(el, e); eqChanged(el);
+});
+document.addEventListener("click", ev => {
+  const b = ev.target.closest && ev.target.closest(".eqp [data-eqcut], .eqp [data-eqon]"); if (!b) return;
+  const el = b.closest(".eqp"), e = eqTarget(el); if (!e) return;
+  if (b.dataset.eqcut != null) e.cut = +b.dataset.eqcut;
+  else { e.on = !e.on; el.classList.toggle("on", e.on); b.setAttribute("aria-pressed", e.on); const st = b.querySelector(".st"); if (st) st.textContent = e.on ? "ON" : "OFF"; }
+  eqRefresh(el, e); eqChanged(el);
+});
+// the Sound lab: after Drive
+{
+  const r0 = labRender;
+  labRender = function () {
+    const r = r0.apply(this, arguments);
+    try {
+      const s = LAB.cur, peds = LAB.view === "sound" && s && document.querySelector("#lab .lb-peds");
+      if (peds) {
+        s.fx.eq = eqNorm(s.fx.eq); const e = s.fx.eq;
+        const d = document.createElement("div"); d.className = "lb-ped eqp" + (e.on ? " on" : ""); d.dataset.eqfor = "lab";
+        d.innerHTML = `<button class="pt" type="button" data-eqon="1" aria-pressed="${e.on}">EQ<span class="st">${e.on ? "ON" : "OFF"}</span></button>${eqBody(e)}`;
+        const dr = peds.querySelector('[data-fxon="drive"]'), at = dr && dr.closest(".lb-ped");
+        if (at) at.after(d); else peds.prepend(d);
+        // two pedals per row: the one before the EQ gets the row to itself if it would sit alone on the left
+        const kids = [...peds.children], i = kids.indexOf(d); if (i % 2 === 1) kids[i - 1].classList.add("eq-wide");
+      }
+    } catch (_) {}
+    return r;
+  };
+  const l0 = labLive;
+  labLive = function (s) { const r = l0.apply(this, arguments); try { if (s && s.kind === "lead") S.eq = eqNorm(s.fx && s.fx.eq); } catch (_) {} eqSend(); return r; };
+  const ip0 = labIntoPreset;
+  labIntoPreset = function (p, t) {
+    const r = ip0.apply(this, arguments);
+    try {
+      const a = labRef(t.lead), b = labRef(t.lead2);
+      if (a) { p.fx = p.fx || {}; p.fx.eq = eqNorm(a.fx && a.fx.eq); }
+      if (b && p.pfx && p.pfx.lead2) p.pfx.lead2.eq = eqNorm(b.fx && b.fx.eq);
+    } catch (_) {}
+    return r;
+  };
+}
+// a setup brings its lead EQ (none: off); the other parts' come with setPfx (PFX_DEF has eq now)
+{
+  const ap0 = applyPreset;
+  applyPreset = function (p) { const r = ap0.apply(this, arguments); try { S.eq = eqNorm(p && p.fx && p.fx.eq); } catch (_) {} eqSend(); return r; };
+}
+// the Studio's pedal boards: an EQ card in each part's chain (after Drive / the compressor; first for the chords)
+{
+  const AFTER = { lead: "drive", lead2: "drive", bass: "comp", drums: "drive", pad: null };
+  const rb0 = renderBoard;
+  renderBoard = function () {
+    const r = rb0.apply(this, arguments);
+    try {
+      const part = fxPart, e = part === "lead" ? (S.eq = eqNorm(S.eq)) : (PFX[part].eq = eqNorm(PFX[part].eq));
+      const cards = [...pedals.querySelectorAll(":scope > .pedal")], list = PART_FX[part];
+      const card = document.createElement("div"); card.className = "pedal eqp" + (e.on ? " on" : ""); card.dataset.eqfor = "studio:" + part;
+      card.innerHTML = `<button class="toggle" type="button" data-eqon="1" aria-pressed="${e.on}">EQ<span class="led"></span></button>${eqBody(e)}`;
+      const flow = document.createElement("span"); flow.className = "flow"; flow.setAttribute("aria-hidden", "true"); flow.textContent = "→";
+      const i = AFTER[part] ? list.findIndex(f => f.id === AFTER[part]) : -1;
+      if (i >= 0 && cards[i]) { cards[i].after(card); card.before(flow); } else if (cards[0]) { cards[0].before(card); card.after(flow); } else pedals.appendChild(card);
+    } catch (_) {}
+    return r;
+  };
+  const fc0 = fxCount;
+  fxCount = function (part) { const n = fc0.apply(this, arguments); try { const e = part === "lead" ? S.eq : PFX[part].eq; return n + (e && e.on ? 1 : 0); } catch (_) { return n; } };
+  try { renderBoard(); } catch (_) {}
+}
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  .eqp { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 7px; }
+  .lb-ped.eqp { --ec: var(--lc); }
+  .pedal.eqp { --ec: var(--pc, #ff3fa4); flex-basis: 100%; min-width: 0; }
+  #lab .lb-peds > .eq-wide { grid-column: 1 / -1; }
+  .lb-ped.eqp .pt .st { display: flex !important; flex-direction: row !important; align-items: center; gap: 5px; font: 500 9px var(--mono); color: #8a84a8; width: auto !important; margin: 0 !important; }
+  .lb-ped.eqp.on .pt .st { color: #fff; }
+  .lb-ped.eqp > .pt { width: 100% !important; align-self: stretch; min-height: 28px !important; height: 28px !important; }
+  .lb-ped.eqp .pt .st::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: #3a3f4d; }
+  .lb-ped.eqp.on .pt .st::after { background: var(--lc); box-shadow: 0 0 8px var(--lc); }
+  .eqp .eq-gr { border-radius: 10px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.1); overflow: hidden; }
+  .eqp .eq-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 14px; row-gap: 4px; }
+  .eqp .eq-k { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .eqp .eq-k label, .eqp .eq-cl > label { display: flex; justify-content: space-between; gap: 4px; font: 500 9.5px var(--mono); color: #b8aee6; letter-spacing: .06em; white-space: nowrap; }
+  .eqp .eq-k label span { color: #fff; }
+  .eqp input.eqr { -webkit-appearance: none; appearance: none; width: 100%; height: 26px; margin: 0; background: transparent; touch-action: pan-y; accent-color: var(--ec); }
+  .eqp input.eqr::-webkit-slider-runnable-track { height: 5px; border-radius: 3px; background: var(--trk); }
+  .eqp input.eqr::-moz-range-track { height: 5px; border-radius: 3px; background: var(--trk); }
+  .eqp input.eqr::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 19px; height: 19px; margin-top: -7px; border-radius: 50%; border: 0; background: var(--ec); box-shadow: 0 0 6px color-mix(in srgb, var(--ec) 60%, transparent); }
+  .eqp input.eqr::-moz-range-thumb { width: 19px; height: 19px; border-radius: 50%; border: 0; background: var(--ec); }
+  .eqp:not(.on) input.eqr::-webkit-slider-thumb { background: #8d88a6; box-shadow: none; }
+  .eqp:not(.on) input.eqr::-moz-range-thumb { background: #8d88a6; }
+  .eqp .eq-cl { display: flex; flex-direction: column; gap: 5px; }
+  .eqp .eq-seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-radius: 9px; overflow: hidden; border: 1px solid rgba(255,255,255,.2); }
+  .eqp .eq-seg button { background: transparent; border: 0; border-left: 1px solid rgba(255,255,255,.12); color: #b8aee6; font: 500 10px var(--mono); min-height: 32px; padding: 0; }
+  .eqp .eq-seg button:first-child { border-left: 0; }
+  .eqp .eq-seg button[aria-pressed="true"] { background: color-mix(in srgb, var(--ec) 35%, transparent); color: #fff; }
+  .eqp .eq-note { font: 400 10.5px "IBM Plex Sans", var(--body); color: #8f87b3; }
+  .spn-sec .pedal.eqp { width: auto !important; }
+  .pedal.eqp .eq-two { row-gap: 10px; }
+  .pedal.eqp .eq-k { gap: 6px; }
+  .spn-sec .pedal.eqp input.eqr { height: 28px !important; }
+  `;
+  document.head.appendChild(st);
+}
+// the engine hears every part's EQ (30 numbers: [on, low, mid, Hz, high, cut] × lead, 2nd, chords, bass, drums)
+if (window.GPNative && GPNative.web && !GPNative.eqMix && window.GPWEB) GPNative.eqMix = j => { const W = window.GPWEB, m = ["eqMix", JSON.parse(j)]; if (W.node) W.node.port.postMessage(m); else W.q.push(m); };
+const EQS = { last: "", sent: 0 };
+function eqArr() { return [S.eq, PFX.lead2.eq, PFX.pad.eq, PFX.bass.eq, PFX.drums.eq].flatMap(x => { const e = eqNorm(x); return [e.on ? 1 : 0, e.low, e.mid, e.freq, e.high, e.cut]; }); }
+function eqSend(force) {
+  try {
+    if (!audio || !window.GPNative || window.GPNOFF || typeof GPNative.eqMix !== "function") return;
+    const j = JSON.stringify(eqArr()); if (!force && j === EQS.last) return; EQS.last = j; GPNative.eqMix(j); EQS.sent++;
+  } catch (_) {}
+}
+setInterval(() => eqSend(false), 300); NATMIX.push(() => eqSend(true));
+{
+  const d0 = diagReport;
+  diagReport = function () { const r = d0.apply(this, arguments); try { r.eq = { engine: eqEng(), sent: EQS.sent, now: eqArr() }; } catch (_) {} return r; };
+}
+
+// the drummer's groove in the engine (Studio pad): the bars as the page plays them (grooveStep), loudness worked out here
+window.grooveSetup = function () {
+  if (game.on || !drum.on || !drum.groove || T.meter.steps !== 16 || !GROOVES[drum.groove] || isSong() || !grooveEng()) return null;
+  const G = GROOVES[drum.groove], vel = v => +Math.min(1.2, Math.pow(v, .8) * 1.15).toFixed(4);
+  const bars = list => list.map(bar => bar.map(([p, inst, v]) => [+p.toFixed(4), inst, vel(v)]));
+  return { L: Math.max(1, passBars()), main: bars(G.main), crash: bars(G.crash), fill: bars(G.fill) };
+};
+
+// the app: App sound only. Song mode is off (its chords play from your own chords instead), a sample kit that is still
+// loading counts as the engine's (it waits silently, 3 s at most), and the Lead / Band switches are Creator-only.
+if (window.GPNative && !GPNative.web && typeof GPNative.eqMix === "function") {
+  const cm0 = setChordMode;
+  setChordMode = function (mode) { if (mode === "song") mode = myChords && myChords.length ? "manual" : "auto"; return cm0.apply(this, [mode, ...[].slice.call(arguments, 1)]); };
+  try { if (pad.mode === "song") setChordMode("song"); } catch (_) {}
+  if (window.NKIT) { const r0 = NKIT.ready; NKIT.ready = id => r0(id) || (!!id && id !== "synth" && !!KIT_MAPS[id]); }
+  const sw = () => {
+    for (const id of ["gNatLead", "gNatBand"]) { const b = $(id); if (b) b.hidden = !CRE.on; }
+    if (!CRE.on) { NATIVE.lead = true; if (NATIVE.drumOk) NATIVE.band = true; }
+  };
+  sw(); setInterval(sw, 1000);
 }
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }

@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.16 TEST · game mode · 24 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.17 TEST · game mode · 24 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1547,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.16 TEST · game mode · 24 Oct 2026</p>
+      <p class="ver">GlassPad 6.17 TEST · game mode · 24 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10285,7 +10285,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.16 TEST</p>
+    <p class="hm-ver">GlassPad 6.17 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -11619,7 +11619,7 @@ function stRender() {
   $("stParts").innerHTML =
     card("lead", SV.wave(lead), "LEAD", sumTxt("sum-sound"), true, lead) +
     card("bass", SV.wave(bassC), "BASS", sumTxt("sum-bass"), bass.on, bassC) +
-    card("chords", SV.chords.replace('stroke="currentColor"', `stroke="${sc}"`), "CHORDS", sumTxt("sum-pad"), pad.on, sc) +
+    card("chords", typeof SV.chords === "function" ? SV.chords(sc) : SV.chords.replace('stroke="currentColor"', `stroke="${sc}"`), "CHORDS", sumTxt("sum-pad"), pad.on, sc) +
     card("drums", SV.drums.replace('stroke="currentColor"', `stroke="${sc}"`), "DRUMS", sumTxt("sum-drums"), drum.on, sc);
   const tg = "#4fc7b4";
   $("stTogether").innerHTML =
@@ -14754,7 +14754,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.16 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.17 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -15585,7 +15585,7 @@ function pickClose() { const o = LAB.pick; $("pk2").hidden = true; LAB.pick = nu
 function pickRender() {
   const o = LAB.pick; if (!o) return;
   const yours = LAB.store.sounds.filter(s => s.kind === o.kind && (!o.exclude || s.id !== o.exclude));
-  const tabs = [["yours", "Yours", yours.length], ["synths", "Synths", null], ["recs", "Recordings", samples.length]].filter(([k]) => k !== "yours" || o.yours !== false);
+  const tabs = [["yours", "Lab sounds", yours.length], ["synths", "Synths", null], ["recs", "My sounds", samples.length]].filter(([k]) => k !== "yours" || o.yours !== false);
   $("pk2Tabs").style.gridTemplateColumns = `repeat(${tabs.length}, minmax(0, 1fr))`;
   $("pk2Tabs").innerHTML = tabs.map(([k, n, c]) => `<button role="tab" data-tab="${k}" class="${o.tab === k ? "on" : ""}" aria-selected="${o.tab === k}">${n}${c != null ? `<small>${c}</small>` : ""}</button>`).join("");
   const c = o.cur, row = (key, name, sub, on, rec, n) => `<div class="pk2-row${on ? " on" : ""}${rec ? " rec" : ""}" data-k="${escH(key)}"><button class="pl" data-hear="${escH(key)}" aria-label="Hear ${escH(name)}">${SV.play}</button>
@@ -15673,7 +15673,7 @@ $("mksBox").addEventListener("click", e => {
   const t = mk.t, bassSheet = mk.sheet === "bass2f", f = bassSheet ? 3 : (mk.fing || 1);
   const done = () => { mkRender(); mkRedraw(); };
   pickOpen({ title: bassSheet ? "BASS SOUND" : f === 1 ? "LEAD · 1ST FINGER" : "LEAD · 2ND FINGER", kind: bassSheet ? "bass" : "lead", cur: slotOf(t, f), multi: !bassSheet, off: f === 2, second: f === 2,
-    col: getComputedStyle($("mk")).getPropertyValue("--mkc").trim() || "#ff3fd8",
+    col: f === 3 ? mkCol(1) : f === 2 ? mkCol(2) : mkCol(0),   // 6.17: the part's own colour (2nd finger = the highlight, as on the pad)
     afterHear: () => mkFxLive(true),
     onPick: sel => {
       if (t.unset && f !== 2) t.unset[f === 3 ? "bass" : "lead"] = false;   // 5.70
@@ -16509,7 +16509,7 @@ mkEditPlaying = function () { return mkEditTheme(gameKey()); };
   const b = document.createElement("button"); b.className = "hm-edit"; b.id = "hmEdit"; b.setAttribute("aria-label", "Edit this theme");
   b.innerHTML = `${SV.pencil}EDIT`;
   const pv = $("hmPv"); pv.before(b);
-  b.addEventListener("click", e => { e.stopPropagation(); if ($("home").classList.contains("hmlock")) return; const id = hm.heroId; mkEditTheme(id); mk.fromPad = false; mkStrips(); });
+  b.addEventListener("click", e => { e.stopPropagation(); if ($("home").classList.contains("hmlock")) return; const id = hm.heroTry && MKP.pending ? "__mkplay" : hm.heroId; mkEditTheme(id); mk.fromPad = false; mkStrips(); });
 }
 {
   const st = document.createElement("style");
@@ -16982,7 +16982,7 @@ const LASTP = { ok: false };
         const l = readLast();
         if (l && l.qs && l.qs.base === "__mkplay") {
           const id = GAME_IMGS[l.qs.id] ? l.qs.id : "tokyo";
-          hm.heroId = id; $("hmHeroImg").src = (MKP.pending && MKP.pending.t && MKP.pending.t.pic) || hmPic(id);   // 6.14: your photo while it is still here
+          hm.heroId = id; hm.heroTry = true; $("hmHeroImg").src = (MKP.pending && MKP.pending.t && MKP.pending.t.pic) || hmPic(id);   // 6.14: your photo while it is still here (6.17: Edit opens it)
           $("hmHeroName").textContent = (l.qs.name || "Your theme").replace(/ \(not saved\)$/, "") + " (not saved)";
           const h = $("home"), c = neonCols(id); neonSet(h, c); h.style.setProperty("--hacc", c.lead); neonStrips(h);
         }
@@ -19343,7 +19343,7 @@ function stallSync() {
 }
 // 7) the sheets: the part's own colour for Lead and Bass; swipe the top line down to close
 const MKS = window.MKS = { k: null };
-function mksTint() { try { if ($("mkSheet").hidden || !mk.t) return; if (MKS.k === "lead" || MKS.k === "bass") $("mkSheet").style.setProperty("--mkc", mkCol(MKS.k === "lead" ? 0 : 1)); } catch (_) {} }
+function mksTint() { try { if ($("mkSheet").hidden || !mk.t) return; if (MKS.k === "lead" || MKS.k === "bass") $("mkSheet").style.setProperty("--mkc", mkCol(MKS.k === "lead" ? ((mk.fing || 1) === 2 ? 2 : 0) : 1)); } catch (_) {} }
 {
   const s0 = mkSheet; mkSheet = function (k) { MKS.k = k; const r = s0.apply(this, arguments); mksTint(); return r; };
   const r0 = mkRender; mkRender = function () { const r = r0.apply(this, arguments); mksTint(); return r; };
@@ -19814,21 +19814,32 @@ function mkRoll(keys) {
   const photo = keys.includes("photo"), now = keys.filter(k => k !== "photo");
   if (photo && !app) { if (keys.length === 1) { $("mkFile").click(); return; } }   // the website: the photo picker (Roll the dice leaves the photo alone)
   MKD.rolls++;
-  mkRollValues(t, now); mkRender();
-  const order = MKD_ORDER.filter(k => keys.includes(k) && (k !== "photo" || app)), timers = [], saved = {};
-  for (const k of order) { const r = mkRowOf(k); if (r) saved[k] = { tx: r.querySelector(".tx").innerHTML, ic: r.querySelector(".ic").innerHTML }; }
+  const oldCols = [...t.cols];
+  mkRollValues(t, now);
+  const newCols = [...t.cols], colsLater = now.includes("cols") && JSON.stringify(oldCols) !== JSON.stringify(newCols);
+  if (colsLater) t.cols = oldCols;   // 6.17: the page keeps its colours until the Colours row lands
+  mkRender();
+  const order = MKD_ORDER.filter(k => keys.includes(k) && (k !== "photo" || app)), timers = [], saved = {}, done = new Set();
+  const snap = () => { for (const k of order) if (!done.has(k)) { const r = mkRowOf(k); if (r) saved[k] = { tx: r.querySelector(".tx").innerHTML, ic: r.querySelector(".ic").innerHTML }; } };
+  snap();
+  const many = order.filter(k => k !== "photo").length > 1;
+  const reroll = () => {   // after the page was drawn again: the rows still spinning keep spinning
+    for (const k of order) if (!done.has(k)) { const r = mkRowOf(k); if (r) r.classList.add("rolling"); }
+    const big = $("mkRows").querySelector(".mk-roll"); if (big && many && MKD.spin) big.classList.add("rolling");
+  };
   const land = (k, flash) => {
-    const r = mkRowOf(k), sv = saved[k]; if (!r) return;
-    if (sv) { r.querySelector(".tx").innerHTML = sv.tx; r.querySelector(".ic").innerHTML = sv.ic; }
+    if (k === "cols" && colsLater && t.cols !== newCols) { t.cols = newCols; done.add(k); mkRender(); snap(); reroll(); }
+    else { const r = mkRowOf(k), sv = saved[k]; if (r && sv) { r.querySelector(".tx").innerHTML = sv.tx; r.querySelector(".ic").innerHTML = sv.ic; } }
+    const r = mkRowOf(k); if (!r) return;
     r.classList.remove("rolling"); if (flash) { r.classList.remove("landed"); void r.offsetWidth; r.classList.add("landed"); }
   };
   const spinRow = (k, until) => {
-    const r = mkRowOf(k); if (!r) return; r.classList.add("rolling");
-    const b = r.querySelector(".tx b"), ic = r.querySelector(".ic");
+    { const r = mkRowOf(k); if (r) r.classList.add("rolling"); }
     let dt = 45;
     const tick = () => {
-      if (performance.now() >= until) return;
+      if (performance.now() >= until || done.has(k)) return;
       try {
+        const r = mkRowOf(k), b = r && r.querySelector(".tx b"), ic = r && r.querySelector(".ic");
         if (b && MKD_FAKE[k]) b.textContent = MKD_FAKE[k]();
         if (k === "cols" && ic) ic.querySelectorAll("i").forEach(i => { const c = GLOW_COLOURS[Math.floor(Math.random() * GLOW_COLOURS.length)][1]; i.style.background = c; i.style.boxShadow = "0 0 6px " + c; });
       } catch (_) {}
@@ -19836,17 +19847,17 @@ function mkRoll(keys) {
     };
     tick();
   };
-  const t0 = performance.now(), many = order.filter(k => k !== "photo").length > 1, done = new Set();
-  const wait = order.includes("photo");
+  const t0 = performance.now(), wait = order.includes("photo");
   const sp = MKD.spin = {
     finish() {
       timers.forEach(clearTimeout); timers.length = 0;
-      for (const k of order) if (!done.has(k) && k !== "photo") { done.add(k); land(k, true); }
+      for (const k of order) if (!done.has(k) && k !== "photo") { land(k, true); done.add(k); }
       if (!wait || done.has("photo")) end();
     },
   };
   const end = () => {
     if (MKD.spin !== sp) return; MKD.spin = null;
+    if (colsLater && t.cols !== newCols) { t.cols = newCols; mkRender(); }
     const big = $("mkRows").querySelector(".mk-roll"); if (big) big.classList.remove("rolling");
     if (T.playing && hpv.on && t.feelSet !== false && now.length) { try { mkPreviewPlay(); } catch (_) {} }
   };
@@ -19854,21 +19865,21 @@ function mkRoll(keys) {
   order.filter(k => k !== "photo").forEach((k, i) => {
     const at = many ? 420 + i * 140 : 480;
     spinRow(k, t0 + at - 40);
-    timers.push(setTimeout(() => { done.add(k); land(k, true); if ([...order].every(x => done.has(x) || (x === "photo" && !wait))) end(); else if (!wait && order.filter(x => x !== "photo").every(x => done.has(x))) end(); }, at));
+    timers.push(setTimeout(() => { if (done.has(k)) return; land(k, true); done.add(k); if (order.every(x => done.has(x) || (x === "photo" && !wait))) end(); }, at));
   });
   if (wait) {
     spinRow("photo", t0 + 60000);
     mkRandomPhoto((url, why) => {
-      timers.forEach(clearTimeout);
       if (url && mk.t === t) { t.pic = url; if (keys.length === 1) { try { mkColsFromPhoto(); } catch (_) {} } }
       else if (why === "denied") toast("GlassPad can't see your photos. Allow it in the phone's Settings → Apps → GlassPad → Permissions");
       else if (why === "empty") toast("No photos found on the phone");
       else if (why) toast("Couldn't get a photo");
       done.add("photo");
-      const keep = {}; for (const k of order) if (k !== "photo") { const r = mkRowOf(k); if (r && done.has(k)) keep[k] = 1; }
-      mkRender(); const r = mkRowOf("photo"); if (r && url) { r.classList.remove("landed"); void r.offsetWidth; r.classList.add("landed"); }
-      for (const k of order) if (k !== "photo" && !done.has(k)) { done.add(k); land(k, true); }
-      end();
+      const left = order.filter(k => k !== "photo" && !done.has(k));
+      if (left.length) { mkRender(); snap(); reroll(); }   // the others still land in their own time
+      else { timers.forEach(clearTimeout); mkRender(); }
+      const r = mkRowOf("photo"); if (r) { r.classList.remove("rolling"); if (url) { r.classList.remove("landed"); void r.offsetWidth; r.classList.add("landed"); } }
+      if (!left.length) end();
     });
   }
   if (!order.length) end();
@@ -19940,7 +19951,7 @@ function pedFoldAll(root, set) {
   });
 }
 // the ON light: the status text (lab) or the LED (Studio) and a little room round it
-const pedIsSwitch = (e, head) => { if (!e.detail && !e.clientX && !e.clientY) return true;   // a key or a script: as before
+let pedIsSwitch = (e, head) => { if (!e.detail && !e.clientX && !e.clientY) return true;   // a key or a script: as before
   const sw = head.querySelector(":scope > span, :scope > .led, :scope > .st"); if (!sw) return false; const r = sw.getBoundingClientRect(); return e.clientX >= r.left - 14 && e.clientX <= r.right + 10; };
 function pedFoldClick(e, root, set, refresh) {
   const head = e.target.closest(".fp > .pt, .fp > .toggle"); if (!head || !root.contains(head)) return;
@@ -20045,6 +20056,149 @@ scrollArrows($("sp"), () => $("spPad"), () => document.querySelector("#sp .sp-to
   .gp-more[hidden] { display: none; }
   .gp-more svg { width: 20px; height: 20px; } .gp-more.up svg { transform: rotate(180deg); }`;
   document.head.appendChild(st);
+}
+
+/* ---------- 6.17: his notes of 24 Oct (picker colours, strips on time at a chord change, second-finger taps, ON on the left, Mix in dB) ---------- */
+// 3) the Lead sheet follows the finger: 2nd finger = the highlight colour; a dot on each finger's tab in its colour
+{
+  const rd0 = mkRedraw;
+  mkRedraw = function () { const r = rd0.apply(this, arguments); try { mksTint(); } catch (_) {} return r; };
+  const L0 = MK_SHEETS.lead2f[1];
+  MK_SHEETS.lead2f[1] = () => L0().replace(/(<button role="tab" data-fing="([12])"[^>]*><small>)/g, (m, a, n) => a + `<i class="fdot" style="background:${mkCol(n === "2" ? 2 : 0)}"></i>`);
+  const st = document.createElement("style");
+  st.textContent = `.mkl-tabs .fdot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; box-shadow: 0 0 6px currentColor; }`;
+  document.head.appendChild(st);
+}
+// Home: a tile or another hero is no longer the try-out
+{
+  const s0 = hmShow; hmShow = function () { hm.heroTry = false; return s0.apply(this, arguments); };
+}
+
+// 4) chord changes: the strips switch early by the engine's sound delay (a note played on the change is heard on the new
+//    chord), and notes being held jump to the new chord fast instead of sliding over 20 ms
+const CHE = window.CHEARLY = { n: 0, fast: false, ms: 0, at: 0 };
+{
+  const early = () => {
+    if (performance.now() - CHE.at > 2000) {
+      CHE.at = performance.now();
+      try { CHE.ms = 0; if (window.GPNative && !GPNative.web && typeof GPNative.info === "function") { const d = JSON.parse(GPNative.info()); if (d.ok && d.delayMs > 0) CHE.ms = Math.min(120, d.delayMs); } } catch (_) { CHE.ms = 0; }
+    }
+    return CHE.ms / 1000 + .008;
+  };
+  setInterval(() => {
+    try {
+      if (!audio || !T.playing || !uiQueue.length) return;
+      const lim = audio.ctx.currentTime + early();
+      for (let i = 0; i < uiQueue.length; i++) {   // chords (and a section / part change with them) early, in their order
+        const q = uiQueue[i]; if (q.t > lim) continue;
+        if (q.chord) { uiQueue.splice(i, 1); i--; CHE.n++; setLiveChord(q.chord); if (q.mi !== undefined) { try { markPlayingChip(q.mi); } catch (_) {} } }
+        else if (q.section) { uiQueue.splice(i, 1); i--; applySection(q.section); }
+        else if (q.part) { uiQueue.splice(i, 1); i--; applyPart(q.part); }
+      }
+    } catch (_) {}
+  }, 5);
+  const slc0 = setLiveChord;
+  setLiveChord = function () { const was = CHE.fast; CHE.fast = !!T.playing; try { return slc0.apply(this, arguments); } finally { CHE.fast = was; } };
+  const sf0 = setFreqs;
+  setFreqs = function (v, tc) { return sf0.call(this, v, CHE.fast && tc > .006 ? .006 : tc); };
+}
+
+// 5) a second finger's tap on a button: Android makes no click for it, so the page does
+{
+  const down = new Map(); let sec = null, guard = null;
+  const ZONES = "#lab, #sp, #mk, #mkSheet, #pk2, #msx";
+  const tapOf = el => el && el.closest && el.closest('button, [role="button"], .seg button, label.btn');
+  document.addEventListener("pointerdown", e => {
+    if (e.pointerType === "mouse") return;
+    const others = down.size; down.set(e.pointerId, true);
+    if (!others) { sec = null; return; }
+    const b = tapOf(e.target); if (!b || !b.closest(ZONES) || b.id === "lbTry" || b.classList.contains("sp-trybig")) return;
+    sec = { id: e.pointerId, b, x: e.clientX, y: e.clientY };
+  }, true);
+  const up = e => {
+    down.delete(e.pointerId);
+    if (!sec || sec.id !== e.pointerId) return;
+    const s2 = sec; sec = null;
+    if (e.type !== "pointerup" || Math.hypot(e.clientX - s2.x, e.clientY - s2.y) > 14) return;
+    const at = document.elementFromPoint(e.clientX, e.clientY); if (!at || tapOf(at) !== s2.b || s2.b.disabled) return;
+    guard = { b: s2.b, until: performance.now() + 450 };
+    MT.taps++;
+    s2.b.click();
+  };
+  document.addEventListener("pointerup", up, true); document.addEventListener("pointercancel", up, true);
+  // a real click that follows (some phones do make one): just the one
+  document.addEventListener("click", e => {
+    if (!guard || !e.isTrusted) return;
+    if (performance.now() > guard.until) { guard = null; return; }
+    if (guard.b.contains(e.target)) { guard = null; e.stopImmediatePropagation(); e.preventDefault(); }
+  }, true);
+  const MT = window.MTAPS = { taps: 0 };
+}
+
+// 7) folded pedals: the ON light on the left (its own zone up to the line), the name, then the settings; tap the rest = open
+{
+  const pf0 = pedFoldAll;
+  pedFoldAll = function (root, set) {
+    const r = pf0.apply(this, arguments);
+    try {
+      root.querySelectorAll(":scope > .fp > .toggle").forEach(h => {   // Studio: the LED goes in a zone of its own
+        const led = h.querySelector(":scope > .led"); if (led && !led.parentNode.classList.contains("swz")) { const z = document.createElement("span"); z.className = "swz"; h.prepend(z); z.appendChild(led); }
+      });
+    } catch (_) {}
+    return r;
+  };
+  pedKey = function (p) {   // (Studio: the name is no longer the first thing in the head)
+    const b = p.querySelector(":scope > .pt, :scope > .toggle"); if (!b) return ""; if (p.classList.contains("eqp")) return "eq"; if (b.dataset.fxon) return b.dataset.fxon;
+    const tn = [...b.childNodes].find(n => n.nodeType === 3 && n.nodeValue.trim()); return tn ? tn.nodeValue.trim().toLowerCase() : "";
+  };
+  pedIsSwitch = (e, head) => {
+    if (!e.detail && !e.clientX && !e.clientY) return true;   // a key or a script: as before
+    const sw = head.querySelector(":scope > .swz, :scope > span:not(.fsum), :scope > .st"); if (!sw) return false;
+    const r = sw.getBoundingClientRect(), hr = head.getBoundingClientRect();
+    return e.clientX >= hr.left - 2 && e.clientX <= r.right + 6;
+  };
+  try { const r = document.querySelector("#lab .lb-peds"); if (r) pedFoldAll(r, PFOLD.lab); pedFoldAll(pedals, PFOLD.studio); } catch (_) {}
+  const st = document.createElement("style");
+  st.textContent = `
+  #lab .fp > .pt { justify-content: flex-start !important; }
+  #lab .fp > .pt > span:not(.fsum), #lab .fp > .pt > .st { order: -1 !important; min-width: 58px; height: 30px; display: flex !important; align-items: center; justify-content: flex-start; gap: 6px;
+    padding: 0 10px 0 0 !important; margin: 0 6px 0 0 !important; border-right: 1px solid rgba(255,255,255,.16); box-sizing: border-box; }
+  #lab .fp > .pt > .fsum, #pedals.pfold > .fp > .toggle > .fsum { text-align: left !important; padding: 0 0 0 8px !important; }
+  #pedals.pfold > .fp > .toggle { justify-content: flex-start !important; }
+  #pedals.pfold > .fp > .toggle > .swz { order: -1; flex: none; width: 62px; height: 30px; display: flex; align-items: center; justify-content: flex-end; padding: 0 12px 0 0; box-sizing: border-box; position: relative;
+    margin-right: 10px; border-right: 1px solid rgba(255,255,255,.16); }
+  #pedals.pfold > .fp > .toggle > .swz > .led { margin: 0 !important; width: 11px !important; height: 11px !important; position: relative; }
+  /* 9) an opened pedal stays inside the screen */
+  #lab .lb-peds:has(> .fp) { grid-template-columns: minmax(0, 1fr) !important; }
+  #lab .lb-peds > .fp { min-width: 0 !important; max-width: 100% !important; box-sizing: border-box !important; }
+  #lab .lb-peds > .fp > * { min-width: 0; max-width: 100%; box-sizing: border-box; }`;
+  document.head.appendChild(st);
+}
+
+// 8) Mix faders: middle = the part's usual level, top = +6 dB, bottom half down to −36 dB, then off
+{
+  const posOf = (v, ref) => { if (!(v > 0)) return 0; const db = 20 * Math.log10(v / ref); return db >= 0 ? Math.min(1, .5 + db / 12) : Math.max(.005, .5 * (1 + db / 36)); };
+  const gainOf = (p, ref) => { if (p <= .002) return 0; const db = p >= .5 ? (p - .5) * 12 : -36 * (1 - p / .5); return ref * Math.pow(10, db / 20); };
+  const dbTxt = (v, ref) => !(v > 0) ? "off" : (x => (x > 0 ? "+" : x < 0 ? "−" : "") + Math.abs(x).toFixed(Math.abs(x) < 10 ? 1 : 0) + " dB")(20 * Math.log10(v / ref));
+  window.MIXDB = { posOf, gainOf };
+  for (const c of MIX_CH) {
+    const el = $("mixer").querySelector(`[data-part="${c.part}"]`); if (!el) continue;
+    const f0 = el.querySelector("input"), out = el.querySelector("output"), src = c.src ? $(c.src) : null, ref = c.def;
+    if (src) src.max = String(Math.max(+src.max, +(ref * 2).toFixed(2)));   // room for +6 dB
+    const f = f0.cloneNode(true); f.min = "0"; f.max = "1"; f.step = "0.005"; f0.replaceWith(f);
+    c.sync = () => {
+      const v = src ? +src.value : mix.master; f.value = posOf(v, ref);
+      out.textContent = CRE.on ? dbTxt(v, ref) : Math.round(v / ref * 100) + "%";
+      if (c.part !== "master") { const m = el.querySelector(".m"); m.setAttribute("aria-pressed", mix.mute[c.part]); el.classList.toggle("off", mix.mute[c.part]); }
+    };
+    f.addEventListener("input", () => {
+      const v = +gainOf(+f.value, ref).toFixed(4);
+      if (src) { src.value = v; src.dispatchEvent(new Event("input", { bubbles: true })); } else setMaster(v);
+      c.sync(); mixSummary();
+    });
+    c.sync();
+  }
+  setInterval(() => { try { if (!$("mixer").closest("[hidden]")) syncMix(); } catch (_) {} }, 1500);
 }
 
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)

@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.15 TEST · game mode · 23 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.16 TEST · game mode · 24 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1547,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.15 TEST · game mode · 23 Oct 2026</p>
+      <p class="ver">GlassPad 6.16 TEST · game mode · 24 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10285,7 +10285,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.15 TEST</p>
+    <p class="hm-ver">GlassPad 6.16 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14754,7 +14754,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.15 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.16 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -19636,6 +19636,417 @@ if (window.GPNative && !GPNative.web && typeof GPNative.eqMix === "function") {
   };
   sw(); setInterval(sw, 1000);
 }
+/* ---------- 6.16 (app 0.3.30): try from the engine, the Sound lab from the sound sheets, dice, folding pedals, scroll arrows ---------- */
+const SV_DICE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><circle cx="8.6" cy="8.6" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="15.4" cy="15.4" r="1.5" fill="currentColor" stroke="none"/></svg>';
+const SV_PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>';
+const SV_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+
+// 1) Sound lab, Hold to try: the engine plays it (the same sound, pedals, EQ and room as the pad), the page only if it can't
+if (NATIVE.on && window.GPNative) {
+  const RIFF0 = 1 << 22, BSN = ["finger", "sub", "reese", "fuzz", "acid", "pluck"];
+  const can = () => typeof GPNative.evAt === "function" && typeof GPNative.leadGlide === "function" && typeof GPNative.bassGlide === "function";
+  const LTN = window.LTNAT = { notes: 0, page: 0 };
+  let nid = 0, mixAt = 0;
+  const nop = () => {}, ftom = f => 69 + 12 * Math.log2(f / 440);
+  const msOf = t => { const d = (t - audio.ctx.currentTime) * 1000; return d > 2 ? d : 0; };
+  const param = set => ({ value: 0, setTargetAtTime: set || nop, setValueAtTime: nop, linearRampToValueAtTime: nop, exponentialRampToValueAtTime: nop, cancelScheduledValues: nop, cancelAndHoldAtTime: nop });
+  const node = extra => Object.assign({ connect(x) { return x; }, disconnect: nop, start: nop, stop: nop }, extra);
+  const lv0 = ltVoice;
+  ltVoice = function (s, midi, t) {
+    let tD = 0;
+    try {
+      if (can() && audio && s && s.base && s.base.t !== "rec") {
+        const v = s.base.v;
+        if (s.kind === "lead" && LEAD_SNDS.includes(v)) tD = 1 + LEAD_SNDS.indexOf(v) + 16 * Math.round(sndTrim("lead", v) * 1000);
+        if (s.kind === "bass" && BSN.includes(v)) tD = 1 + BSN.indexOf(v) + 16 * Math.round(sndTrim("bass", v) * 1000);
+      }
+    } catch (_) { tD = 0; }
+    if (!tD) { LTN.page++; return lv0.apply(this, arguments); }
+    const lead = s.kind === "lead", id = RIFF0 + 900000 + (nid = (nid + 1) % 90000);
+    if (performance.now() - mixAt > 150) { mixAt = performance.now(); for (const f of NATMIX) { try { f(); } catch (_) {} } }   // its pedals reach the engine first
+    try { GPNative.evAt(lead ? 50 : 52, id, midi, lead ? 2600 : 900, 0, tD, msOf(t)); LTN.notes++; } catch (_) { LTN.page++; return lv0.apply(this, arguments); }
+    let gone = false;
+    const off = (at, tc) => { if (gone) return; gone = true; try { GPNative.evAt(lead ? 51 : 53, id, 0, tc, 0, 0, Math.max(1, msOf(at))); } catch (_) {} };
+    const glide = (f, at, tc) => { try { if (lead) GPNative.leadGlide(id, ftom(f), tc, msOf(at)); else GPNative.bassGlide(id, ftom(f), tc, msOf(at)); } catch (_) {} };
+    return { kind: s.kind, midi, parts: [[node({ frequency: param(glide), detune: param() }), 0]], filt: node({ frequency: param(), Q: param() }),
+      g: node({ gain: param((x, at, tc) => { if (x === 0) off(at, tc); }) }), natTry: id };
+  };
+  const d0 = diagReport;
+  diagReport = function () { const r = d0.apply(this, arguments); try { r.labTry = { engine: LTN.notes, page: LTN.page }; } catch (_) {} return r; };
+}
+
+// 2) the sound sheets → the Sound lab (for this theme), and back with the sound picked
+const LABMK = window.LABMK = { on: null, ready: false };
+const labForTxt = f => f === 3 ? "Bass" : f === 1 ? "Lead, 1st finger" : "Lead, 2nd finger";
+function labFromMk(f, fresh) {
+  const t = mk.t; if (!t) return;
+  const kind = f === 3 ? "bass" : "lead", sl = slotOf(t, f);
+  let s, copyOf = null;
+  if (!fresh && sl.t === "lab" && sl.s) s = sl.s;
+  else {
+    s = labNew(kind);
+    if (!fresh && sl.t !== "off") {
+      if (sl.t === "rec") { const r = (sl.recs || [sl.v]).filter(Boolean)[0]; if (r) { s.base = { t: "rec", v: r }; copyOf = r; } }
+      else if (sl.v) { s.base = { t: "synth", v: sl.v }; copyOf = synthName(kind, sl.v); }
+      if (copyOf) s.name = (copyOf + " (mine)").slice(0, 24);
+      try {   // the effects it has in this theme now (Make your own keeps them live on the pad)
+        if (kind === "bass") s.fx = { ...s.fx, ...bmc(PFX.bass) };
+        else if (f === 1) { for (const id of LEAD_FX_IDS) if (S[id]) s.fx[id] = bmc(S[id]); s.fx.eq = eqNorm(S.eq); }
+      } catch (_) {}
+    }
+  }
+  try { pickClose(); } catch (_) {}
+  mkSheetClose(); $("mk").hidden = true;
+  LABMK.on = { f, kind, copyOf, name: (t.name || $("mkName").value.trim() || $("mkName").placeholder || "your theme") }; LABMK.ready = false;
+  labOpen(); labEdit(s); LABMK.ready = true; labRender();
+}
+function labBackToMk(sid) {
+  const o = LABMK.on; LABMK.on = null; LABMK.ready = false; if (!o) return;
+  try { ltStopAll(); } catch (_) {} mkRiffStop(); $("lab").hidden = true; $("lab").classList.remove("formk");
+  if (LAB.prev) { try { restoreLast(LAB.prev); } catch (_) {} LAB.prev = null; }
+  LAB.view = "home"; LAB.cur = null;
+  const t = mk.t; if (!t) return homeOpen(false);
+  if (sid) {
+    if (o.f === 3) { t.bass = "lab:" + sid; t.bassRec = null; }
+    else { const key = o.f === 1 ? "lead" : "lead2", rk = o.f === 1 ? "recs" : "recs2"; t[key] = "lab:" + sid; t[rk] = []; }
+    if (t.unset && o.f !== 2) t.unset[o.f === 3 ? "bass" : "lead"] = false;
+  }
+  $("mk").hidden = false; if (o.f !== 3) mk.fing = o.f;
+  mkRender(); mkSheet(o.f === 3 ? "bass" : "lead");
+  if (sid) { const x = labGet(sid); toast(`${x ? x.name : "Your sound"} is your ${o.f === 3 ? "bass" : o.f === 1 ? "lead" : "2nd finger"} sound`); }
+}
+{
+  const c0 = labCommit;
+  labCommit = function (s) { const r = c0.apply(this, arguments); try { if (LABMK.on && s && labGet(s.id)) { const id = s.id; setTimeout(() => { if (LABMK.on) labBackToMk(id); }, 380); } } catch (_) {} return r; };
+  // back: to the theme (twice if it isn't saved)
+  $("lab").addEventListener("click", e => {
+    const b = e.target.closest && e.target.closest("#lbBack"); if (!b || !LABMK.on) return;
+    e.stopImmediatePropagation(); e.preventDefault();
+    const dirty = LAB.cur && (labChanged() || !labGet(LAB.cur.id));
+    if (dirty && !LAB.leaveOk) { LAB.leaveOk = true; toast("Not saved. Tap back again to go back to your theme"); setTimeout(() => LAB.leaveOk = false, 2500); return; }
+    LAB.leaveOk = false; labBackToMk(null);
+  }, true);
+  const r0 = labRender;
+  labRender = function () {
+    const r = r0.apply(this, arguments);
+    try {
+      const o = LABMK.on, sv = $("lbSave");
+      $("lab").classList.toggle("formk", !!o);
+      if (o && LABMK.ready && LAB.view === "home") { setTimeout(() => { if (LABMK.on) labBackToMk(null); }); return r; }   // Discard: back to the theme
+      if (sv && sv.firstChild && sv.firstChild.nodeType === 3) sv.firstChild.nodeValue = o ? "USE IN MY THEME" : "SAVE";
+      else if (sv && !sv.textContent.trim()) sv.textContent = o ? "USE IN MY THEME" : "SAVE";
+      if (o && LAB.view === "sound" && LAB.cur) {
+        const n = document.querySelector("#lbBody .lb-name + .lb-note");
+        if (n) { const d = document.createElement("div"); d.className = "lb-for";
+          d.innerHTML = `<span>${o.copyOf && !labGet(LAB.cur.id) ? "A copy of " + escH(o.copyOf) + ", for " : "For "}<b>${escH(o.name)} · ${labForTxt(o.f)}</b></span>`; n.replaceWith(d); }
+      }
+    } catch (_) {}
+    return r;
+  };
+  // the buttons in the Lead and Bass sheets
+  const row = f => { const sl = slotOf(mk.t, f), ed = sl.t !== "off";
+    return `<div class="mk-labrow${ed ? "" : " one"}">${ed ? `<button type="button" data-labmk="edit">${SV_PEN}<span>Edit this sound<small>IN THE SOUND LAB</small></span></button>` : ""}<button type="button" data-labmk="new">${SV_PLUS}<span>New sound<small>IN THE SOUND LAB</small></span></button></div>`; };
+  const L0 = MK_SHEETS.lead2f[1], B0 = MK_SHEETS.bass2f[1];
+  const after = (h, f) => h.replace(/(<button class="mk-pickbtn"[\s\S]*?<\/button>)/, m => m + row(f));
+  MK_SHEETS.lead2f[1] = () => after(L0(), mk.fing || 1);
+  MK_SHEETS.bass2f[1] = () => after(B0(), 3);
+  $("mksBox").addEventListener("click", e => {
+    const b = e.target.closest("[data-labmk]"); if (!b || !mk.t) return;
+    e.stopPropagation();
+    labFromMk(mk.sheet === "bass2f" ? 3 : (mk.fing || 1), b.dataset.labmk === "new");
+  }, true);
+}
+
+// 3) Roll the dice: the whole theme, or one part; a short spin, then it lands (tap again: straight to the result)
+const MKD = window.MKDICE = { spin: null, rolls: 0, photoCb: null, photoT: 0, photos: 0 };
+const pickOne = (a, not) => { const b = a.filter(x => x !== not); const l = b.length ? b : a; return l[Math.floor(Math.random() * l.length)]; };
+const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const colDist = (a, b) => { try { const x = hexRgb(a), y = hexRgb(b); return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]); } catch (_) { return 999; } };
+function diceCol() {
+  try {
+    const t = mk.t, c = [mkCol(1), mkCol(0), mkCol(2)], m = getComputedStyle($("mk")).getPropertyValue("--mkc").trim() || mkCol(2);
+    return c.find(x => colDist(x, m) > 90) || "#ffc94a";
+  } catch (_) { return "#ffc94a"; }
+}
+const MKD_ORDER = ["photo", "cols", "lead", "bass", "feel", "chord"];
+function mkRollValues(t, keys) {
+  const FX = ["clean", "feel", "big"];
+  for (const k of keys) {
+    if (k === "cols") { const a = GLOW_COLOURS.map(c => c[0]).sort(() => Math.random() - .5); t.cols = a.slice(0, 3); if (t.unset) t.unset.cols = false; }
+    if (k === "lead") {
+      const pool = LEAD_CHOICES.map(c => c[0]).concat(LAB.store.sounds.filter(x => x.kind === "lead").map(x => "lab:" + x.id));
+      t.lead = pickOne(pool, t.lead); t.recs = []; t.fx1 = pickOne(FX);
+      if (Math.random() < .5) { t.lead2 = "off"; t.recs2 = []; } else { t.lead2 = pickOne(LEAD_CHOICES.map(c => c[0]), t.lead); t.recs2 = []; t.fx2 = pickOne(FX); }
+      if (t.unset) t.unset.lead = false;
+    }
+    if (k === "bass") {
+      const pool = BASS_CHOICES.map(c => c[0]).concat(LAB.store.sounds.filter(x => x.kind === "bass").map(x => "lab:" + x.id));
+      t.bass = pickOne(pool, t.bassRec ? null : t.bass); t.bassRec = null; t.fxB = pickOne(FX); if (t.unset) t.unset.bass = false;
+    }
+    if (k === "feel") {
+      const id = pickOne(FEELS.map(f => f.id), t.feelSet !== false ? t.band : null); t.band = id; t.feelSet = true;
+      if (t.unset) {   // what you haven't picked comes with the feel (as picking a feel does)
+        const st = QSTYLES_SYNTH[id], p = st && st.p;
+        if (p) {
+          if (t.unset.cols && !keys.includes("cols") && st.cols) t.cols = [...st.cols];
+          if (t.unset.lead && !keys.includes("lead")) { t.lead = feelWave(id); t.recs = []; }
+          if (t.unset.bass && !keys.includes("bass")) { t.bass = (p.bass && p.bass.sound && p.bass.sound !== "sampler") ? p.bass.sound : "finger"; t.bassRec = null; }
+        }
+      }
+    }
+    if (k === "chord") {
+      const own = (feelBase(t.band).pad || {}).sound;
+      t.chord = Math.random() < .3 ? null : pickOne(Object.keys(PAD).filter(x => x !== own), t.chord);
+    }
+  }
+}
+const MKD_FAKE = {
+  cols: () => [0, 1, 2].map(() => GLOW_COLOURS[Math.floor(Math.random() * GLOW_COLOURS.length)][0]).join(" · "),
+  lead: () => pickOne(LEAD_CHOICES).at(1), bass: () => pickOne(BASS_CHOICES).at(1),
+  feel: () => pickOne(FEELS).name, chord: () => (PAD[pickOne(Object.keys(PAD))] || {}).name || "", photo: () => "Finding a photo…",
+};
+function mkRowOf(k) { return $("mkRows").querySelector(`.mk-step[data-k="${k}"]`); }
+function mkRollFinish() { const sp = MKD.spin; if (sp) sp.finish(); }
+function mkRoll(keys) {
+  const t = mk.t; if (!t) return;
+  if (MKD.spin) { mkRollFinish(); return; }   // tap again: straight to the result
+  const app = !!(window.GPNative && !GPNative.web && typeof GPNative.randomPhoto === "function");
+  const photo = keys.includes("photo"), now = keys.filter(k => k !== "photo");
+  if (photo && !app) { if (keys.length === 1) { $("mkFile").click(); return; } }   // the website: the photo picker (Roll the dice leaves the photo alone)
+  MKD.rolls++;
+  mkRollValues(t, now); mkRender();
+  const order = MKD_ORDER.filter(k => keys.includes(k) && (k !== "photo" || app)), timers = [], saved = {};
+  for (const k of order) { const r = mkRowOf(k); if (r) saved[k] = { tx: r.querySelector(".tx").innerHTML, ic: r.querySelector(".ic").innerHTML }; }
+  const land = (k, flash) => {
+    const r = mkRowOf(k), sv = saved[k]; if (!r) return;
+    if (sv) { r.querySelector(".tx").innerHTML = sv.tx; r.querySelector(".ic").innerHTML = sv.ic; }
+    r.classList.remove("rolling"); if (flash) { r.classList.remove("landed"); void r.offsetWidth; r.classList.add("landed"); }
+  };
+  const spinRow = (k, until) => {
+    const r = mkRowOf(k); if (!r) return; r.classList.add("rolling");
+    const b = r.querySelector(".tx b"), ic = r.querySelector(".ic");
+    let dt = 45;
+    const tick = () => {
+      if (performance.now() >= until) return;
+      try {
+        if (b && MKD_FAKE[k]) b.textContent = MKD_FAKE[k]();
+        if (k === "cols" && ic) ic.querySelectorAll("i").forEach(i => { const c = GLOW_COLOURS[Math.floor(Math.random() * GLOW_COLOURS.length)][1]; i.style.background = c; i.style.boxShadow = "0 0 6px " + c; });
+      } catch (_) {}
+      dt *= 1.16; timers.push(setTimeout(tick, dt));
+    };
+    tick();
+  };
+  const t0 = performance.now(), many = order.filter(k => k !== "photo").length > 1, done = new Set();
+  const wait = order.includes("photo");
+  const sp = MKD.spin = {
+    finish() {
+      timers.forEach(clearTimeout); timers.length = 0;
+      for (const k of order) if (!done.has(k) && k !== "photo") { done.add(k); land(k, true); }
+      if (!wait || done.has("photo")) end();
+    },
+  };
+  const end = () => {
+    if (MKD.spin !== sp) return; MKD.spin = null;
+    const big = $("mkRows").querySelector(".mk-roll"); if (big) big.classList.remove("rolling");
+    if (T.playing && hpv.on && t.feelSet !== false && now.length) { try { mkPreviewPlay(); } catch (_) {} }
+  };
+  { const big = $("mkRows").querySelector(".mk-roll"); if (big && many) big.classList.add("rolling"); }
+  order.filter(k => k !== "photo").forEach((k, i) => {
+    const at = many ? 420 + i * 140 : 480;
+    spinRow(k, t0 + at - 40);
+    timers.push(setTimeout(() => { done.add(k); land(k, true); if ([...order].every(x => done.has(x) || (x === "photo" && !wait))) end(); else if (!wait && order.filter(x => x !== "photo").every(x => done.has(x))) end(); }, at));
+  });
+  if (wait) {
+    spinRow("photo", t0 + 60000);
+    mkRandomPhoto((url, why) => {
+      timers.forEach(clearTimeout);
+      if (url && mk.t === t) { t.pic = url; if (keys.length === 1) { try { mkColsFromPhoto(); } catch (_) {} } }
+      else if (why === "denied") toast("GlassPad can't see your photos. Allow it in the phone's Settings → Apps → GlassPad → Permissions");
+      else if (why === "empty") toast("No photos found on the phone");
+      else if (why) toast("Couldn't get a photo");
+      done.add("photo");
+      const keep = {}; for (const k of order) if (k !== "photo") { const r = mkRowOf(k); if (r && done.has(k)) keep[k] = 1; }
+      mkRender(); const r = mkRowOf("photo"); if (r && url) { r.classList.remove("landed"); void r.offsetWidth; r.classList.add("landed"); }
+      for (const k of order) if (k !== "photo" && !done.has(k)) { done.add(k); land(k, true); }
+      end();
+    });
+  }
+  if (!order.length) end();
+}
+function mkRandomPhoto(cb) {
+  MKD.photoCb = cb; MKD.photos++;
+  clearTimeout(MKD.photoT); MKD.photoT = setTimeout(() => { const f = MKD.photoCb; MKD.photoCb = null; if (f) f(null, "slow"); }, 45000);
+  try { GPNative.randomPhoto(); } catch (_) { const f = MKD.photoCb; MKD.photoCb = null; clearTimeout(MKD.photoT); if (f) f(null, "err"); }
+}
+window.gpPhoto = (url, why) => { const f = MKD.photoCb; MKD.photoCb = null; clearTimeout(MKD.photoT); if (f) f(url || null, url ? "" : (why || "err")); };
+{
+  const r0 = mkRender;
+  mkRender = function () {
+    const r = r0.apply(this, arguments);
+    try {
+      const rows = $("mkRows"); if (!rows || !mk.t) return r;
+      rows.style.setProperty("--dc", diceCol());
+      if (!rows.querySelector(".mk-roll")) {
+        const b = document.createElement("button"); b.type = "button"; b.className = "mk-roll"; b.dataset.roll = "all";
+        b.innerHTML = `${SV_DICE}<span>Roll the dice</span>`; rows.prepend(b);
+      }
+      for (const k of MKD_ORDER) {
+        const row = rows.querySelector(`.mk-step[data-k="${k}"]`); if (!row || row.querySelector(".rd")) continue;
+        const d = document.createElement("span"); d.className = "rd"; d.dataset.roll = k; d.setAttribute("role", "button"); d.setAttribute("aria-label", "Roll the dice for " + k);
+        d.innerHTML = SV_DICE; const cv = row.querySelector(".cv"); if (cv) cv.before(d); else row.appendChild(d);
+      }
+    } catch (_) {}
+    return r;
+  };
+  $("mkRows").addEventListener("click", e => {
+    const d = e.target.closest("[data-roll]"); if (!d) return;
+    e.stopPropagation(); e.preventDefault();
+    if (d.dataset.roll === "all") mkRoll(MKD_ORDER.slice()); else mkRoll([d.dataset.roll]);
+  }, true);
+  const d0 = diagReport;
+  diagReport = function () { const r = d0.apply(this, arguments); try { r.dice = { rolls: MKD.rolls, photos: MKD.photos, galleryApp: !!(window.GPNative && typeof GPNative.randomPhoto === "function") }; } catch (_) {} return r; };
+}
+
+// 4) folding pedals: one line each (name, its settings when on, the ON light, a chevron); tap the line to open it,
+//    the ON light to switch it. Switching one on opens it.
+const PFOLD = { lab: new Set(), studio: new Set() };
+function pedSummary(p) {
+  try {
+    if (p.classList.contains("eqp")) {
+      const e = p.dataset.eqfor === "lab" ? eqNorm(LAB.cur && LAB.cur.fx.eq) : (() => { const pt = (p.dataset.eqfor || "").split(":")[1]; return eqNorm(pt === "lead" ? S.eq : PFX[pt] && PFX[pt].eq); })();
+      const f = (v, n) => v ? (v > 0 ? "+" : "−") + Math.abs(Math.round(v)) + " " + n : "";
+      return [f(e.low, "low"), f(e.mid, "mid"), f(e.high, "high"), e.cut ? "cut " + e.cut : ""].filter(Boolean).join(" · ") || "flat";
+    }
+    const out = [];
+    const seg = p.querySelector('.seg button.on, .seg button[aria-pressed="true"]'); if (seg) out.push(seg.textContent.trim().toLowerCase());
+    p.querySelectorAll("label").forEach(l => {
+      const n = (l.childNodes[0] && l.childNodes[0].nodeType === 3 ? l.childNodes[0].nodeValue : l.textContent).trim().toLowerCase();
+      const v = l.querySelector("span") ? l.querySelector("span").textContent : (l.parentNode.querySelector("output") || {}).textContent || "";
+      if (n) out.push(n + " " + String(v).replace("%", "").trim());
+    });
+    return out.slice(0, 3).join(" · ");
+  } catch (_) { return ""; }
+}
+function pedKey(p) { const b = p.querySelector(":scope > .pt, :scope > .toggle"); if (!b) return ""; if (p.classList.contains("eqp")) return "eq"; return b.dataset.fxon || (b.childNodes[0] && b.childNodes[0].nodeValue || "").trim().toLowerCase(); }
+function pedFoldAll(root, set) {
+  root.querySelectorAll(":scope > .lb-ped, :scope > .pedal").forEach(p => {
+    const k = pedKey(p); if (!k) return;
+    p.classList.add("fp"); p.classList.toggle("fold", !set.has(k));
+    const head = p.querySelector(":scope > .pt, :scope > .toggle");
+    let sm = head.querySelector(".fsum"); if (!sm) { sm = document.createElement("i"); sm.className = "fsum"; head.appendChild(sm); }
+    sm.textContent = p.classList.contains("on") ? pedSummary(p) : "";
+    if (!head.querySelector(".fch")) { const c = document.createElement("b"); c.className = "fch"; c.setAttribute("aria-hidden", "true"); head.appendChild(c); }
+    head.setAttribute("aria-expanded", set.has(k));
+  });
+}
+// the ON light: the status text (lab) or the LED (Studio) and a little room round it
+const pedIsSwitch = (e, head) => { if (!e.detail && !e.clientX && !e.clientY) return true;   // a key or a script: as before
+  const sw = head.querySelector(":scope > span, :scope > .led, :scope > .st"); if (!sw) return false; const r = sw.getBoundingClientRect(); return e.clientX >= r.left - 14 && e.clientX <= r.right + 10; };
+function pedFoldClick(e, root, set, refresh) {
+  const head = e.target.closest(".fp > .pt, .fp > .toggle"); if (!head || !root.contains(head)) return;
+  const p = head.parentNode, k = pedKey(p); if (!k) return;
+  if (pedIsSwitch(e, head)) { if (!p.classList.contains("on")) set.add(k); else set.delete(k); setTimeout(refresh, 0); return; }   // switch: lets it through
+  e.stopImmediatePropagation(); e.preventDefault();
+  if (set.has(k)) set.delete(k); else set.add(k);
+  refresh();
+}
+{
+  const labPeds = () => document.querySelector("#lab .lb-peds");
+  const refresh = () => { const r = labPeds(); if (r) pedFoldAll(r, PFOLD.lab); };
+  const r0 = labRender;
+  labRender = function () { const r = r0.apply(this, arguments); try { refresh(); } catch (_) {} return r; };
+  const e0 = labEdit;
+  labEdit = function () { PFOLD.lab.clear(); return e0.apply(this, arguments); };
+  $("lab").addEventListener("click", e => { const r = labPeds(); if (r) pedFoldClick(e, r, PFOLD.lab, refresh); }, true);
+  // the Studio boards (Creator)
+  const sRefresh = () => { try { pedals.classList.add("pfold"); pedFoldAll(pedals, PFOLD.studio); } catch (_) {} };
+  const rb0 = renderBoard;
+  renderBoard = function () { const r = rb0.apply(this, arguments); sRefresh(); return r; };
+  pedals.addEventListener("click", e => pedFoldClick(e, pedals, PFOLD.studio, sRefresh), true);
+  sRefresh();
+}
+
+// 5) scroll arrows: ⌄ when there's more below (just above the buttons at the bottom), ⌃ when there's more above
+function scrollArrows(box, dockOf, topOf) {
+  const mkb = cls => { const b = document.createElement("button"); b.type = "button"; b.className = "gp-more " + cls; b.hidden = true; b.innerHTML = CHEVD; b.setAttribute("aria-label", cls === "up" ? "Scroll up" : "Scroll down"); document.body.appendChild(b); return b; };
+  const up = mkb("up"), dn = mkb("dn");
+  const free = (b, x, y) => { b.style.pointerEvents = "none"; const el = document.elementFromPoint(x, y); b.style.pointerEvents = ""; return !!el && box.contains(el); };
+  const sync = () => {
+    try {
+      const vis = !box.hidden && box.getClientRects().length > 0 && getComputedStyle(box).display !== "none";
+      if (!vis) { up.hidden = dn.hidden = true; return; }
+      const more = box.scrollTop + box.clientHeight < box.scrollHeight - 10, less = box.scrollTop > 10;
+      const d = dockOf && dockOf(), dr = d && !d.hidden && d.getClientRects().length ? d.getBoundingClientRect() : null;
+      const y = dr && dr.height ? dr.top - 40 : innerHeight - 52, x = innerWidth / 2;
+      const h = topOf && topOf(), hr = h && h.getClientRects().length ? h.getBoundingClientRect() : null, uy = hr && hr.bottom > 0 ? Math.round(hr.bottom + 6) : 12;
+      dn.style.top = y + "px"; up.style.top = uy + "px";
+      dn.hidden = !(more && free(dn, x, y + 13));
+      up.hidden = !(less && free(up, x, uy + 14));
+    } catch (_) {}
+  };
+  box.addEventListener("scroll", sync, { passive: true }); addEventListener("resize", sync); setInterval(sync, 350);
+  dn.addEventListener("click", () => box.scrollBy({ top: Math.round(box.clientHeight * .6), behavior: "smooth" }));
+  up.addEventListener("click", () => box.scrollBy({ top: -Math.round(box.clientHeight * .6), behavior: "smooth" }));
+  return sync;
+}
+scrollArrows($("mk"), () => { const p = $("mkPlayIt"); return p && p.parentNode; });
+scrollArrows($("lab"), () => $("lbDock"));
+scrollArrows($("sp"), () => $("spPad"), () => document.querySelector("#sp .sp-top"));
+
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  .mk-labrow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0 2px; }
+  .mk-labrow.one { grid-template-columns: 1fr; }
+  .mk-labrow button { display: flex; align-items: center; gap: 9px; text-align: left; padding: 10px 11px; border-radius: 13px; border: 1.5px solid color-mix(in srgb, var(--mkc) 55%, transparent);
+    background: color-mix(in srgb, var(--mkc) 10%, rgba(10,10,20,.85)); color: #fff; font: 600 13px "IBM Plex Sans", sans-serif; min-height: 52px; }
+  .mk-labrow button svg { width: 18px; height: 18px; flex: none; color: var(--mkc); }
+  .mk-labrow button small { display: block; font: 500 9.5px var(--mono); color: #a49cc8; letter-spacing: .06em; margin-top: 2px; }
+  #lab .lb-for { display: flex; align-items: center; gap: 8px; padding: 9px 12px; margin: 2px 0 4px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--lc) 50%, transparent);
+    background: color-mix(in srgb, var(--lc) 12%, rgba(8,8,16,.85)); font: 500 12.5px "IBM Plex Sans", sans-serif; color: #eee; }
+  #lab .lb-for b { color: #fff; }
+  #lab .lb-for::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--lc); box-shadow: 0 0 8px var(--lc); flex: none; }
+  #lab.formk #lbSave { font-size: 13px; line-height: 1.15; }
+  #mkRows .mk-roll { width: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 46px; border-radius: 14px; border: 1.5px solid var(--dc);
+    background: color-mix(in srgb, var(--dc) 12%, rgba(10,10,20,.88)); color: #fff; font: 600 14px "IBM Plex Sans", sans-serif; letter-spacing: .03em;
+    box-shadow: 0 0 10px color-mix(in srgb, var(--dc) 35%, transparent); }
+  #mkRows .mk-roll svg { width: 20px; height: 20px; color: var(--dc); }
+  #mkRows .mk-step .rd { flex: none; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--dc) 45%, transparent); color: var(--dc); margin-left: 2px; }
+  #mkRows .mk-step .rd svg { width: 19px; height: 19px; }
+  #mkRows .mk-roll.rolling svg, #mkRows .mk-step.rolling .rd svg { animation: gpdice .45s linear infinite; }
+  @keyframes gpdice { 0% { transform: rotate(0) scale(1); } 50% { transform: rotate(180deg) scale(.82); } 100% { transform: rotate(360deg) scale(1); } }
+  #mkRows .mk-step.rolling .tx b { color: color-mix(in srgb, var(--dc) 60%, #fff); }
+  #mkRows .mk-step.rolling .ic img { filter: blur(3px); }
+  #mkRows .mk-step.landed { animation: gpland .7s ease-out 1; }
+  @keyframes gpland { 0% { box-shadow: 0 0 0 2px var(--dc), 0 0 22px var(--dc); } 100% { box-shadow: 0 0 0 0 transparent, 0 0 0 transparent; } }
+  @media (prefers-reduced-motion: reduce) { #mkRows .mk-roll.rolling svg, #mkRows .mk-step.rolling .rd svg { animation: none; } }
+  /* folding pedals */
+  #lab .lb-peds:has(> .fp) { grid-template-columns: 1fr !important; gap: 8px !important; }
+  #lab .lb-peds > .fp { grid-column: 1 / -1 !important; }
+  #lab .lb-peds > .fp.fold { padding-top: 0 !important; padding-bottom: 0 !important; }
+  .fp.fold > :not(.pt):not(.toggle) { display: none !important; }
+  #lab .fp > .pt { display: flex !important; flex-direction: row !important; align-items: center !important; gap: 8px; width: 100% !important; min-height: 46px !important; height: auto !important; margin: 0 !important; }
+  #lab .fp > .pt > span, #lab .fp > .pt > .st { order: 3; margin: 0 !important; width: auto !important; flex-direction: row !important; padding: 6px 0 6px 8px; }
+  .fp > .pt > .fsum, .fp > .toggle > .fsum { order: 2; flex: 1; min-width: 0; text-align: right; font: normal 500 10px var(--mono); color: var(--lc, var(--pc, #c9bfff)); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 2px; }
+  .fp:not(.fold) > .pt > .fsum, .fp:not(.fold) > .toggle > .fsum { visibility: hidden; }
+  .fp > .pt > .fch, .fp > .toggle > .fch { order: 4; flex: none; width: 8px; height: 8px; border-right: 2px solid #8f87b3; border-bottom: 2px solid #8f87b3; transform: rotate(45deg); margin: -4px 4px 0 8px; transition: transform .15s; }
+  .fp:not(.fold) > .pt > .fch, .fp:not(.fold) > .toggle > .fch { transform: rotate(-135deg); margin-top: 4px; }
+  #lab .lb-peds > .fp:not(.fold) { padding-bottom: 14px !important; }
+  #pedals.pfold { display: flex !important; flex-direction: column !important; flex-wrap: nowrap !important; gap: 8px !important; align-items: stretch !important; }
+  #pedals.pfold > .flow { display: none !important; }
+  #pedals.pfold > .pedal { width: auto !important; max-width: none !important; min-width: 0 !important; flex: none !important; }
+  #pedals.pfold > .fp > .toggle { display: flex !important; align-items: center; gap: 8px; width: 100%; min-height: 40px; text-align: left; }
+  #pedals.pfold > .fp > .toggle > .led { order: 3; margin: 0 0 0 4px !important; }
+  #pedals.pfold > .fp.fold { padding-top: 0 !important; padding-bottom: 0 !important; }
+  #pedals.pfold > .fp.fold > .toggle { border-bottom-color: transparent !important; box-shadow: none !important; }
+  /* scroll arrows */
+  .gp-more { position: fixed; left: 50%; z-index: 60; width: 44px; height: 28px; margin-left: -22px; border-radius: 14px; display: grid; place-items: center; padding: 0; color: #fff;
+    background: rgba(20,18,34,.92); border: 1px solid rgba(255,255,255,.3); box-shadow: 0 2px 12px rgba(0,0,0,.6); }
+  .gp-more[hidden] { display: none; }
+  .gp-more svg { width: 20px; height: 20px; } .gp-more.up svg { transform: rotate(180deg); }`;
+  document.head.appendChild(st);
+}
+
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }
 requestAnimationFrame(() => document.documentElement.classList.add("gp-ready"));

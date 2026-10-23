@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.12 TEST · game mode · 20 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.13 TEST · game mode · 23 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1547,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.12 TEST · game mode · 20 Oct 2026</p>
+      <p class="ver">GlassPad 6.13 TEST · game mode · 23 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10268,7 +10268,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.12 TEST</p>
+    <p class="hm-ver">GlassPad 6.13 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14733,7 +14733,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.12 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.13 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -16927,7 +16927,7 @@ if (NATIVE.on) {
     if ($("gSheet").hidden) return;
     try {
       const d = JSON.parse(GPNative.info());
-      $("gNat").textContent = !d.ok ? "Not running" : `Out ${d.delayMs} ms · touch → sound ${d.touchMs.toFixed(1)} ms (max ${d.touchMaxMs.toFixed(1)}, ${d.touches}) · total ≈ ${Math.round(d.delayMs + d.touchMs)} ms · ${d.glitches} glitch${d.glitches === 1 ? "" : "es"} · load ${d.loadPct}% (peak ${d.peakPct}%) · buffer ${d.bufferMs.toFixed(1)} ms · ${d.api} ${d.sharing}` + (window.TSPLIT ? TSPLIT.line(d) : "");
+      $("gNat").textContent = !d.ok ? "Not running" : `Out ${d.delayMs} ms · touch → sound ${d.touchMs.toFixed(1)} ms (max ${d.touchMaxMs.toFixed(1)}, ${d.touches}) · total ≈ ${Math.round(d.delayMs + d.touchMs)} ms · ${d.glitches} glitch${d.glitches === 1 ? "" : "es"} · load ${d.loadPct}% (peak ${d.peakPct}%) · buffer ${d.bufferMs.toFixed(1)} ms · ${d.api} ${d.sharing}`;
     } catch (_) {}
   }, 500);
   // Copy setup gets the native numbers too
@@ -17079,7 +17079,7 @@ $("mkCam").addEventListener("change", () => {
 // touch → sound for lead notes only, page and native timed the same way (from the finger landing)
 {
   const st = { page: { n: 0, sum: 0, max: 0 } };
-  area.addEventListener("pointerdown", e => { NATIVE.ts = e.timeStamp; NATIVE.seen = performance.now(); }, { capture: true, passive: true });
+  area.addEventListener("pointerdown", e => { NATIVE.ts = e.timeStamp; }, { capture: true, passive: true });
   const sv = startVoice;
   startVoice = function (key, x, y, type, kind) {
     const v = sv.apply(this, arguments);
@@ -17543,7 +17543,6 @@ if (NATIVE.on && typeof GPNative.leadHold === "function") {
     try {
       if (kind === "lead" && SND.path === "finger" && audio && realLead() && (!patFor("lead") || typeof GPNative.arpSet === "function")) {
         const id = nid++, second = !!buildingSecond, age = NATIVE.ts ? performance.now() - NATIVE.ts : -1;
-        if (window.TSPLIT) TSPLIT.note();
         if ((second ? lead.snd2 : $("wave").value) === "sampler") GPNative.leadHoldS(id, midi, cut, second ? 1 : 0, NSAMP.pick("lead", frac, second), age >= 0 && age < 500 ? age : -1);
         else GPNative.leadHold(id, midi, cut, second ? 1 : 0, age >= 0 && age < 500 ? age : -1);
         L5.held++; NATIVE.perNote = true; if (window.NARPtick) queueMicrotask(NARPtick);
@@ -18133,7 +18132,9 @@ const BCK = { downs: [], diffs: [], last: -2, lastAt: 0, stuck: 0, stuckNow: fal
     requestAnimationFrame(f);
     if (!CRE.on || !game.on || !T.playing || !audio) { BCK.last = -2; BCK.stuckNow = false; return; }   // 6.04: Creator mode only
     const g = $("gSeq"); if (!g) return;
-    const i = [...g.children].findIndex(x => x.classList.contains("now")), now = audio.ctx.currentTime;
+    const cur = g.querySelector(":scope > .now"), now = audio.ctx.currentTime;
+    if (cur === BCK.el && BCK.last >= 0) { const bar = stepDur() * T.meter.steps; if (!BCK.stuckNow && now - BCK.lastAt > bar * 1.6 && passBars() > 1) { BCK.stuckNow = true; BCK.stuck++; } return; }
+    BCK.el = cur; const i = cur ? Array.prototype.indexOf.call(g.children, cur) : -1;
     if (i !== BCK.last) {
       if (BCK.last >= 0 && i >= 0 && BCK.downs.length) {   // (not the first move after Play: the intro)
         const near = BCK.downs.reduce((a, d) => Math.abs(d - now) < Math.abs(a - now) ? d : a, BCK.downs[0]);
@@ -18963,6 +18964,7 @@ function recPullNow() {
     const b = GPNative.recPull(); if (!b) return;
     const bin = atob(b), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
     const a = new Int16Array(u.buffer, 0, u.length >> 1); RECM.pulls++; RECM.kB += u.length / 1024;
+    if (RECM.engPeak < 300) for (let i = 0; i < a.length; i += 7) { const v = a[i] < 0 ? -a[i] : a[i]; if (v > RECM.engPeak) RECM.engPeak = v; }   // 6.13
     if (RECM.feed) RECM.feed.port.postMessage(a, [a.buffer]); else RECM.pend.push(a);
   } catch (e) { RECM.err = String(e && e.message || e); }
 }
@@ -19030,32 +19032,10 @@ function recOff(node) {
   const d0 = diagReport;
   diagReport = function () {
     const r = d0.apply(this, arguments);
-    try { r.recEngine = { now: recEng() || "page only", recording: RECM.users > 0, mode: RECM.mode, takes: RECM.takes, fetches: RECM.pulls, kB: Math.round(RECM.kB), waitingMs: RECM.fillMs, gaps: RECM.under, pageDelayMs: Math.round(RECM.lagMs), err: RECM.err }; } catch (_) {}
-    try { if (TSPLIT.rows.length) r.touchSplitPage = TSPLIT.sum(); } catch (_) {}
+    try { r.recEngine = { now: recEng() || "page only", recording: RECM.users > 0, mode: RECM.mode, takes: RECM.takes, fetches: RECM.pulls, kB: Math.round(RECM.kB), waitingMs: RECM.fillMs, gaps: RECM.under, pageDelayMs: Math.round(RECM.lagMs), err: RECM.err, ctx: audio && audio.ctx ? audio.ctx.state : null, feed: !!RECM.feed, video: window.VCHK ? VCHK.last : null }; } catch (_) {}
     return r;
   };
 }
-/* Where the touch delay goes (Creator only, nothing changes): the page notes, per lead note, how long the finger took to
-   reach the page (Android + the web view) and how long the page took to call the engine; the app (0.3.26+) adds the
-   bridge, the wait for the next audio block and the output. Copy setup: native.touchSplit + touchSplitPage. */
-const TSPLIT = window.TSPLIT = { rows: [],
-  note() {
-    if (!CRE.on || !NATIVE.ts || !NATIVE.seen) return;
-    const now = performance.now(), toPage = NATIVE.seen - NATIVE.ts, work = now - NATIVE.seen;
-    if (toPage < 0 || toPage > 500 || work < 0 || work > 500) return;
-    this.rows.push([toPage, work]); if (this.rows.length > 32) this.rows.shift();
-  },
-  sum() {
-    const med = c => { const v = this.rows.map(r => r[c]).sort((a, b) => a - b); return v.length ? +v[v.length >> 1].toFixed(1) : null; };
-    return { notes: this.rows.length, toPageMs: med(0), pageMs: med(1), last: this.rows.slice(-8).map(r => r.map(x => +x.toFixed(1))) };
-  },
-  line(d) {
-    try {
-      if (!CRE.on || !d || !d.touchSplit || !d.touchSplit.n) return "";
-      const t = d.touchSplit, p = this.rows.length ? this.sum() : null, f = x => x == null || x < 0 ? "?" : Math.round(x);
-      return ` · touch → heard ${f(t.totalMs)} ms = ${p ? `to the page ${f(p.toPageMs)} + page ${f(p.pageMs)}` : `page ${f(t.pageMs)}`} + bridge ${f(t.bridgeMs)} + wait ${f(t.waitMs)} + out ${f(t.outMs)} (${t.n} notes)`;
-    } catch (_) { return ""; }
-  } };
 /* ---------- 6.11 (app 0.3.27): audio takes collect the engine's sound; Save and Share in the app ----------
    Audio takes (app 0.3.26+): the engine's copy is pulled every 100 ms into a list (the engine keeps 5 s, so a busy page
    only makes the pull late, never lossy) and joined to the page's own sound after Stop, lined up by sample count and the
@@ -19228,6 +19208,73 @@ function mySoundsFix() {
     vrec.delayMs = 0; vrec.ring = null;
     const r = await sv.apply(this, arguments);
     vrec.delayMs = vrec.on && RECM.users && RECM.mode === "app" ? RECM.picMs || 0 : 0;
+    return r;
+  };
+}
+/* ---------- 6.13: video sound check; Creator-only stall probe ----------
+   Video (app sound): the page's sound is woken as the take starts; the take's own level and the engine's are watched;
+   a take where the engine played but the recording stayed silent is not kept (message instead). */
+const VCHK = window.VCHK = { an: null, buf: null, peak: 0, timer: 0, last: null };
+{
+  const sv = startVideoRec;
+  startVideoRec = async function () {
+    try { if (audio && audio.ctx && audio.ctx.state !== "running") await audio.ctx.resume(); } catch (_) {}
+    RECM.engPeak = 0; VCHK.peak = 0; VCHK.last = null;
+    const r = await sv.apply(this, arguments);
+    try {
+      if (vrec.on && RECM.users && RECM.mode === "app" && RECM.mix) {
+        const an = RECM.ctx.createAnalyser(); an.fftSize = 2048; RECM.mix.connect(an); VCHK.an = an; VCHK.buf = new Float32Array(an.fftSize);
+        clearInterval(VCHK.timer);
+        VCHK.timer = setInterval(() => {
+          if (!VCHK.an || VCHK.peak > .002) return;
+          VCHK.an.getFloatTimeDomainData(VCHK.buf); for (let i = 0; i < VCHK.buf.length; i += 4) { const v = Math.abs(VCHK.buf[i]); if (v > VCHK.peak) VCHK.peak = v; }
+        }, 250);
+      }
+    } catch (_) {}
+    return r;
+  };
+  const sp = stopVideoRec;
+  stopVideoRec = function () {
+    if (vrec.on && VCHK.an && !vrec.tailing) {
+      // judged once the tail has been recorded (the 6.10 wrapper waits tailMs before the real stop)
+      setTimeout(() => {
+        clearInterval(VCHK.timer); VCHK.timer = 0;
+        VCHK.last = { takePeak: +VCHK.peak.toFixed(4), enginePeak: RECM.engPeak || 0, ctx: audio && audio.ctx ? audio.ctx.state : null, feed: !!RECM.feed, silent: (RECM.engPeak || 0) >= 300 && VCHK.peak < .0005 };
+        try { VCHK.an.disconnect(); } catch (_) {} try { RECM.mix && RECM.mix.disconnect(VCHK.an); } catch (_) {} VCHK.an = null;
+      }, Math.max(0, (RECM.tailMs || 0) - 30));
+    }
+    return sp.apply(this, arguments);
+  };
+  const rk = recKeep;
+  recKeep = async function (blob, type, secs) {
+    if (type === "video" && VCHK.last && VCHK.last.silent) { toast("That video came out without sound, so it wasn't kept. Please try again."); return null; }
+    return rk.apply(this, arguments);
+  };
+}
+/* Creator only: long page stalls (> 50 ms), so a laggy spell shows up in Copy setup with what Creator had on. */
+const STALL = window.STALL = { obs: null, n: 0, ms: 0, worst: 0, t0: 0, last: [] };
+function stallSync() {
+  try {
+    if (CRE.on && !STALL.obs && window.PerformanceObserver && (PerformanceObserver.supportedEntryTypes || []).includes("longtask")) {
+      Object.assign(STALL, { n: 0, ms: 0, worst: 0, t0: performance.now(), last: [] });
+      STALL.obs = new PerformanceObserver(l => { for (const e of l.getEntries()) { STALL.n++; STALL.ms += e.duration; if (e.duration > STALL.worst) STALL.worst = e.duration; STALL.last.push([Math.round(e.startTime / 1000), Math.round(e.duration)]); if (STALL.last.length > 12) STALL.last.shift(); } });
+      STALL.obs.observe({ type: "longtask" });
+    } else if (!CRE.on && STALL.obs) { STALL.obs.disconnect(); STALL.obs = null; }
+  } catch (_) {}
+}
+{
+  const cs0 = creSync; creSync = function () { const r = cs0.apply(this, arguments); stallSync(); return r; };
+  stallSync();
+  const dr0 = diagReport;
+  diagReport = function () {
+    const r = dr0.apply(this, arguments);
+    try {
+      if (STALL.obs) {
+        const mins = Math.max(1 / 60, (performance.now() - STALL.t0) / 60000), id = (() => { try { return gameKey(); } catch (_) { return null; } })();
+        r.stalls = { perMin: +(STALL.n / mins).toFixed(1), msPerMin: Math.round(STALL.ms / mins), worstMs: Math.round(STALL.worst), mins: +mins.toFixed(1), last: STALL.last,
+          creator: { editing: CTH.id || null, savedTheme: !!(id && CRB[id] && CRB[id].setup), tryB: !!(typeof CRT_B !== "undefined" && CRT_B.on), gamePad: !!game.on, studioOpen: !$("sp").hidden, testOpen: !$("gSheet").hidden, band: NATIVE.bandLabel ? NATIVE.bandLabel() : null } };
+      }
+    } catch (_) {}
     return r;
   };
 }

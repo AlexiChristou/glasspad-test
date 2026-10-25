@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.18 TEST · game mode · 24 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.19 TEST · game mode · 25 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1547,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.18 TEST · game mode · 24 Oct 2026</p>
+      <p class="ver">GlassPad 6.19 TEST · game mode · 25 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -4233,8 +4233,9 @@ function buildPattern() {
    own timing and loudness, scaled to the band's tempo. */
 const GROOVES = { blues: {"name":"Blues shuffle (Groove MIDI Dataset, drummer 5, CC BY 4.0)","bpm":72,"crash":[[[-0.077,"kick",0.3],[-0.035,"crash",0.78],[-0.006,"kick",0.09],[0.337,"ohat",0.28],[0.631,"snare",0.11],[0.675,"hat",0.31],[1.012,"hat",0.83],[1.027,"snare",1.0],[1.362,"hat",0.38],[1.675,"kick",0.18],[1.681,"hat",0.34],[2.004,"kick",0.21],[2.006,"hat",0.6],[2.331,"hat",0.34],[2.504,"snare",0.05],[2.662,"hat",0.22],[2.702,"rim",0.2],[2.996,"phat",0.31],[3.002,"ohat",0.69],[3.008,"rim",0.65],[3.275,"snare",0.06],[3.34,"hat",0.34],[3.342,"kick",0.14],[3.662,"hat",0.42],[3.662,"kick",0.16]],[[-0.038,"crash",1.0],[-0.035,"kick",0.34],[0.04,"kick",0.1],[1.01,"phat",0.13],[1.031,"hat",0.54],[1.04,"snare",0.81],[1.146,"snare",0.28],[1.683,"kick",0.17],[1.694,"hat",0.58],[2.035,"kick",0.16],[2.054,"hat",0.65],[2.367,"hat",0.26],[2.669,"kick",0.19],[2.671,"hat",0.31],[3.01,"hat",0.87],[3.019,"snare",0.88],[3.352,"hat",0.42],[3.615,"snare",0.04],[3.671,"kick",0.14],[3.679,"hat",0.35]],[[-0.06,"kick",0.38],[-0.058,"phat",0.43],[-0.029,"crash",0.81],[0.019,"kick",0.09],[0.525,"snare",0.04],[0.69,"hat",0.42],[1.033,"ohat",0.83],[1.037,"snare",0.88],[1.358,"hat",0.3],[1.66,"kick",0.19],[1.681,"hat",0.28],[2.0,"kick",0.17],[2.027,"hat",0.69],[2.371,"hat",0.28],[2.51,"snare",0.07],[2.575,"snare",0.04],[2.644,"kick",0.19],[2.66,"hat",0.28],[2.996,"hat",0.74],[2.996,"snare",0.81],[3.337,"hat",0.35],[3.646,"hat",0.28],[3.656,"kick",0.13]]],"main":[[[-0.002,"hat",0.74],[0.006,"kick",0.2],[0.337,"hat",0.3],[0.508,"snare",0.1],[0.569,"snare",0.05],[0.608,"snare",0.05],[0.654,"kick",0.21],[0.671,"hat",0.43],[1.015,"snare",0.83],[1.019,"hat",0.82],[1.335,"snare",0.09],[1.362,"hat",0.25],[1.681,"hat",0.28],[1.687,"kick",0.14],[2.006,"phat",0.21],[2.017,"kick",0.22],[2.027,"hat",0.69],[2.356,"hat",0.31],[2.687,"hat",0.28],[3.015,"phat",0.28],[3.025,"hat",0.8],[3.029,"snare",0.76],[3.352,"hat",0.31],[3.36,"kick",0.16],[3.687,"kick",0.17],[3.69,"hat",0.31]],[[0.025,"kick",0.27],[0.035,"hat",0.7],[0.092,"kick",0.09],[0.362,"hat",0.24],[0.562,"snare",0.07],[0.637,"snare",0.04],[0.675,"hat",0.27],[0.675,"kick",0.21],[1.017,"hat",0.86],[1.021,"snare",0.72],[1.352,"hat",0.29],[1.671,"kick",0.14],[1.681,"hat",0.34],[2.004,"kick",0.17],[2.008,"hat",0.55],[2.331,"hat",0.29],[2.629,"hat",0.48],[2.646,"kick",0.22],[2.952,"snare",0.68],[3.008,"snare",1.0],[3.087,"snare",0.31],[3.302,"ohat",0.64],[3.554,"phat",0.47],[3.627,"kick",0.15],[3.629,"hat",0.35],[3.767,"snare",0.07]],[[0.012,"kick",0.2],[0.027,"hat",0.65],[0.356,"hat",0.37],[0.658,"hat",0.34],[0.662,"kick",0.24],[0.996,"hat",0.69],[0.996,"rim",0.64],[1.29,"snare",0.08],[1.335,"hat",0.23],[1.606,"snare",0.04],[1.65,"kick",0.14],[1.654,"hat",0.4],[1.979,"kick",0.18],[1.992,"hat",0.54],[2.315,"hat",0.35],[2.637,"kick",0.21],[2.64,"hat",0.42],[2.985,"hat",0.79],[2.992,"snare",0.76],[3.348,"snare",0.24],[3.508,"snare",0.5],[3.658,"snare",1.0],[3.808,"snare",0.97],[3.883,"phat",0.31]],[[-0.075,"snare",0.23],[-0.033,"kick",0.25],[-0.002,"hat",0.63],[0.208,"rim",0.13],[0.283,"snare",0.04],[0.321,"snare",0.06],[0.354,"hat",0.24],[0.681,"hat",0.3],[1.006,"ohat",0.83],[1.012,"snare",0.92],[1.023,"phat",0.53],[1.11,"snare",0.25],[1.356,"hat",0.38],[1.683,"kick",0.13],[1.69,"hat",0.25],[2.025,"hat",0.54],[2.025,"kick",0.16],[2.36,"hat",0.43],[2.66,"hat",0.31],[2.675,"kick",0.24],[2.996,"rim",0.49],[3.04,"snare",1.0],[3.333,"ohat",0.55],[3.556,"snare",0.06],[3.592,"phat",0.35],[3.656,"kick",0.28],[3.671,"hat",0.54]],[[-0.01,"kick",0.23],[-0.004,"hat",0.51],[0.187,"snare",0.05],[0.262,"snare",0.06],[0.3,"snare",0.04],[0.321,"hat",0.25],[0.633,"kick",0.19],[0.648,"hat",0.26],[0.994,"hat",0.44],[0.994,"snare",0.61],[1.323,"ohat",0.89],[1.646,"phat",0.63],[1.679,"hat",0.33],[1.896,"snare",0.04],[1.973,"kick",0.24],[1.979,"hat",0.39],[2.31,"hat",0.3],[2.629,"kick",0.17],[2.652,"hat",0.17],[2.985,"snare",0.63],[2.987,"hat",0.66],[3.327,"phat",0.39],[3.337,"hat",0.39],[3.642,"hat",0.28],[3.642,"kick",0.15]],[[-0.027,"kick",0.19],[-0.01,"hat",0.58],[0.325,"hat",0.3],[0.533,"snare",0.13],[0.585,"snare",0.1],[0.644,"kick",0.23],[0.646,"hat",0.3],[0.667,"rim",0.08],[0.704,"kick",0.07],[0.983,"snare",0.61],[0.998,"hat",0.35],[1.312,"ohat",0.98],[1.637,"phat",0.57],[1.673,"hat",0.39],[1.977,"kick",0.22],[1.985,"hat",0.4],[2.321,"hat",0.23],[2.662,"hat",0.3],[3.006,"hat",0.91],[3.006,"snare",0.83],[3.329,"phat",0.28],[3.354,"hat",0.37],[3.631,"snare",0.06],[3.673,"hat",0.36],[3.683,"kick",0.13]]],"fill":[[[-0.05,"kick",0.19],[-0.033,"hat",0.5],[0.292,"crash",0.86],[0.292,"snare",1.0],[0.408,"snare",0.31],[0.598,"hat",0.31],[0.729,"snare",0.11],[0.929,"snare",0.08],[0.931,"hat",0.47],[0.946,"kick",0.32],[1.021,"kick",0.08],[1.275,"snare",1.0],[1.277,"crash",0.92],[1.377,"snare",0.34],[1.59,"hat",0.39],[1.731,"snare",0.04],[1.933,"hat",0.46],[1.962,"kick",0.22],[2.25,"hat",0.5],[2.25,"snare",0.07],[2.273,"kick",0.3],[2.346,"kick",0.11],[2.585,"snare",0.94],[2.637,"snare",1.0],[2.712,"snare",0.43],[2.89,"phat",0.25],[2.942,"tomhi",0.76],[3.29,"tommid",0.61],[3.625,"tomlo",0.71]],[[0.006,"hat",0.35],[0.331,"ohat",1.0],[0.337,"snare",0.8],[0.45,"snare",0.2],[0.644,"ohat",0.19],[0.8,"snare",0.13],[0.844,"snare",0.11],[0.894,"snare",0.09],[0.919,"phat",0.16],[0.969,"ohat",0.39],[0.994,"kick",0.2],[1.283,"ohat",0.28],[1.315,"kick",0.24],[1.642,"ohat",1.0],[1.642,"snare",0.75],[1.746,"snare",0.34],[1.973,"ohat",0.31],[2.292,"ohat",0.35],[2.292,"phat",0.33],[2.315,"kick",0.37],[2.394,"kick",0.07],[2.6,"snare",0.85],[2.652,"snare",1.0],[2.756,"snare",0.28],[2.908,"phat",0.2],[2.956,"tommid",0.72],[3.137,"snare",0.1],[3.2,"snare",0.08],[3.277,"tomlo",1.0],[3.617,"kick",0.24]],[[-0.056,"snare",0.09],[0.017,"kick",0.2],[0.027,"hat",0.59],[0.262,"snare",0.11],[0.327,"snare",0.06],[0.354,"hat",0.25],[0.367,"snare",0.06],[0.669,"hat",0.32],[0.706,"kick",0.28],[0.775,"kick",0.07],[1.04,"hat",0.39],[1.042,"snare",0.75],[1.344,"snare",0.08],[1.348,"ohat",1.0],[1.658,"phat",0.57],[1.694,"hat",0.35],[1.996,"kick",0.28],[2.0,"hat",0.39],[2.323,"hat",0.38],[2.598,"snare",0.04],[2.646,"kick",0.24],[2.65,"hat",0.35],[2.979,"hat",0.8],[2.983,"snare",0.85],[3.098,"snare",0.24],[3.296,"tomhi",0.91],[3.617,"tommid",0.73]]]} };
 // which of the drummer's bars plays in bar b: the fill on the last bar of the chords, the crash bar after it, grooves between
+function grooveId() { return game.on ? (drum.themeGroove || null) : drum.groove; }   // 6.19
 function grooveBarOf(b) {
-  const G = GROOVES[drum.groove], L = Math.max(1, passBars()), pos = ((b % L) + L) % L, h = (b * 2654435761) >>> 0;
+  const G = GROOVES[grooveId()], L = Math.max(1, passBars()), pos = ((b % L) + L) % L, h = (b * 2654435761) >>> 0;
   const list = pos === L - 1 ? G.fill : pos === 0 && b > 0 ? G.crash : G.main;
   return list[h % list.length];
 }
@@ -4420,7 +4421,7 @@ function scheduler() {
     if (s === 0) partBar(T.bar, t0);
     // a third value moves a hit by that many 16ths from the (unswung) step: used for triplet fills
     const stepFx = [];
-    const grooveOn = !game.on && drum.on && drum.groove && !sd && T.meter.steps === 16 && GROOVES[drum.groove];
+    const grooveOn = drum.on && grooveId() && !sd && T.meter.steps === 16 && GROOVES[grooveId()];
     if (grooveOn) for (const [inst, th, vel] of grooveStep(s, t0, dur)) {
       hit(inst, Math.max(audio.ctx.currentTime + .002, th), vel);
       const fx = inst === "kick" ? "kick" : inst === "snare" ? "snare" : inst === "hat" || inst === "ride" ? "hat" : null;
@@ -10285,7 +10286,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.18 TEST</p>
+    <p class="hm-ver">GlassPad 6.19 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14754,7 +14755,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.18 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.19 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -19617,8 +19618,8 @@ setInterval(() => eqSend(false), 300); NATMIX.push(() => eqSend(true));
 
 // the drummer's groove in the engine (Studio pad): the bars as the page plays them (grooveStep), loudness worked out here
 window.grooveSetup = function () {
-  if (game.on || !drum.on || !drum.groove || T.meter.steps !== 16 || !GROOVES[drum.groove] || isSong() || !grooveEng()) return null;
-  const G = GROOVES[drum.groove], vel = v => +Math.min(1.2, Math.pow(v, .8) * 1.15).toFixed(4);
+  if (!drum.on || !grooveId() || T.meter.steps !== 16 || !GROOVES[grooveId()] || isSong() || !grooveEng()) return null;
+  const G = GROOVES[grooveId()], vel = v => +Math.min(1.2, Math.pow(v, .8) * 1.15).toFixed(4);
   const bars = list => list.map(bar => bar.map(([p, inst, v]) => [+p.toFixed(4), inst, vel(v)]));
   return { L: Math.max(1, passBars()), main: bars(G.main), crash: bars(G.crash), fill: bars(G.fill) };
 };
@@ -20225,6 +20226,244 @@ if (NATIVE.on && window.GPNative) {
     } catch (_) {}
     return cc0.apply(this, arguments);
   };
+}
+/* ---------- 6.19: Drums in Make your own (kit pads, played by), Level + recordings in Hold to try, grouped rows, pedal switch ---------- */
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  /* rows: boxed groups, each row its own card */
+  #mkRows { gap: 16px !important; }
+  #mkRows .grp { position: relative; display: flex; flex-direction: column; border: 1.5px solid color-mix(in srgb, var(--gc) 60%, transparent); border-radius: 18px; padding: 14px 8px 6px; background: color-mix(in srgb, var(--gc) 5%, transparent); }
+  #mkRows .gh { position: absolute; top: -8px; left: 14px; padding: 0 8px; background: #0a0612; color: var(--gc); font: 600 11px "IBM Plex Mono", var(--mono); letter-spacing: .16em; line-height: 15px; }
+  #mkRows .grp .mk-step { min-height: 0; padding-top: 6px; padding-bottom: 6px; background: rgba(255,255,255,.055); border: 1px solid rgba(255,255,255,.13); border-radius: 13px; margin: 0 0 6px; box-shadow: none; }
+  #mkRows .grp .mk-step:last-child { margin-bottom: 2px; }
+  #mkRows .grp .mk-step.hl { border-color: var(--mkc); box-shadow: 0 0 14px color-mix(in srgb, var(--mkc) 55%, transparent); }
+  #mkRows .mk-step .tx small:first-child { font: 700 14px "IBM Plex Sans", var(--body); letter-spacing: .06em; color: #fff; text-transform: uppercase; white-space: nowrap; }
+  #mkRows .mk-step .tx b { font: 400 13.5px "IBM Plex Sans", var(--body); color: #c4c9de; margin-top: 2px; }
+  #mkRows .mk-step.todo .tx b { color: var(--mkc); }
+  #mkRows .mk-step .tx i { font-size: 11.5px; color: #8a90a8; }
+  #mkRows .mk-step[data-k="lead"] .tx small:first-child { color: var(--c0); }
+  #mkRows .mk-step[data-k="bass"] .tx small:first-child { color: var(--c1); }
+  #mkRows .mk-step[data-k="drums"] .tx small:first-child, #mkRows .mk-step[data-k="chord"] .tx small:first-child { color: var(--c2); }
+  #mkRows .mk-step .rd { width: 34px; height: 34px; border: 0; background: transparent; box-shadow: none; }
+  #mkRows .mk-step .rd svg { width: 22px; height: 22px; opacity: .85; }
+  #mkRows .mk-step .cv { width: 26px; height: 34px; display: grid; place-items: center; flex: none; }
+  #mkRows .mk-step .cv svg { width: 20px; height: 20px; color: #dfe2f0; }
+  #mkRows .mk-step .n { transform: scale(.78); opacity: .8; margin-right: -4px; }
+  #mkRows .mk-step .ic { width: 36px; height: 36px; border-radius: 11px; }
+  #mkRows .mk-step .ic svg { max-width: 22px; max-height: 20px; }
+  #mkRows .mk-step.sp2 { cursor: default; }
+  #mkRows .mk-step.sp2 .tx { flex: 0 0 auto; min-width: 0; }
+  #mkRows .mk-step.sp2 .tx small:first-child { font-size: 13px; letter-spacing: .03em; }
+  #mkRows .seg { flex: 0 0 auto; display: flex; margin-left: auto; border: 1px solid rgba(255,255,255,.2); border-radius: 10px; overflow: hidden; }
+  #mkRows .seg button { padding: 7px 6px; border: 0; border-left: 1px solid rgba(255,255,255,.14); background: transparent; color: #aab0c8; font: 500 11.5px "IBM Plex Sans", var(--body); }
+  #mkRows .seg button:first-child { border-left: 0; }
+  #mkRows .seg button.on { background: #a98bff; color: #120a22; font-weight: 700; }
+  /* the Drums sheet: a drum sampler's pads */
+  #mksBox .sg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 12px; border-radius: 20px; background: linear-gradient(#0a0b14, #12131f); border: 1.5px solid rgba(160,170,200,.18); margin-top: 4px; }
+  #mksBox .sp { position: relative; aspect-ratio: 1; border-radius: 14px; border: 1.5px solid rgba(160,170,200,.2); background: linear-gradient(160deg, #23263a, #14151f); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 6px; box-shadow: inset 0 2px 0 rgba(255,255,255,.07), 0 3px 0 #05050a; font-family: "IBM Plex Sans", var(--body); }
+  #mksBox .sp b { font-size: 14px; line-height: 1.1; text-align: center; font-weight: 600; }
+  #mksBox .sp small { font: 9.5px/1.2 "IBM Plex Mono", var(--mono); letter-spacing: .05em; color: #9aa3b8; text-transform: uppercase; text-align: center; }
+  #mksBox .sp i { position: absolute; top: 8px; right: 8px; width: 9px; height: 9px; border-radius: 50%; background: #3a3f55; }
+  #mksBox .sp.on { background: linear-gradient(160deg, color-mix(in srgb, var(--mkc) 60%, #200014), color-mix(in srgb, var(--mkc) 28%, #0a0510)); border-color: var(--mkc); box-shadow: 0 0 22px color-mix(in srgb, var(--mkc) 55%, transparent), inset 0 2px 0 rgba(255,255,255,.18), 0 3px 0 #05050a; }
+  #mksBox .sp.on i { background: #fff; box-shadow: 0 0 8px #fff, 0 0 14px var(--mkc); }
+  #mksBox .sp.hit { transform: translateY(2px); box-shadow: inset 0 2px 0 rgba(255,255,255,.18), 0 1px 0 #05050a; }
+  #mksBox .sp.off { opacity: .55; } #mksBox .sp.empty { background: #0d0e17; box-shadow: none; border-style: dashed; border-color: rgba(160,170,200,.14); }
+  #mksBox .sp.empty i { display: none; }
+  #mksBox .kit-by { margin-top: 16px; }
+  #mksBox .kit-by + .mk-fx { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; display: grid !important; }
+  /* Sound lab pedals: a small switch, the ON light on its left, less space on top */
+  #lab .fp > .pt > span:not(.fsum) { font-size: 0 !important; min-width: 0 !important; width: auto !important; height: 30px !important; border: 0 !important; padding: 0 !important; margin: 0 12px 0 0 !important; gap: 9px !important; display: flex !important; align-items: center !important; background: none !important; box-shadow: none !important; }
+  #lab .fp > .pt > span:not(.fsum)::after { content: "" !important; display: block !important; width: 44px !important; height: 24px !important; border-radius: 12px !important; background: radial-gradient(circle at 12px 12px, #cfd3e6 8.5px, transparent 9.5px) #262938 !important; border: 1.5px solid rgba(205,210,235,.4) !important; box-sizing: border-box; box-shadow: none !important; flex: none; }
+  #lab .lb-ped.on > .pt > span:not(.fsum)::after { background: radial-gradient(circle at 32px 12px, #fff 8.5px, transparent 9.5px) var(--lc) !important; border-color: var(--lc) !important; }
+  #lab .fp > .pt > span:not(.fsum)::before { content: "" !important; display: block !important; position: static !important; width: 9px !important; height: 9px !important; border-radius: 50% !important; background: #3a3f4d !important; flex: none; box-shadow: none !important; margin: 0 !important; }
+  #lab .lb-ped.on > .pt > span:not(.fsum)::before { background: var(--lc) !important; box-shadow: 0 0 6px var(--lc), 0 0 14px var(--lc) !important; }
+  #lab .lb-ped:not(.on) > .pt { color: #a3a8c0 !important; }
+  #lab .lb-peds > .fp, #lab .lb-peds > .fp:not(.fold) { padding-top: 0 !important; }
+  #lab .fp > .pt { min-height: 38px !important; }
+  #lab .fp:not(.fold) > .pt { margin-top: 2px !important; }
+  #lab .lb-ped .fsum { line-height: 1; }`;
+  document.head.appendChild(st);
+}
+// ----- 1. Drums: the theme's kit and who plays it -----
+const KIT19 = [["synth", "Synth drums", "built in"], ["linn", "LinnDrum", "80s"]];
+const KIT19_SOON = [["808", "808", "not added yet"]];
+const kit19Name = id => (KIT19.find(k => k[0] === id) || [0, id === "ferros" ? "Acoustic" : "Synth drums"])[1];
+function kitStored() { let k = "synth"; try { k = localStorage.getItem("glasspad.kit") || "synth"; } catch (_) {} return k === "synth" || KIT_MAPS[k] ? k : "synth"; }
+const kitOfTheme = t => (t && t.kit && (t.kit === "synth" || KIT_MAPS[t.kit])) ? t.kit : kitStored();
+const K19 = window.KIT19 = { tok: 0, sets: 0, grooves: 0 };
+// the kit for now, without changing your saved choice (Studio's Kit setting stays yours)
+function kitTo(id) {
+  const tok = ++K19.tok;
+  const done = k => { if (tok !== K19.tok) return; drum.kit = k; try { $("drumKit").value = k; } catch (_) {} K19.sets++; try { updateSummaries(); } catch (_) {} };
+  if (id === "synth" || KITS[id]) return done(id);
+  try { ensureAudio(); } catch (_) {}
+  loadKit(id).then(() => done(id)).catch(() => done("synth"));
+}
+// a theme's style carries its kit and drummer; anything else (Studio, a built-in theme) = your saved kit, no theme drummer
+{
+  const ap = applyPreset;
+  applyPreset = function (p) {
+    const r = ap.apply(this, arguments);
+    try {
+      const th = !!(p && p.th19), want = th && p.kit19 ? p.kit19 : kitStored();
+      drum.themeGroove = th && p.groove19 && GROOVES[p.groove19] ? p.groove19 : null; if (drum.themeGroove) K19.grooves++;
+      if (want !== (drum.kit || "synth")) kitTo(want);
+    } catch (_) {}
+    return r;
+  };
+  const mark = t => { for (const set of [QSTYLES_SYNTH, QSTYLES_ORIGINAL]) { const x = set[t.id]; if (x && x.p) { x.p.th19 = 1; x.p.kit19 = t.kit || null; x.p.groove19 = t.drummer || null; } } };
+  const reg = myRegister;
+  myRegister = function (t) { const r = reg.apply(this, arguments); try { mark(t); } catch (_) {} return r; };
+  MY.list.forEach(t => { try { mark(t); } catch (_) {} });
+}
+const SV_PADS = c => `<svg viewBox="0 0 24 24"><g fill="${c}"><rect x="2" y="2" width="9" height="9" rx="2.4"/><rect x="13" y="2" width="9" height="9" rx="2.4"/><rect x="2" y="13" width="9" height="9" rx="2.4"/><rect x="13" y="13" width="9" height="9" rx="2.4"/></g></svg>`;
+const SV_GAUGE = '<svg viewBox="0 0 24 24" fill="none" stroke="#a98bff" stroke-width="2" stroke-linecap="round"><path d="M4 17a8 8 0 1 1 16 0"/><path d="M12 17l4-5"/></svg>';
+function mkDrumsHTML() {
+  const t = mk.t, cur = kitOfTheme(t), by = t.drummer || "";
+  const pad = (cls, n, sm, k) => `<button type="button" class="sp ${cls}"${k ? ` data-kit="${k}" aria-pressed="${cls === "on"}"` : ""}${cls === "off" || cls === "empty" ? " disabled" : ""}><i></i><b>${n}</b><small>${sm}</small></button>`;
+  return `<p>Tap a pad to hear the kit and pick it.</p><div class="sg">${KIT19.map(([k, n, sm]) => pad(cur === k ? "on" : "", n, sm, k)).join("")}${KIT19_SOON.map(([, n, sm]) => pad("off", n, sm)).join("")}${pad("empty", "", "").repeat(6)}</div>
+    <div class="lbl kit-by">PLAYED BY</div><div class="mk-fx" role="group" aria-label="Played by">${[["", "The app", "the theme's own beat"], ["blues", "A drummer", "blues shuffle"]].map(([v, n, d]) => `<button type="button" data-by="${v}" class="${by === v ? "on" : ""}" aria-pressed="${by === v}"><b>${n}</b><small>${d}</small></button>`).join("")}</div>
+    ${t.feelSet === false ? `<span class="tiny">PICK A FEEL TO HEAR IT WITH THE BAND</span>` : ""}`;
+}
+MK_SHEETS.drums = ["DRUMS", () => mkDrumsHTML()];
+{
+  const sh = mkSheet;
+  mkSheet = function (k) {
+    if (k === "drums") { try { MKS.k = k; } catch (_) {} mk.sheet = "drums"; mkSheetOpen(MK_SHEETS.drums[0], MK_SHEETS.drums[1]()); $("mkSheet").style.setProperty("--mkc", mkCol(2)); return; }
+    if (k !== "lead" && k !== "bass") $("mkSheet").style.removeProperty("--mkc");   // (the Lead / Bass colour doesn't stay on the other sheets)
+    return sh.apply(this, arguments);
+  };
+  $("mksBox").addEventListener("click", e => {
+    const t = mk.t; if (!t || mk.sheet !== "drums") return;
+    const p = e.target.closest("[data-kit]"), b = e.target.closest("[data-by]"); if (!p && !b) return;
+    e.stopPropagation();
+    if (p) { t.kit = p.dataset.kit; p.classList.add("hit"); setTimeout(() => p.classList.remove("hit"), 120); }
+    if (b) t.drummer = b.dataset.by || null;
+    mkRedraw(); mkRender();
+    if (t.feelSet !== false) { try { mkPreviewPlay(); } catch (_) {} }
+  }, true);
+}
+// the dice: Drums rolls a kit too
+MKD_ORDER.splice(MKD_ORDER.indexOf("bass") + 1, 0, "drums");
+MKD_FAKE.drums = () => pickOne(KIT19).at(1);
+{
+  const rv = mkRollValues;
+  mkRollValues = function (t, keys) { const r = rv.apply(this, arguments); try { if (keys.includes("drums")) t.kit = pickOne(KIT19.map(k => k[0]), kitOfTheme(t)); } catch (_) {} return r; };
+}
+// ----- 4. the rows: Drums and Speed rows, groups, colours -----
+{
+  const r0 = mkRender;
+  mkRender = function () {
+    const r = r0.apply(this, arguments);
+    try {
+      const rows = $("mkRows"), t = mk.t; if (!rows || !t) return r;
+      rows.style.setProperty("--c0", mkCol(0)); rows.style.setProperty("--c1", mkCol(1)); rows.style.setProperty("--c2", mkCol(2));
+      const q = k => rows.querySelector(`.mk-step[data-k="${k}"]`);
+      // Drums, after Bass
+      if (!q("drums") && q("bass")) {
+        const d = document.createElement("button"); d.className = "mk-step"; d.dataset.k = "drums";
+        d.innerHTML = `<span class="n"></span><span class="ic">${SV_PADS(mkCol(2))}</span><span class="tx"><small>DRUMS</small><b>${escH(kit19Name(kitOfTheme(t)) + (t.drummer ? " · a drummer" : ""))}</b></span><span class="rd" data-roll="drums" role="button" aria-label="Roll the dice for drums">${SV_DICE}</span><span class="cv">${CHEV}</span>`;
+        q("bass").after(d);
+      }
+      // Chord sound: no OPTIONAL; Feel: no description line
+      { const c = q("chord"); if (c) c.querySelectorAll(".tx small em").forEach(e => e.remove()); }
+      { const f = q("feel"); if (f) f.querySelectorAll(".tx i").forEach(e => e.remove()); }
+      // Speed: its own row, Slower / Normal / Faster on it
+      const old = rows.querySelector(".mk-step.sp"); if (old) old.remove();
+      if (!rows.querySelector(".mk-step.sp2")) {
+        const sp = t.speed || "asis", d = document.createElement("div"); d.className = "mk-step sp2";
+        d.innerHTML = `<span class="n"></span><span class="ic">${SV_GAUGE}</span><span class="tx"><small>SPEED</small></span><div class="seg" role="group" aria-label="Speed">${[["slow", "Slower"], ["asis", "Normal"], ["fast", "Faster"]].map(([v, n]) => `<button type="button" data-speed="${v}" class="${sp === v ? "on" : ""}" aria-pressed="${sp === v}">${n}</button>`).join("")}</div>`;
+        rows.appendChild(d);
+      }
+      // the groups
+      const G = [["LOOK", ["photo", "cols"], "#ff4fb8"], ["SOUNDS", ["lead", "bass", "drums", "chord"], "#3fdcff"], ["BAND", ["feel", "speed"], "#a98bff"]];
+      rows.querySelectorAll(".grp").forEach(g => { while (g.lastChild && g.lastChild.classList && g.lastChild.classList.contains("mk-step")) rows.appendChild(g.lastChild); g.remove(); });
+      let n = 0;
+      for (const [name, ks, col] of G) {
+        const g = document.createElement("div"); g.className = "grp"; g.style.setProperty("--gc", col); g.dataset.g = name.toLowerCase();
+        g.innerHTML = `<div class="gh">${name}</div>`;
+        for (const k of ks) { const el = k === "speed" ? rows.querySelector(".mk-step.sp2") : q(k); if (el) { g.appendChild(el); const ne = el.querySelector(".n"); if (ne) ne.textContent = ++n; } }
+        rows.appendChild(g);
+      }
+    } catch (_) {}
+    return r;
+  };
+}
+// ----- 2 + 3. Sound lab: Level in Hold to try; a recording repeats while held -----
+{
+  const ll = labLive;
+  labLive = function (s) {
+    const r = ll.apply(this, arguments);
+    try {
+      if (s && audio) {
+        const isL = s.kind === "lead", lv = s.level ?? (isL ? 1 : .9), g = isL ? audio.bus.gain : audio.bassBus.gain;
+        if (isL) lead.vol = lv; else bass.vol = lv;
+        g.cancelScheduledValues(0); g.value = mixV(isL ? "lead" : "bass", lv);
+      }
+    } catch (_) {}
+    return r;
+  };
+}
+const LTR = window.LTREC = { on: false, t: 0, k: 0, base: 0, dur: 0, midi: 60, kind: "lead", notes: 0 };
+function ltRecStart(s) {
+  const c = samples.find(x => x.name === s.base.v); if (!c || !audio) return false;
+  try { if (!c.buf) c.buf = clipBuf(c); } catch (_) { return false; }
+  if (!c.buf) return false;
+  mkRiffStop();
+  RIFF_OVR.l1 = s.kind === "lead" ? [c.name] : null; RIFF_OVR.b = s.kind === "bass" ? [c.name] : null;
+  for (const f of NATMIX) { try { f(); } catch (_) {} }   // its pedals and level reach the engine first
+  let m = rootOf(c); try { m += sampleShift(s.kind, c); } catch (_) {}
+  Object.assign(LTR, { on: true, k: 0, dur: Math.max(.15, c.buf.duration), midi: m, kind: s.kind, base: audio.ctx.currentTime + .1 });
+  const fill = () => {
+    if (!LTR.on) return;
+    const now = audio.ctx.currentTime;
+    while (LTR.base + LTR.k * LTR.dur < now + .3) {
+      RIFF.base = LTR.base; try { riffNote(LTR.kind, "sampler", LTR.midi, LTR.k * LTR.dur, LTR.dur); LTR.notes++; } catch (_) {} finally { RIFF.base = null; }
+      LTR.k++;
+    }
+    LTR.t = setTimeout(fill, 50);
+  };
+  fill(); return true;
+}
+function ltRecEnd(cut) {
+  LTR.on = false; clearTimeout(LTR.t); if (!cut) return;
+  mkRiffStop();
+  // the engine may already have the next repeat queued (sent a moment ahead): let it go the moment it starts
+  try {
+    const last = LTR.base + (LTR.k - 1) * LTR.dur, now = audio.ctx.currentTime;
+    if (LTR.k > 0 && last > now && window.GPNative && typeof GPNative.evAt === "function") {
+      const ms = (NATIVE.heardIn ? NATIVE.heardIn(last) : (last - now) * 1000) + 8;
+      GPNative.evAt(54, 0, 0, .03, 0, 0, Math.max(1, ms));
+    }
+  } catch (_) {}
+}
+{
+  const old = $("lbTry"), b = old.cloneNode(true); old.replaceWith(b);
+  const rec = () => LAB.cur && LAB.cur.base.t === "rec";
+  b.addEventListener("pointerdown", e => {
+    e.preventDefault(); if (!LAB.cur) return; ensureAudio(); ltStopAll(); ltRecEnd(true); mkRiffStop(); labLive(LAB.cur); b.classList.add("go"); LAB.trying = true;
+    if (rec() && ltRecStart(LAB.cur)) { LT.holdT = setTimeout(() => { LT.mode = "hold"; }, 220); return; }
+    LT.holdT = setTimeout(() => {
+      LT.mode = "hold";
+      if (rec()) { const loop = () => { if (LT.mode !== "hold") return; mkRiff(LAB.cur.kind, 2, labOver(LAB.cur)); LT.seq.push(setTimeout(loop, (8 * 60 / 90) * 1000)); }; loop(); return; }
+      LT.v.push(ltVoice(LAB.cur, LAB.cur.kind === "lead" ? 69 : 45, audio.ctx.currentTime));
+    }, 220);
+  });
+  const up = () => {
+    if (!LAB.trying) return; LAB.trying = false; b.classList.remove("go");
+    if (LTR.on) { const hold = LT.mode === "hold"; clearTimeout(LT.holdT); LT.mode = null; ltRecEnd(hold); return; }   // a tap: it plays once
+    if (LT.mode === "hold") { ltStopAll(); mkRiffStop(); return; }
+    clearTimeout(LT.holdT); if (!LAB.cur) return;
+    if (rec()) mkRiff(LAB.cur.kind, 1, labOver(LAB.cur)); else ltArp(LAB.cur);
+  };
+  b.addEventListener("pointerup", up); b.addEventListener("pointercancel", () => { LAB.trying = false; b.classList.remove("go"); ltRecEnd(true); ltStopAll(); });
+  b.addEventListener("pointerleave", () => { if (LT.mode === "hold") up(); });
+  b.addEventListener("contextmenu", e => e.preventDefault());
+}
+{
+  const d0 = diagReport;
+  diagReport = function () { const r = d0.apply(this, arguments); try { r.v619 = { kit: drum.kit || "synth", themeGroove: drum.themeGroove || null, kitSets: K19.sets, recTry: LTR.notes }; } catch (_) {} return r; };
 }
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }

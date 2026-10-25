@@ -56,7 +56,7 @@ class GPCore extends AudioWorkletProcessor {
       case "bassHoldS": x.gp_bassHoldS(m[1], m[2], m[3], m[4]); break;
       case "drum2": x.gp_drum2(m[1], m[2], m[3], m[4], this.f(m[5])); break;
       case "bandCmd": x.gp_bandCmd(m[1], m[2], m[3] >= 0 ? this.f(m[3]) : -1); break;
-      case "drumMix": case "bassMix": case "padMix": case "leadMix": case "eqMix": {
+      case "drumMix": case "bassMix": case "padMix": case "pad2Mix": case "leadMix": case "eqMix": {
         const a = new Float32Array(x.memory.buffer, x.gp_args(), 96); a.fill(0); a.set(m[1].slice(0, 96));
         x["gp_" + n](); break;
       }

@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.19 TEST · game mode · 25 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.20 TEST · game mode · 25 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1547,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.19 TEST · game mode · 25 Oct 2026</p>
+      <p class="ver">GlassPad 6.20 TEST · game mode · 25 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10286,7 +10286,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.19 TEST</p>
+    <p class="hm-ver">GlassPad 6.20 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14755,7 +14755,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.19 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.20 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -16891,6 +16891,7 @@ if (!window.GPNative && /[?&]engine\b/.test(location.search) && window.AudioWork
     padNote(id, snd, m, len, pk, a, fq, lite, ms) { if (W.ctx) send(["padNote", id, snd, m, len, pk, a, fq, lite, frameIn(ms)]); },
     padRelease(id, tc, ms) { if (W.ctx) send(["padRelease", id, tc, frameIn(ms)]); }, pump(v, ms) { if (W.ctx) send(["pump", v, frameIn(ms)]); },
     padMix(j) { const o = JSON.parse(j); send(["padMix", PK.map(k => +o[k] || 0)]); },
+    pad2Mix(j) { const o = JSON.parse(j); send(["pad2Mix", [...PK, "own", "eqOn", "eqLow", "eqMid", "eqFreq", "eqHigh", "eqCut"].map(k => +o[k] || 0)]); },   // 6.20
     bandSetup(j) { send(["bandSetup", new TextEncoder().encode(j)]); }, bandStart(intro, ms) { send(["bandCmd", 0, intro, ms >= 0 && W.ctx ? frameIn(ms) : -1]); },
     bandEnd() { send(["bandCmd", 1, 0, -1]); }, bandStop() { send(["bandCmd", 2, 0, -1]); }, bandTap() { send(["bandCmd", 3, 0, -1]); },
     bandShift() { send(["bandCmd", 4, 0, -1]); }, bassTouch(d) { send(["bandCmd", 5, d, -1]); },
@@ -18293,7 +18294,7 @@ window.pad2Setup = pad2Setup;
       <div class="group"><label for="p2Arp">Arpeggiator</label><select id="p2Arp">${opts("padArp")}</select></div>
       <div class="group" id="p2ArpRateG"><label for="p2ArpRate">Arp speed</label><select id="p2ArpRate">${opts("padArpRate")}</select></div>
       <div class="group" id="p2ArpStyleG"><label for="p2ArpStyle">Arp style</label><select id="p2ArpStyle">${opts("padArpStyle")}</select></div>
-      <span class="hint">A second chord part on the same chords, with its own sound and playing: e.g. a held pad on Chords 1 and a 1/16 arp an octave up here. It shares the chords' effects, room and pump. App sound only: the Web sound doesn't play it.</span>
+      <span class="hint">A second chord part on the same chords, with its own sound and playing: e.g. a held pad on Chords 1 and a 1/16 arp an octave up here. Effects: Chords 1's, or its own (Effects, Chords 2 tab). It shares the pump. App sound only: the Web sound doesn't play it.</span>
     </div>`;
   $("m-pad").after(d);
   const P2 = (k, v) => { PAD2[k] = v; pad2Sync(); };
@@ -18320,7 +18321,7 @@ window.pad2Setup = pad2Setup;
       const st = spnRow(sec, "Strum"), sp2 = document.createElement("span"); sp2.className = "spn-pills"; st.appendChild(sp2); spnMove($("p2Strum"), sp2);
       for (const id of ["p2Arp"]) spnMove($(id).closest(".group"), sec);
       spnMove($("p2ArpRateG"), sec); spnMove($("p2ArpStyleG"), sec); spnMove($("p2Warn"), sec);
-      spnNote(sec, "Plays the same chords as Chords 1 with its own sound and playing, e.g. a held pad above and a 1/16 arp an octave up here. Shares the chords' effects, room and pump. App sound only.");
+      spnNote(sec, "Plays the same chords as Chords 1 with its own sound and playing, e.g. a held pad above and a 1/16 arp an octave up here. Effects: Chords 1's, or its own (Effects, Chords 2 tab). Shares the pump. App sound only.");
     } catch (_) {}
     return r;
   };
@@ -20464,6 +20465,113 @@ function ltRecEnd(cut) {
 {
   const d0 = diagReport;
   diagReport = function () { const r = d0.apply(this, arguments); try { r.v619 = { kit: drum.kit || "synth", themeGroove: drum.themeGroove || null, kitSets: K19.sets, recTry: LTR.notes }; } catch (_) {} return r; };
+}
+
+/* ---------- 6.20: Hear it shows the rows it flashes; Chords 2 own effects (engine 0.3.32) ---------- */
+// Hear it with nothing picked: the rows it flashes are scrolled into view first (Feel sat under Play it / Save)
+mkPulse = function (keys) {
+  const box = $("mk"), rows = keys.map(k => $("mkRows").querySelector(`.mk-step[data-k="${k}"]`)).filter(Boolean);
+  if (!rows.length) return;
+  const pulse = () => rows.forEach((s, i) => setTimeout(() => { s.classList.remove("pulse"); void s.offsetWidth; s.classList.add("pulse"); }, i * 120));
+  let dy = 0;
+  try {
+    const bb = box.getBoundingClientRect(), bar = $("mkPlayIt") && $("mkPlayIt").parentNode;
+    const top = bb.top + 12, bottom = (bar ? bar.getBoundingClientRect().top : bb.bottom) - 56;   // clear of the scroll arrow too
+    const rs = rows.map(r => r.getBoundingClientRect()), lo = Math.min(...rs.map(r => r.top)), hi = Math.max(...rs.map(r => r.bottom));
+    if (hi - lo <= bottom - top) { if (hi > bottom) dy = hi - bottom; else if (lo < top) dy = lo - top; }
+    else dy = lo - top;
+  } catch (_) {}
+  if (Math.abs(dy) > 2) { box.scrollBy({ top: dy, behavior: "smooth" }); setTimeout(pulse, 320); } else pulse();
+};
+// Chords 2: its own pedals (Filter, Ensemble, Phaser, Tremolo, Echo, Reverb, EQ) when PAD2.own; otherwise it shares the chords'
+const PAD2FX = () => { const o = JSON.parse(JSON.stringify(PFX.pad)); o.eq = eqNorm(o.eq); return o; };   // a copy of Chords 1's, so switching on changes nothing at first
+PAD2_DEF.own = false; PAD2_DEF.fx = null; PAD2.own = false; PAD2.fx = null;
+function pad2Fx() {   // fills in what's missing, in place (the pedal board keeps references to these objects)
+  if (!PAD2.fx) PAD2.fx = PAD2FX();
+  for (const k of Object.keys(PFX_DEF.pad)) { if (k === "eq") continue; const d = PFX_DEF.pad[k], o = PAD2.fx[k] || (PAD2.fx[k] = {}); for (const q of Object.keys(d)) if (o[q] === undefined) o[q] = d[q]; }
+  if (!PAD2.fx.eq) PAD2.fx.eq = eqNorm(null);
+  return PAD2.fx;
+}
+{
+  const c0 = capture; capture = function () { const r = c0.apply(this, arguments); r.pad2 = JSON.parse(JSON.stringify(PAD2)); return r; };
+  const a0 = applyPreset; applyPreset = function (p) { const r = a0.apply(this, arguments); PAD2.fx = p && p.pad2 && p.pad2.fx ? JSON.parse(JSON.stringify(p.pad2.fx)) : null; PAD2.own = !!(p && p.pad2 && p.pad2.own); if (PAD2.fx) pad2Fx(); try { pad2Send(true); } catch (_) {} return r; };
+}
+const P2M = { last: "", sent: 0 };
+window.pad2Ok = () => !!(window.GPNative && typeof GPNative.pad2Mix === "function");
+function pad2Send(force) {
+  try {
+    if (!audio || !pad2Ok() || window.GPNOFF || typeof NATIVE === "undefined" || !NATIVE.padOk) return;
+    let m = { own: 0 };
+    if (PAD2.on && PAD2.own) {
+      const P = pad2Fx(), f = P.filter, tr = P.trem, A = audio, bar = T.meter.steps * 15 / T.bpm, n = x => x ? 1 : 0, timed = tr.sync === "time", Pd = PAD[PAD2.sound], e = eqNorm(P.eq);
+      m = { bus: A.padBus.gain.value, trim: A.padOut.gain.value, master: masterNow(), mono: Pd && Pd.osc.some(o => o[3]) ? 0 : 1,
+        rev: P.reverb.on ? P.reverb.send * 1.1 : 0, echo: P.echo.on ? P.echo.send * .8 : 0, eSecs: A.echoD.delayTime.value, eFb: A.echoFb.gain.value,
+        filt: n(f.on), fMode: f.mode === "env" ? 0 : f.mode === "sweep" ? 1 : 2, fCut: f.cut, fDepth: f.depth, fRes: f.res,
+        fRateHz: 1 / (SWEEP_BARS[pickIdx(f.speed, SWEEP_BARS.length)][0] * bar),
+        ens: n(P.ens.on), eWidth: P.ens.width, eDepth: P.ens.depth, ph: n(P.phaser.on), phRate: P.phaser.rate, phDepth: P.phaser.depth,
+        tr: n(tr.on), trTimed: n(timed), trHz: timed ? 1 / (TREM_DIV[pickIdx(tr.rate, TREM_DIV.length)][0] * 60 / T.bpm) : 1 + tr.rate * 13, trDepth: tr.depth,
+        pump: pad.pump || 0, beat: 60 / T.bpm, own: 1, eqOn: n(e.on), eqLow: e.low, eqMid: e.mid, eqFreq: e.freq, eqHigh: e.high, eqCut: e.cut };
+    }
+    const k = JSON.stringify(m, (_, v) => typeof v === "number" ? +v.toFixed(4) : v);
+    if (!force && k === P2M.last) return; P2M.last = k; GPNative.pad2Mix(k); P2M.sent++;
+  } catch (_) {}
+}
+setInterval(() => pad2Send(false), 300); NATMIX.push(() => pad2Send(true));
+
+// Studio Chords page (option A): tabs Chords 1 | Chords 2 on the Effects board; on Chords 2, an Own effects switch
+PART_FX.pad2 = PART_FX.pad; PART_NAME.pad2 = "Chords 2"; PART_COL.pad2 = PART_COL.pad;
+Object.defineProperty(PFX, "pad2", { get: pad2Fx, enumerable: false, configurable: true });   // not saved with PFX: it lives in PAD2.fx
+{
+  const ap0 = applyPartFx; applyPartFx = function (part) { if (part === "pad2") { pad2Send(true); return; } return ap0.apply(this, arguments); };
+  const es0 = eqSend; eqSend = function () { const r = es0.apply(this, arguments); if (fxPart === "pad2") pad2Send(); return r; };
+  const st = document.createElement("style");
+  st.textContent = `
+  #sp .c2fx { margin: 4px 0 12px; }
+  #sp .c2fx .c2t { display: grid; grid-template-columns: 1fr 1fr; border: 1.5px solid var(--pc1); border-radius: 14px; overflow: hidden; background: color-mix(in srgb, var(--pc1) 8%, transparent); }
+  #sp .c2fx .c2t button { height: 42px; border: 0; border-radius: 0; background: transparent; color: #fff; font: 700 13px var(--display); letter-spacing: .06em; box-shadow: none; }
+  #sp .c2fx .c2t button + button { border-left: 1.5px solid color-mix(in srgb, var(--pc1) 60%, transparent); }
+  #sp .c2fx .c2t button.on { background: var(--pc1); color: var(--pcT, #140a00); }
+  #sp .c2fx .c2r { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px 0 0; }
+  #sp .c2fx .c2r .l { font: 500 12px var(--mono); letter-spacing: .14em; color: #c9b8a8; text-transform: uppercase; }
+  #sp .c2fx .c2sw { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 6px 0 14px; border-radius: 19px; border: 1.5px solid var(--pc1); background: transparent; color: #fff; font: 600 13px var(--body); }
+  #sp .c2fx .c2sw i { width: 46px; height: 26px; border-radius: 13px; background: rgba(255,255,255,.14); position: relative; transition: background .15s; }
+  #sp .c2fx .c2sw i::after { content: ""; position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left .15s; }
+  #sp .c2fx .c2sw[aria-pressed="true"] i { background: var(--pc1); }
+  #sp .c2fx .c2sw[aria-pressed="true"] i::after { left: 23px; background: #140a00; }
+  #sp .c2fx .c2n { font: 400 12.5px var(--body); color: #b9a99a; margin: 8px 0 0; }`;
+  document.head.appendChild(st);
+}
+function c2Tabs() {
+  try {
+    if (SPN.part !== "chords" || $("sp").hidden) return;
+    const sec = [...$("spBody").querySelectorAll(":scope > .spn-sec")].find(s => ((s.querySelector(".spn-h b") || {}).textContent || "") === "EFFECTS"); if (!sec) return;
+    let box = sec.querySelector(".c2fx");
+    if (!box) {
+      box = document.createElement("div"); box.className = "c2fx";
+      box.innerHTML = `<div class="c2t" role="group" aria-label="Whose effects"><button type="button" data-c2="pad">CHORDS 1</button><button type="button" data-c2="pad2">CHORDS 2</button></div>
+        <div class="c2r"><span class="l">Own effects</span><button type="button" class="c2sw" aria-pressed="false"><span>Off</span><i></i></button></div><div class="c2n"></div>`;
+      sec.querySelector(".spn-h").after(box);
+      box.querySelector(".c2t").addEventListener("click", e => { const b = e.target.closest("[data-c2]"); if (!b) return; fxPart = b.dataset.c2; renderBoard(); c2Tabs(); });
+      box.querySelector(".c2sw").addEventListener("click", () => { PAD2.own = !PAD2.own; if (PAD2.own) pad2Fx(); pad2Send(true); if (fxPart === "pad2") renderBoard(); c2Tabs(); });
+    }
+    if (!PAD2.on && fxPart === "pad2") { fxPart = "pad"; renderBoard(); }
+    if (fxPart !== "pad" && fxPart !== "pad2") { fxPart = "pad"; renderBoard(); }
+    const two = PAD2.on && fxPart === "pad2";
+    box.hidden = !PAD2.on;
+    box.querySelectorAll("[data-c2]").forEach(b => b.classList.toggle("on", b.dataset.c2 === fxPart));
+    box.querySelector(".c2r").hidden = !two;
+    const sw = box.querySelector(".c2sw"); sw.setAttribute("aria-pressed", !!PAD2.own); sw.querySelector("span").textContent = PAD2.own ? "On" : "Off";
+    const n = box.querySelector(".c2n"), ok = pad2Ok();
+    n.textContent = !ok ? "Needs the new app (0.3.32): install it to hear these." : PAD2.own ? "" : "Off: Chords 2 uses Chords 1's effects.";
+    n.hidden = !two || !n.textContent;
+    const bd = sec.querySelector(".board"); if (bd) bd.hidden = two && !PAD2.own;
+  } catch (_) {}
+}
+{
+  const b0 = spnBuild; spnBuild = function (p) { const r = b0.apply(this, arguments); if (p === "chords") { if (fxPart !== "pad") { fxPart = "pad"; try { renderBoard(); } catch (_) {} } c2Tabs(); } return r; };
+  const r0 = spnRestore; spnRestore = function () { try { const bd = document.querySelector(".board[hidden]"); if (bd) bd.hidden = false; if (fxPart === "pad2") { fxPart = "pad"; renderBoard(); } } catch (_) {} return r0.apply(this, arguments); };
+  const s0 = pad2Sync; pad2Sync = function () { const r = s0.apply(this, arguments); c2Tabs(); return r; };
+  const a1 = applyPreset; applyPreset = function () { const r = a1.apply(this, arguments); try { if (fxPart === "pad2") renderBoard(); c2Tabs(); } catch (_) {} return r; };
 }
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }

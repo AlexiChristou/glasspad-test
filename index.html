@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.20 TEST · game mode · 25 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.21 TEST · game mode · 25 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1547,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.20 TEST · game mode · 25 Oct 2026</p>
+      <p class="ver">GlassPad 6.21 TEST · game mode · 25 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10286,7 +10286,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.20 TEST</p>
+    <p class="hm-ver">GlassPad 6.21 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14755,7 +14755,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.20 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.21 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -20572,6 +20572,52 @@ function c2Tabs() {
   const r0 = spnRestore; spnRestore = function () { try { const bd = document.querySelector(".board[hidden]"); if (bd) bd.hidden = false; if (fxPart === "pad2") { fxPart = "pad"; renderBoard(); } } catch (_) {} return r0.apply(this, arguments); };
   const s0 = pad2Sync; pad2Sync = function () { const r = s0.apply(this, arguments); c2Tabs(); return r; };
   const a1 = applyPreset; applyPreset = function () { const r = a1.apply(this, arguments); try { if (fxPart === "pad2") renderBoard(); c2Tabs(); } catch (_) {} return r; };
+}
+
+/* ---------- 6.21: more drum kits (808, 909, 505, MRK2, SC-8850: his 0x808 pack) + an 80s machine pad; pad lights top left ----------
+   The kit files are like kit-linn.json (one take each, 909 hats two). Each sound's level is matched to LinnDrum's (measured,
+   phone-speaker style), which was matched to the synth drums. A sound a kit hasn't got plays from the synth drums.
+   MRK2 and SC-8850 have one tom: high and low are made from it (4 semitones up / down). The 808's ride = its cymbal, cut short.
+   "80s machine" = the synth drums with the big kick and gated snare (as the Beat maker's 80s sounds): kit-80s.json holds no
+   sounds the band uses, and while it's picked every style's kick/snare become bkick/gsnare (the band in the engine follows
+   through kitKick/kitSnare in its setup). */
+{
+  for (const id of ["808", "909", "505", "mrk2", "sc8850"]) KIT_MAPS[id] = JSON.parse(JSON.stringify(KIT_MAPS.linn));
+  Object.assign(KIT_GAINS, {"808": {"kick": 2.18, "snare": 1.37, "clap": 0.58, "sidestick": 0.47, "hhc": 0.74, "hho": 0.35, "tomhi": 0.95, "tommid": 1.15, "tomlo": 1.85, "crash": 0.49, "shaker": 0.92, "conga": 0.1, "cowbell": 0.51, "ride": 0.53}, "909": {"kick": 1.24, "snare": 0.99, "clap": 1.11, "sidestick": 0.32, "hhc": 0.36, "hho": 0.72, "tomhi": 1.14, "tommid": 1.56, "tomlo": 1.6, "crash": 0.27, "ride": 0.26}, "505": {"kick": 2.3, "snare": 1.33, "clap": 0.57, "sidestick": 0.2, "hhc": 0.43, "hho": 0.36, "tomhi": 0.99, "tommid": 0.86, "tomlo": 1.01, "crash": 0.14, "conga": 0.1, "cowbell": 0.59, "ride": 0.57}, "mrk2": {"kick": 4.0, "snare": 1.03, "hhc": 0.19, "hho": 0.32, "tomhi": 1.93, "tommid": 2.3, "tomlo": 2.76, "crash": 0.22, "conga": 0.22}, "sc8850": {"kick": 2.73, "snare": 0.76, "clap": 0.39, "sidestick": 0.14, "hhc": 0.58, "hho": 0.47, "tomhi": 0.79, "tommid": 0.8, "tomlo": 0.71, "cowbell": 0.59}});
+  KIT_MAPS["80s"] = {}; KIT_GAINS["80s"] = {};
+  KIT19.push(["808", "808", "classic"], ["909", "909", "90s dance"], ["505", "505", "cheap and cheerful"], ["80s", "80s machine", "synth"], ["mrk2", "MRK2", "retro"], ["sc8850", "SC-8850", "90s sampler"]);
+  KIT19_SOON.length = 0;
+  const sel = $("drumKit");
+  for (const [k, n] of [["808", "808"], ["909", "909"], ["505", "505"], ["80s", "80s machine"], ["mrk2", "MRK2"], ["sc8850", "SC-8850"]]) if (![...sel.options].some(o => o.value === k)) sel.add(new Option(n, k));
+  try { const k = localStorage.getItem("glasspad.kit"); if (k && [...sel.options].some(o => o.value === k)) sel.value = k; } catch (_) {}
+  // the pad grid: whole rows of three (8 kits + 1 empty)
+  const dh = mkDrumsHTML;
+  mkDrumsHTML = function () {
+    const h = dh.apply(this, arguments), t = document.createElement("div"); t.innerHTML = h;
+    try { const g = t.querySelector(".sg"); if (g) { const full = g.querySelectorAll(".sp:not(.empty)").length, keep = (3 - full % 3) % 3; [...g.querySelectorAll(".sp.empty")].slice(keep).forEach(e => e.remove()); } } catch (_) {}
+    return t.innerHTML;
+  };
+  const st = document.createElement("style");
+  st.textContent = "#mksBox .sp i { right: auto !important; left: 8px !important; }";   // the pad's light: top left
+  document.head.appendChild(st);
+}
+const K80 = window.K80 = { on: false, orig: {}, style: null, sets: 0 };
+function k80Sync() {
+  try {
+    const on = drum.kit === "80s", sty = drum.style;
+    if (on === K80.on && (!on || sty === K80.style)) return;
+    // put back what we changed, then (if on) give the current style the 80s kick and snare
+    for (const [k, v] of Object.entries(K80.orig)) { if (v) KIT[k] = v; else delete KIT[k]; }
+    K80.orig = {}; K80.on = on; K80.style = sty; K80.sets++;
+    if (on) { K80.orig[sty] = KIT[sty] || null; KIT[sty] = { ...(KIT[sty] || {}), kick: "bkick", snare: "gsnare" }; }
+    try { buildPattern(); } catch (_) {}
+  } catch (_) {}
+}
+setInterval(k80Sync, 150);
+{
+  const kt = kitTo; kitTo = function () { const r = kt.apply(this, arguments); setTimeout(k80Sync, 0); return r; };
+  const sk = setKit; setKit = async function () { const r = await sk.apply(this, arguments); k80Sync(); return r; };
+  const d0 = diagReport; diagReport = function () { const r = d0.apply(this, arguments); try { r.kits621 = { kit: drum.kit, k80: K80.on, sets: K80.sets }; } catch (_) {} return r; };
 }
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }

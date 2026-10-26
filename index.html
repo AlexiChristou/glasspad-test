@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.25 TEST · game mode · 26 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.26 TEST · game mode · 26 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1547,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.25 TEST · game mode · 26 Oct 2026</p>
+      <p class="ver">GlassPad 6.26 TEST · game mode · 26 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10286,7 +10286,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.25 TEST</p>
+    <p class="hm-ver">GlassPad 6.26 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14756,7 +14756,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.25 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.26 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -16828,11 +16828,11 @@ function mkLeadOver() {
   let tries = 0;
   const go = () => {
     if (!MKL.on || $("mk").hidden || !mk.t) return (MKL.on = false);
-    if (!(T.playing && hpv.on)) { if (++tries < 60) MKL.t = setTimeout(go, 50); else MKL.on = false; return; }
+    if (!(T.playing && hpv.on && !hpv.swi && T.abs > 0)) { if (++tries < 60) MKL.t = setTimeout(go, 50); else MKL.on = false; return; }
     const now = audio.ctx.currentTime, barLen = stepDur() * T.meter.steps, g0 = gridZero();
     const nb = g0 + Math.ceil((now + .2 - g0) / barLen) * barLen;
     MKL.t = setTimeout(() => {
-      if (!MKL.on || !(T.playing && hpv.on) || $("mk").hidden) return (MKL.on = false);
+      if (!MKL.on || !(T.playing && hpv.on && !hpv.swi) || $("mk").hidden) return (MKL.on = false);
       RIFF.base = nb; try { mkRiff("lead", 2); MKL.ran = true; } catch (_) {} RIFF.base = null;
       MKL.t = setTimeout(go, barLen * 1.5 * 1000);   // look for the bar after next
     }, Math.max(0, (nb - now) * 1000 - 150));
@@ -19870,7 +19870,7 @@ function mkRoll(keys) {
     if (MKD.spin !== sp) return; MKD.spin = null;
     if (colsLater && t.cols !== newCols) { t.cols = newCols; mkRender(); }
     const big = $("mkRows").querySelector(".mk-roll"); if (big) big.classList.remove("rolling");
-    if (T.playing && hpv.on && t.feelSet !== false && now.length) { try { mkPreviewPlay(); } catch (_) {} }
+    if (T.playing && hpv.on && !pvFading() && t.feelSet !== false && now.length) { try { mkPreviewPlay(); } catch (_) {} }
   };
   { const big = $("mkRows").querySelector(".mk-roll"); if (big && many) big.classList.add("rolling"); }
   order.filter(k => k !== "photo").forEach((k, i) => {
@@ -20978,6 +20978,31 @@ const SV25 = window.SV25 = { asNew: 0, replaced: 0, cuts: 0 };
   document.head.appendChild(css);
 }
 { const d0 = diagReport; diagReport = function () { const r = d0.apply(this, arguments); try { r.v625 = { ...SV25 }; } catch (_) {} return r; }; }
+
+/* ---------- 6.26: dice while a preview plays ----------
+   1) Rolling the dice while the band plays starts the band again with the new theme (it stops the old one first, ~0.4 s).
+      The lead over it used to plan its first 2 bars on the OLD band (still running for that 0.4 s), so they came in off the
+      new beat (measured 20-190 ms, or drifting at the old speed). Now the old lead stops at the switch and the new lead waits
+      for the new band.
+   2) A roll that lands while the preview is fading out no longer starts it again at full volume (the "loud bit" after the
+      fade). The new theme is in place; Hear it plays it.
+   3) The lead also waits for the band's first beat to come back from the engine (until then the page only has its own guess
+      of when the band started; a rare test run planned on that guess and came in early). */
+const pvFading = window.pvFading = () => { try { return !!(hpv.on && MGR && MGR.to === 0 && MGR.t1 && !hpv.swi); } catch (_) { return false; } };
+const DV26 = window.DV26 = { switches: 0, cut: 0, skipped: 0 };
+{
+  const st0 = pvStart;
+  pvStart = function (load) {
+    if (T.playing && load) {
+      hpv.swi = true; DV26.switches++;
+      if (MKL.ran) { MKL.ran = false; DV26.cut++; try { mkRiffStop(); } catch (_) {} }
+      const L = load; load = function () { hpv.swi = false; return L.apply(this, arguments); };
+    } else hpv.swi = false;
+    return st0.call(this, load);
+  };
+  const ps0 = pvStop; pvStop = function () { hpv.swi = false; return ps0.apply(this, arguments); };
+}
+{ const d0 = diagReport; diagReport = function () { const r = d0.apply(this, arguments); try { r.v626 = { ...DV26 }; } catch (_) {} return r; }; }
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }
 requestAnimationFrame(() => document.documentElement.classList.add("gp-ready"));

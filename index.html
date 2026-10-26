@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.22 TEST · game mode · 26 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.23 TEST · game mode · 26 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1547,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.22 TEST · game mode · 26 Oct 2026</p>
+      <p class="ver">GlassPad 6.23 TEST · game mode · 26 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10286,7 +10286,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.22 TEST</p>
+    <p class="hm-ver">GlassPad 6.23 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14755,7 +14755,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.22 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.23 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -20662,6 +20662,82 @@ function kitBar(id) {
 }
 { const c0 = mkClose; mkClose = function () { KPV.tok++; const p = KPV.pend; KPV.pend = null; try { if (p && drum.kit === p.id && p.was !== p.id && !T.playing) kitTo(p.was); } catch (_) {} return c0.apply(this, arguments); }; }
 { const d0 = diagReport; diagReport = function () { const r = d0.apply(this, arguments); try { r.kitBar = { plays: KPV.plays, hits: KPV.hits, waited: KPV.waited, last: KPV.last }; } catch (_) {} return r; }; }
+
+/* ---------- 6.23: previews in time; their bass = 8ths on each chord's root ----------
+   1) While a preview plays (Home tiles, Make your own's Hear it / Play it taste, anything through pvStart), the band's bass
+      is 8th notes on the root of the chord playing (every BAND level; blues too). It is the band's own bass, so it moves
+      with every chord change and swings with the drums. Your game bass is untouched: the lines go back when the preview ends.
+   2) The riff over the band (Make your own: your lead over the preview): each note is the root, 5th or octave of the chord
+      playing at that moment, the off-beat 8ths swing like the drums', and a riff started while the band plays waits for
+      the next beat. With no band it plays as before (the key's root, straight). */
+const PV8 = window.PV8 = { on: false, saved: null, sets: 0, riff: [] };
+const PV8_LINE = { st: [0, 2, 4, 6, 8, 10, 12, 14], iv: [0, 0, 0, 0, 0, 0, 0, 0], len: [1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7] };
+const PV8_ALL = { 0: PV8_LINE, 1: PV8_LINE, 2: PV8_LINE };   // a theme's own line at every level (so High's 16th arp and the blues line rest too)
+PV8.fill = () => { if (!PV8.on) return; let k = null; try { k = gameKey(); } catch (_) {} if (k && GAME_BASS_THEME[k] !== PV8_ALL) GAME_BASS_THEME[k] = PV8_ALL; };
+function pv8Set(on) {
+  if (on === PV8.on) return;
+  if (on) { PV8.saved = { game: GAME_BASS.slice(), theme: { ...GAME_BASS_THEME } }; for (let l = 0; l < 3; l++) GAME_BASS[l] = PV8_LINE; PV8.on = true; PV8.fill(); }
+  else { for (let l = 0; l < 3; l++) GAME_BASS[l] = PV8.saved.game[l]; for (const k of Object.keys(GAME_BASS_THEME)) delete GAME_BASS_THEME[k]; Object.assign(GAME_BASS_THEME, PV8.saved.theme); PV8.saved = null; PV8.on = false; }
+  PV8.sets++;
+}
+{
+  const starting = () => performance.now() - (PV8.startAt || -1e9) < 1000;
+  const st0 = pvStart;
+  pvStart = function (load) {
+    pv8Set(true); PV8.startAt = performance.now();
+    const L = load && function () { const r = load.apply(this, arguments); try { PV8.fill(); } catch (_) {} return r; };
+    return st0.call(this, L || load);
+  };
+  // the preview is over (not on, not starting): the game's lines back
+  setInterval(() => { if (PV8.on) { if (hpv.on || starting()) PV8.fill(); else pv8Set(false); } }, 100);
+  // a band starting: a preview's gets the 8ths (setPlaying sends the setup), anything else the game's lines
+  const sp0 = setPlaying;
+  setPlaying = function (on) { if (on && PV8.on) { if (hpv.on || starting()) PV8.fill(); else pv8Set(false); } return sp0.apply(this, arguments); };
+}
+// 2) the riff over the band
+{
+  const reg = () => T.meter.steps === 16 && JSON.stringify(T.meter.pulses || [0, 4, 8, 12]) === "[0,4,8,12]";
+  mkRiff = function (parts, bars, over) {
+    ensureAudio(); mkRiffStop();
+    const band = T.playing && hpv.on;
+    let own = false;
+    if (band && RIFF.base == null) { const sd = stepDur(), g0 = gridZero(), now = audio.ctx.currentTime; RIFF.base = g0 + Math.ceil((now + .15 - g0) / (4 * sd)) * 4 * sd; own = true; }
+    try {
+      const t = mk.t || {}, k = riffKey(), beat = 60 / k.bpm, e8 = beat / 2;
+      const lead = (over && over.lead) || t.lead || "supersaw", bass = (over && over.bass) || (t.bassRec ? "sampler" : t.bass || "finger");
+      RIFF_OVR.l1 = (over && over.recs) || (t.lead === "sampler" ? t.recs : null); RIFF_OVR.b = (over && over.bassRec) || (t.bassRec ? [t.bassRec] : null);
+      RIFF.until = performance.now() + (bars * 4 * beat + .6 + (band ? Math.max(0, RIFF.base - audio.ctx.currentTime) : 0)) * 1000;
+      const sd = band ? stepDur() : 0, g0 = band ? gridZero() : 0, sw = band && reg() ? (drum.swing || 0) * sd * .66 : 0;
+      PV8.riff = [];
+      for (let bar = 0; bar < bars; bar++) for (let i = 0; i < 8; i++) {
+        const at = bar * 4 * beat + i * e8;
+        let pc = k.root, fifth = 7, late = 0;
+        if (band) {
+          const abs = Math.round((RIFF.base + at - g0) / sd) + (T.barOrigin || 0);
+          try { const ch = chordAtAbs(abs), r0 = ch.tones[0], rel = ch.tones.map(x => mod12(x - r0)); pc = mod12(cbase(ch) + r0); fifth = rel.includes(7) ? 7 : (rel.find(x => x >= 6 && x <= 8) ?? 7); } catch (_) {}
+          if (mod(abs, 4) === 2) late = sw;
+        }
+        if (parts !== "lead") riffNote("bass", bass, 36 + pc, at + late, e8 * .85);
+        if (parts !== "bass") { const n = RIFF.lead[i % RIFF.lead.length], m = 60 + pc + (n === 7 ? fifth : n); riffNote("lead", lead, m, at + late, e8 * .9, over && over.second); PV8.riff.push([at + late, m]); }
+      }
+    } finally { if (own) RIFF.base = null; }
+  };
+}
+/* 3) the six bass sounds at one loudness (Pluck = Tokyo Drift's bass, his yardstick; measured in the engine's band, bass
+   alone, the part a phone speaker plays (above 250 Hz), Tokyo Drift / Sunset / Epic averaged, rounded to 0.5 dB).
+   Applied AFTER the bass pedals (the bass's last level, like Balance): the sound-trim table before them (SND_DB.bass)
+   hardly moved the level because a compressor in the themes evened it back. Balance off = off too. To undo: all zeros. */
+const BASS_POST_DB = window.BASS_POST_DB = { finger: 1.5, sub: -3.5, reese: -2.5, fuzz: -3.5, acid: 1, pluck: 0 };
+{
+  const ab = applyBalance;
+  applyBalance = function () {
+    const r = ab.apply(this, arguments);
+    try { if (audio) audio.bassTrim.gain.setTargetAtTime(TRIM.bass * (balanceOn ? 10 ** (bal.bass / 20) * 10 ** ((BASS_POST_DB[bass.sound] || 0) / 20) : 1), audio.ctx.currentTime, .05); } catch (_) {}
+    return r;
+  };
+  let last = null; setInterval(() => { if (audio && (bass.sound + balanceOn) !== last) { last = bass.sound + balanceOn; applyBalance(); } }, 150);
+}
+{ const d0 = diagReport; diagReport = function () { const r = d0.apply(this, arguments); try { r.pv8 = { on: PV8.on, sets: PV8.sets }; } catch (_) {} return r; }; }
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }
 requestAnimationFrame(() => document.documentElement.classList.add("gp-ready"));

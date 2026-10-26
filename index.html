@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.23 TEST · game mode · 26 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.24 TEST · game mode · 26 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1547,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.23 TEST · game mode · 26 Oct 2026</p>
+      <p class="ver">GlassPad 6.24 TEST · game mode · 26 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10286,7 +10286,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.23 TEST</p>
+    <p class="hm-ver">GlassPad 6.24 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14482,7 +14482,7 @@ let fingerTxt = (t, f) => {
     const lead = mkCol(0), bassC = mkCol(1), hi = mkCol(2), f = feelOf(t.band), pb = feelBase(t.band), got = t.feelSet !== false;
     $("mk").classList.toggle("nopic", !t.pic && !got);
     $("mkSave").classList.toggle("wait", !got);
-    const padNm = k => (PAD[k] || {}).name || k;
+    const padNm = k => { const ls = labRef(k); if (ls) return ls.name; return (PAD[k] || {}).name || k; };   // 6.24: a saved chord sound by its name
     const step = (n, k, ic, lbl, val, sub, o = {}) => `<button class="mk-step${o.hl ? " hl" : ""}${o.todo ? " todo" : ""}" data-k="${k}"><span class="n">${n}</span><span class="ic">${ic}</span>
       <span class="tx"><small>${lbl}${o.opt ? "<em>OPTIONAL</em>" : ""}</small><b>${escH(val)}</b>${sub ? `<i>${escH(sub)}</i>` : ""}</span><span class="cv">${CHEV}</span></button>`;
     const sp = t.speed || "asis", fxs = (k, on) => { if (!on) return ""; if (labRef(k === "fx1" ? t.lead : k === "fx2" ? t.lead2 : t.bass)) return " · its own effects"; return " · " + FX_NAMES[fxAuto(t, k)] + " effects"; };
@@ -14585,6 +14585,7 @@ $("mksBox").addEventListener("click", e => {
   if (d.br) { t.bassRec = t.bassRec === d.br ? null : d.br; if (t.bassRec) mkHearClip(d.br); mkRedraw(); mkRender(); return; }
   if (d.fx) { const [k, v] = d.fx.split(":"); t[k] = v; mkRedraw(); mkRender(); if (T.playing && hpv.on && t.feelSet !== false) mkPreviewPlay(); return; }
   if (d.ch !== undefined && mk.sheet === "chord") { t.chord = d.ch || null; mkRedraw(); mkRender(); if (t.feelSet !== false) mkPreviewPlay(); return; }
+  if (d.a === "labch") { labFromMkChord(); return; }   // 6.24
   if (d.a === "msx") { const from = mk.sheet === "bass2f" ? "bass" : "lead"; mkSheetClose(); msxOpen({ from, fing: mk.fing || 1 }); return; }
 });
 // the Feel sheet shows which feel is playing
@@ -14755,7 +14756,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.23 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.24 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -15338,7 +15339,7 @@ try { const s = JSON.parse(localStorage.getItem("glasspad.lab") || "null"); if (
 const labSave = () => { try { localStorage.setItem("glasspad.lab", JSON.stringify(LAB.store)); return true; } catch (_) { toast("Not enough room on the phone to save that sound"); return false; } };
 const labGet = id => LAB.store.sounds.find(s => s.id === id);
 const labRef = v => typeof v === "string" && v.startsWith("lab:") ? labGet(v.slice(4)) : null;
-const labUsedBy = id => MY.list.filter(t => [t.lead, t.lead2, t.bass].includes("lab:" + id));
+const labUsedBy = id => MY.list.filter(t => [t.lead, t.lead2, t.bass, t.chord].includes("lab:" + id));
 const LEAD_FX_IDS = ["octave", "drive", "chorus", "flanger", "phaser", "trem"], BASS_FX_IDS = ["drive", "chorus", "filter", "octave", "comp"];
 const bmc = o => JSON.parse(JSON.stringify(o));
 function labNew(kind) {
@@ -15385,12 +15386,12 @@ function labIntoPreset(p, t) {
 {
   const reg0 = myRegister;
   myRegister = function (t) {
-    const has = [t.lead, t.lead2, t.bass].some(v => typeof v === "string" && v.startsWith("lab:"));
+    const has = [t.lead, t.lead2, t.bass, t.chord].some(v => typeof v === "string" && v.startsWith("lab:"));
     if (!has) return reg0.apply(this, arguments);
     const e = labExpand(myNorm(t)); reg0.call(this, e);
     for (const set of [QSTYLES_SYNTH, QSTYLES_ORIGINAL]) { const s = set[t.id]; if (s) labIntoPreset(s.p, t); }
   };
-  MY.list.forEach(t => { if ([t.lead, t.lead2, t.bass].some(v => typeof v === "string" && v.startsWith("lab:"))) myRegister(t); });
+  MY.list.forEach(t => { if ([t.lead, t.lead2, t.bass, t.chord].some(v => typeof v === "string" && v.startsWith("lab:"))) myRegister(t); });
   const ap0 = myApplyRecs;
   myApplyRecs = function (t) { return ap0.call(this, labExpand(t)); };
 }
@@ -15401,6 +15402,8 @@ function labLive(s) {
   if (s.kind === "lead") {
     for (const id of [...LEAD_FX_IDS, "echo", "reverb"]) { Object.assign(S[id], s.fx[id] || {}); applyFx(id); }
     Object.assign(tone, s.tone || {});
+  } else if (s.kind === "chords") {   // 6.24
+    const pf = bmc(PFX); pf.pad = { ...bmc(PFX_DEF.pad), ...bmc(s.fx) }; setPfx(pf); if (PAD[s.base.v]) pad.sound = s.base.v;
   } else {
     const pf = bmc(PFX); pf.bass = bmc(s.fx); setPfx(pf); Object.assign(bassTone, s.tone || {});
   }
@@ -15567,8 +15570,8 @@ const LBI = {
   star: c => `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg>`,
 };
 const synthName = (kind, v) => kind === "lead" ? (v === "off" ? "Off" : nameOf(LEAD_CHOICES, v)) : String(nameOf(BASS_CHOICES, v)).replace(" (headphones)", "");
-const labBaseTxt = s => s.base.t === "rec" ? "Recording · " + s.base.v : synthName(s.kind, s.base.v);
-const labColour = kind => { try { const c = neonCols(gameKey()); return kind === "bass" ? c.bass : c.lead; } catch (_) { return kind === "bass" ? "#2fd6ff" : "#ff3fd8"; } };
+const labBaseTxt = s => s.base.t === "rec" ? "Recording · " + s.base.v : s.kind === "chords" ? (PAD[s.base.v] || {}).name || s.base.v : synthName(s.kind, s.base.v);
+const labColour = kind => { try { const c = neonCols(gameKey()); return kind === "chords" ? c.mid : kind === "bass" ? c.bass : c.lead; } catch (_) { return kind === "chords" ? "#7a4dff" : kind === "bass" ? "#2fd6ff" : "#ff3fd8"; } };
 
 /* ----- the picker window ----- */
 {
@@ -15746,7 +15749,7 @@ function labRender() {
     return `<div class="lb-ped${on ? " on" : ""}"><button class="pt" data-fxon="${id}">${name}<span>${on ? "ON" : "OFF"}</span></button>${seg}${params.map(([k, l]) => `<label>${l}<span>${pct(fx[k] ?? 0)}</span></label><input type="range" min="0" max="1" step="0.01" value="${fx[k] ?? 0}" data-fx="${id}:${k}">`).join("")}</div>`; };
   const peds = lead ? [["octave", "Octave", [["level", "LEVEL"]], LAB_CH.octL], ["drive", "Drive", [["amt", "GAIN"], ["tone", "TONE"]]], ["chorus", "Chorus", [["rate", "RATE"], ["depth", "DEPTH"]]],
     ["flanger", "Flanger", [["rate", "RATE"], ["fb", "REGEN"]]], ["phaser", "Phaser", [["rate", "RATE"], ["depth", "DEPTH"]]], ["trem", "Tremolo", [["rate", "SPEED"], ["depth", "DEPTH"]], LAB_CH.trem]]
-    : [["drive", "Drive", [["amt", "GAIN"], ["tone", "TONE"]]], ["chorus", "Chorus", [["rate", "RATE"], ["depth", "DEPTH"]]], ["filter", "Filter", [["cut", "CUTOFF"], ["depth", "DEPTH"], ["res", "RESONANCE"], ["speed", "SPEED"]], LAB_CH.filt],
+    : s.kind === "chords" ? LAB_CH_PEDS : [["drive", "Drive", [["amt", "GAIN"], ["tone", "TONE"]]], ["chorus", "Chorus", [["rate", "RATE"], ["depth", "DEPTH"]]], ["filter", "Filter", [["cut", "CUTOFF"], ["depth", "DEPTH"], ["res", "RESONANCE"], ["speed", "SPEED"]], LAB_CH.filt],
        ["octave", "Octave", [["level", "LEVEL"]], LAB_CH.octB], ["comp", "Squeeze", [["amt", "AMOUNT"], ["punch", "PUNCH"]]]];
   const rv = lead ? (s.fx.reverb || {}).mix ?? 0 : (s.fx.reverb || {}).send ?? 0, ev = (s.fx.echo || {}).send ?? 0;
   const ic = rec ? SV.mic : LBI.wave("var(--lc)");
@@ -15776,9 +15779,14 @@ const LAB_CH = {   // 5.68
   trem: ["sync", [["free", "FREE"], ["time", "IN TIME"]], "free"],
   filt: ["mode", [["sweep", "SWEEP"], ["env", "ENV"], ["still", "STILL"]], "env"],
 };
+// 6.24: a chord sound's pedals (the Chords pedals of Studio / the engine: Filter, Ensemble, Phaser, Tremolo)
+const LAB_CH_PEDS = [["filter", "Filter", [["cut", "CUTOFF"], ["depth", "DEPTH"], ["res", "RESONANCE"], ["speed", "SPEED"]], ["mode", [["sweep", "SWEEP"], ["env", "ENV"], ["still", "STILL"]], "sweep"]],
+  ["ens", "Ensemble", [["width", "WIDTH"], ["depth", "DEPTH"]]], ["phaser", "Phaser", [["rate", "RATE"], ["depth", "DEPTH"]]],
+  ["trem", "Tremolo", [["rate", "SPEED"], ["depth", "DEPTH"]], ["sync", [["free", "FREE"], ["time", "IN TIME"]], "time"]]];
 function labFill(s) {
   const f = s.fx = s.fx || {}, put = (id, k, v) => { f[id] = f[id] || {}; if (f[id][k] == null) f[id][k] = v; };
   if (s.kind === "lead") { put("octave", "mode", "down"); put("trem", "sync", "free"); }
+  else if (s.kind === "chords") { for (const id of Object.keys(PFX_DEF.pad)) f[id] = { ...bmc(PFX_DEF.pad[id]), ...(f[id] || {}) }; }
   else { put("octave", "mode", "up"); put("filter", "mode", "env"); put("filter", "res", PFX_DEF.bass.filter.res); put("filter", "speed", PFX_DEF.bass.filter.speed); }
   return s;
 }
@@ -15867,6 +15875,7 @@ function labDelete(id) {
     if (t.lead === "lab:" + id) { if (plain) { t.lead = plain; t.recs = []; } else { t.lead = "sampler"; t.recs = [s.base.v]; } }
     if (t.lead2 === "lab:" + id) { if (plain) { t.lead2 = plain; t.recs2 = []; } else { t.lead2 = "sampler"; t.recs2 = [s.base.v]; } }
     if (t.bass === "lab:" + id) { if (plain) t.bass = plain; else { t.bass = "finger"; t.bassRec = s.base.v; } }
+    if (t.chord === "lab:" + id) t.chord = PAD[plain] ? plain : null;   // 6.24
     myRegister(t);
   }
   mySave();
@@ -16309,11 +16318,11 @@ labRender = function () {
     <button class="tx" data-edit="${s.id}"><b>${escH(s.name)}</b><small>${escH(labBaseTxt(s))} · ${used(s)}</small></button>${labWave(s, col)}<span class="cv">${CHEV}</span></div>`;
   B.innerHTML = `<div class="lb-top"><button class="hm-x" id="lbBack" aria-label="Back">${SV.back}</button><div><h2>SOUND LAB</h2></div></div>
     <p>Make your own sounds. They show up first when you pick sounds in Make your own.</p>
-    <div class="lb-tabs" role="tablist">${["lead", "bass"].map(t => `<button role="tab" data-ltab="${t}" aria-selected="${t === k}" style="--rc:${labColour(t)}">${t.toUpperCase()}<small>${cnt(t)}</small></button>`).join("")}</div>
-    ${ss.length ? ss.map(row).join("") : `<div class="lb-empty">No ${k} sounds yet. Tap New ${k} sound to make one.</div>`}
+    <div class="lb-tabs" role="tablist">${["lead", "bass", "chords"].map(t => `<button role="tab" data-ltab="${t}" aria-selected="${t === k}" style="--rc:${labColour(t)}">${t.toUpperCase()}<small>${cnt(t)}</small></button>`).join("")}</div>
+    ${ss.length ? ss.map(row).join("") : `<div class="lb-empty">No ${k === "chords" ? "chord" : k} sounds yet. Tap New ${k === "chords" ? "chord" : k} sound to make one.</div>`}
     ${CRE.on ? `<div class="lb-h" style="--hc:#f2b04a">CREATOR</div><button class="lb-studio" id="lbStudio">FULL STUDIO</button>` : ""}
     <div class="lb-grow"></div>
-    <div class="lb-pin"><button class="lb-new" data-new="${k}" style="--rc:${col}">+ New ${k} sound</button>
+    <div class="lb-pin"><button class="lb-new" data-new="${k}" style="--rc:${col}">+ New ${k === "chords" ? "chord" : k} sound</button>
       <button class="lb-mys" id="lbMys"><span>${SV.mic}</span><span><b>My sounds</b><small>${samples.length} recording${samples.length === 1 ? "" : "s"} · record or add a file</small></span></button></div>`;
   hdrDeco(B.querySelector(".lb-top"));
 };
@@ -19679,7 +19688,7 @@ if (NATIVE.on && window.GPNative) {
 
 // 2) the sound sheets → the Sound lab (for this theme), and back with the sound picked
 const LABMK = window.LABMK = { on: null, ready: false };
-const labForTxt = f => f === 3 ? "Bass" : f === 1 ? "Lead, 1st finger" : "Lead, 2nd finger";
+const labForTxt = f => f === 4 ? "Chord sound" : f === 3 ? "Bass" : f === 1 ? "Lead, 1st finger" : "Lead, 2nd finger";
 function labFromMk(f, fresh) {
   const t = mk.t; if (!t) return;
   const kind = f === 3 ? "bass" : "lead", sl = slotOf(t, f);
@@ -20397,7 +20406,8 @@ MKD_FAKE.drums = () => pickOne(KIT19).at(1);
   labLive = function (s) {
     const r = ll.apply(this, arguments);
     try {
-      if (s && audio) {
+      if (s && audio && s.kind === "chords") { pad.vol = LAB_CH_VOL * (s.level ?? 1); const g = audio.padBus.gain; g.cancelScheduledValues(0); g.value = mixV("pad", pad.vol); }   // 6.24
+      else if (s && audio) {
         const isL = s.kind === "lead", lv = s.level ?? (isL ? 1 : .9), g = isL ? audio.bus.gain : audio.bassBus.gain;
         if (isL) lead.vol = lv; else bass.vol = lv;
         g.cancelScheduledValues(0); g.value = mixV(isL ? "lead" : "bass", lv);
@@ -20683,8 +20693,10 @@ function pv8Set(on) {
 {
   const starting = () => performance.now() - (PV8.startAt || -1e9) < 1000;
   const st0 = pvStart;
+  // 6.24: only a new theme (Make your own, not yet saved) gets the 8ths; Home tiles and saved themes play their own bass
+  const want = window.pv8Want = () => { try { return !$("mk").hidden && !!mk.t && !mk.editing; } catch (_) { return false; } };
   pvStart = function (load) {
-    pv8Set(true); PV8.startAt = performance.now();
+    if (want()) { pv8Set(true); PV8.startAt = performance.now(); } else { pv8Set(false); PV8.startAt = 0; }
     const L = load && function () { const r = load.apply(this, arguments); try { PV8.fill(); } catch (_) {} return r; };
     return st0.call(this, L || load);
   };
@@ -20727,7 +20739,7 @@ function pv8Set(on) {
    alone, the part a phone speaker plays (above 250 Hz), Tokyo Drift / Sunset / Epic averaged, rounded to 0.5 dB).
    Applied AFTER the bass pedals (the bass's last level, like Balance): the sound-trim table before them (SND_DB.bass)
    hardly moved the level because a compressor in the themes evened it back. Balance off = off too. To undo: all zeros. */
-const BASS_POST_DB = window.BASS_POST_DB = { finger: 1.5, sub: -3.5, reese: -2.5, fuzz: -3.5, acid: 1, pluck: 0 };
+const BASS_POST_DB = window.BASS_POST_DB = { finger: 0, sub: 0, reese: 0, fuzz: 0, acid: 0, pluck: 0 };   // 6.24: back to 6.22 (his ears: Sunset's Sub too quiet; the pedals change each sound's level differently). Was finger 1.5, sub -3.5, reese -2.5, fuzz -3.5, acid 1, pluck 0
 {
   const ab = applyBalance;
   applyBalance = function () {
@@ -20738,6 +20750,160 @@ const BASS_POST_DB = window.BASS_POST_DB = { finger: 1.5, sub: -3.5, reese: -2.5
   let last = null; setInterval(() => { if (audio && (bass.sound + balanceOn) !== last) { last = bass.sound + balanceOn; applyBalance(); } }, 150);
 }
 { const d0 = diagReport; diagReport = function () { const r = d0.apply(this, arguments); try { r.pv8 = { on: PV8.on, sets: PV8.sets }; } catch (_) {} return r; }; }
+
+/* ---------- 6.24: saved chord sounds ----------
+   Sound lab → CHORDS tab (theme colour 3): a chord sound = { id, name, kind: "chords", base: { t: "synth", v: PAD key }, level, fx }
+   (fx = the Chords pedals, PFX.pad format incl. EQ). Its page: Starts from (one of the 9 chord sounds), Level, the pedals,
+   Echo/Reverb; Hold to try plays a chord (held = held, tap = a short chord). Make your own → Chord sound: MY CHORD SOUNDS on
+   top ("lab:<id>" in t.chord); New chord sound opens the Sound lab and "Use in my theme" comes back with it picked.
+   In a theme: the chord sound replaces the feel's chord sound and pedals; Level scales the feel's chord level (100% = as the
+   feel has it). Page only (the engine already plays the 9 chord sounds and the Chords pedals). */
+const LAB_CH_VOL = .6;   // the chords' level in the Sound lab at Level 100% (a theme uses the feel's own level × Level)
+const CH24 = window.CH24 = { tries: 0, hears: 0, picks: 0 };
+{
+  const n0 = labNew;
+  labNew = function (kind) {
+    if (kind !== "chords") return n0.apply(this, arguments);
+    const n = LAB.store.sounds.filter(s => s.kind === "chords").length + 1;
+    return { id: "s" + Date.now().toString(36), name: "Chord sound " + n, kind, base: { t: "synth", v: "warm" }, level: 1, tone: {}, fx: bmc(PFX_DEF.pad) };
+  };
+  const x0 = labExpand;
+  labExpand = function (t) { const e = x0.apply(this, arguments); try { const c = t && labRef(t.chord); if (c) e.chord = c.base.v; else if (e && typeof e.chord === "string" && e.chord.startsWith("lab:")) e.chord = null; } catch (_) {} return e; };
+  const i0 = labIntoPreset;
+  labIntoPreset = function (p, t) {
+    const r = i0.apply(this, arguments);
+    try {
+      const c = labRef(t.chord);
+      if (c) { p.pad = p.pad || {}; if (PAD[c.base.v]) p.pad.sound = c.base.v; p.pad.vol = (p.pad.vol ?? .6) * (c.level ?? 1); p.pfx = p.pfx || {}; p.pfx.pad = { ...bmc(PFX_DEF.pad), ...bmc(c.fx) }; }
+    } catch (_) {}
+    return r;
+  };
+}
+// hearing a chord sound: a minor chord (held, or short), or four chords for the list's ▶
+const CH_AM = { tones: [0, 3, 7], base: 57, name: "Am" }, CH_SEQ = [CH_AM, { tones: [0, 4, 7], base: 53, name: "F" }, { tones: [0, 4, 7], base: 48, name: "C" }, { tones: [0, 4, 7], base: 55, name: "G" }];
+function chPlay(seq, each) {
+  if (!audio) return; try { releasePad(); } catch (_) {}
+  const t0 = audio.ctx.currentTime + .05;
+  seq.forEach((ch, i) => { try { padChord(ch, t0 + i * each, each * .96); } catch (_) {} });
+}
+{
+  const h0 = labHear;
+  labHear = function (s, after) {
+    if (!s || s.kind !== "chords") return h0.apply(this, arguments);
+    ensureAudio(); if (T.playing) { try { pvClear(); hpv.on = false; } catch (_) {} setPlaying(false); }
+    labLive(s); chPlay(CH_SEQ, .9); CH24.hears++;
+    clearTimeout(LAB.hearT); LAB.hearT = setTimeout(() => { if (after) after(); }, 3800);
+  };
+}
+// Hold to try for a chord sound (the button's own handlers are for lead/bass: this listener sits on the lab, before them)
+{
+  const lab = $("lab"), isCh = () => LAB.view === "sound" && LAB.cur && LAB.cur.kind === "chords";
+  const st = { on: false, t0: 0, held: false, T: 0 };
+  lab.addEventListener("pointerdown", e => {
+    const b = e.target.closest && e.target.closest("#lbTry"); if (!b || !isCh()) return;
+    e.stopPropagation(); e.preventDefault(); ensureAudio();
+    try { ltStopAll(); mkRiffStop(); } catch (_) {}
+    labLive(LAB.cur); b.classList.add("go"); LAB.trying = true; st.on = true; st.held = false; CH24.tries++;
+    try { releasePad(); padChord(CH_AM, audio.ctx.currentTime + .03, 30); } catch (_) {}
+    st.T = setTimeout(() => { st.held = true; }, 260);
+  }, true);
+  const up = e => {
+    if (!st.on) return; const b = e.target.closest && e.target.closest("#lbTry");
+    if (e.type !== "pointerleave" || b) { if (e.stopPropagation) e.stopPropagation(); }
+    st.on = false; LAB.trying = false; clearTimeout(st.T); const btn = $("lbTry"); if (btn) btn.classList.remove("go");
+    if (st.held) { try { releasePad(); } catch (_) {} }
+    else setTimeout(() => { if (!st.on) try { releasePad(); } catch (_) {} }, 1400);   // a tap: a short chord
+  };
+  for (const ev of ["pointerup", "pointercancel"]) lab.addEventListener(ev, up, true);
+  lab.addEventListener("pointerleave", e => { if (st.on && st.held) up(e); }, true);
+}
+// Starts from: a small picker with the 9 chord sounds (tap = pick it and hear it)
+{
+  const lab = $("lab");
+  const pick = () => {
+    const s = LAB.cur, col = labColour("chords");
+    $("lbWarnBox").innerHTML = `<b>STARTS FROM</b><div class="ch24-grid" style="--rc:${col}">${Object.entries(PAD).map(([k, p]) => `<button data-chf="${k}" class="${s.base.v === k ? "on" : ""}">${p.name}</button>`).join("")}</div><button data-w="x">Done</button>`;
+    $("lbWarn").hidden = false; $("lbWarn").classList.add("ch24");
+  };
+  lab.addEventListener("click", e => {
+    const t = e.target;
+    const f = t.closest && t.closest("#lbFrom"); if (f && LAB.cur && LAB.cur.kind === "chords") { e.stopImmediatePropagation(); pick(); return; }
+    const c = t.closest && t.closest("[data-chf]");
+    if (c && LAB.cur) { e.stopImmediatePropagation(); LAB.cur.base = { t: "synth", v: c.dataset.chf }; labLive(LAB.cur); chPlay([CH_AM], 1.3);
+      $("lbWarnBox").querySelectorAll("[data-chf]").forEach(x => x.classList.toggle("on", x === c)); const y = lab.scrollTop; labRender(); lab.scrollTop = y; return; }
+  }, true);
+  $("lbWarn").addEventListener("click", () => { if ($("lbWarn").hidden) $("lbWarn").classList.remove("ch24"); });
+  const css = document.createElement("style");
+  css.textContent = `
+  #lbWarn.ch24 #lbWarnBox { max-width: 360px; }
+  .ch24-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 12px 0 14px; }
+  .ch24-grid button { height: 46px; border-radius: 13px; border: 1.5px solid rgba(255,255,255,.22); background: rgba(10,6,20,.85); color: #fff; font: 600 13.5px "IBM Plex Sans", var(--body); }
+  .ch24-grid button.on { border-color: var(--rc); background: color-mix(in srgb, var(--rc) 22%, rgba(10,6,20,.9)); box-shadow: 0 0 12px color-mix(in srgb, var(--rc) 45%, transparent); }
+  .mks-mych { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  .mks-mych button { text-align: left; display: flex; flex-direction: column; justify-content: center; gap: 2px; min-height: 54px; padding: 8px 14px; }
+  .mks-mych button small { font-weight: 400; opacity: .72; font-size: 12.5px; }
+  #lab .lb-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .mks-newch { display: block; width: 100%; height: 46px; margin: 8px 0 14px; border-radius: 13px; border: 1.5px dashed rgba(255,255,255,.4); background: transparent; color: #eef1f7; font: 600 14px "IBM Plex Sans", var(--body); }`;
+  document.head.appendChild(css);
+}
+// the chord sound page: no Shape section (chord sounds have none), the header and Starts from say CHORDS
+{
+  const r0 = labRender;
+  labRender = function () {
+    const r = r0.apply(this, arguments);
+    try {
+      const s = LAB.cur;
+      if (LAB.view === "sound" && s && s.kind === "chords") {
+        const B = $("lbBody");
+        B.querySelectorAll(".lb-sec").forEach(sec => { const h = sec.querySelector(".lb-sh b"); if (h && h.textContent.trim() === "SHAPE") sec.remove(); });
+        B.querySelectorAll(".lb-sec").forEach((sec, i) => { const n = sec.querySelector(".lb-sh i"); if (n) n.textContent = i + 1; });
+        const sm = B.querySelector(".lb-top small"); if (sm) sm.textContent = "SOUND LAB · CHORDS";
+        const fs = B.querySelector("#lbFrom small"); if (fs) fs.textContent = "CHORD SOUND"; const fb = B.querySelector("#lbFrom b"); if (fb) fb.textContent = labBaseTxt(s);
+      }
+      if (LAB.view === "home" && LAB_T.tab === "chords") { const nb = $("lbBody").querySelector(".lb-newin, .lb-new"); if (nb) nb.textContent = "+ New chord sound"; }
+    } catch (_) {}
+    return r;
+  };
+}
+// Make your own → Chord sound: your chord sounds first
+mkChordHTML = function () {
+  const t = mk.t, own = (feelBase(t.band).pad || {}).sound, mine = LAB.store.sounds.filter(s => s.kind === "chords");
+  const fxTxt = s => { const on = ["filter", "ens", "phaser", "trem"].filter(id => s.fx[id] && s.fx[id].on).map(id => ({ filter: "filter", ens: "ensemble", phaser: "phaser", trem: "tremolo" })[id]);
+    if ((s.fx.echo || {}).on) on.push("echo"); return [labBaseTxt(s), ...on].join(" · "); };
+  return `<p>Pick one of your chord sounds or a built-in one. The chords and rhythm stay the same.</p>
+    <div class="lbl">MY CHORD SOUNDS</div>
+    ${mine.length ? `<div class="mks-grid mks-mych">${mine.map(s => `<button data-ch="lab:${s.id}" class="${t.chord === "lab:" + s.id ? "on" : ""}"><b>${escH(s.name)}</b><small>${escH(fxTxt(s))}</small></button>`).join("")}</div>` : ""}
+    <button class="mks-newch" data-a="labch">+ New chord sound (Sound lab)</button>
+    <div class="lbl">BUILT-IN</div>
+    <div class="mks-grid"><button data-ch="" class="${!t.chord ? "on" : ""}" style="grid-column:1/-1">The feel's own${t.feelSet !== false ? " · " + ((PAD[own] || {}).name || own) : ""}</button>${Object.entries(PAD).filter(([k]) => k !== own || t.feelSet === false).map(([k, p]) => `<button data-ch="${k}" class="${t.chord === k ? "on" : ""}">${p.name}</button>`).join("")}</div>
+    <span class="tiny">${t.feelSet !== false ? "TAP ONE TO HEAR IT WITH THE BAND" : "PICK A FEEL TO HEAR IT WITH THE BAND"}</span>`;
+};
+MK_SHEETS.chord = ["CHORD SOUND", () => mkChordHTML()];
+// New chord sound from Make your own: a copy of the chord sound the theme has now, "Use in my theme" brings it back picked
+function labFromMkChord() {
+  const t = mk.t; if (!t) return;
+  const s = labNew("chords"), cur = t.chord ? (labRef(t.chord) ? labRef(t.chord).base.v : t.chord) : (feelBase(t.band).pad || {}).sound;
+  if (PAD[cur]) { s.base = { t: "synth", v: cur }; s.name = (PAD[cur].name + " (mine)").slice(0, 24); }
+  try { s.fx = { ...s.fx, ...bmc(PFX.pad) }; } catch (_) {}
+  mkSheetClose(); $("mk").hidden = true;
+  LABMK.on = { f: 4, kind: "chords", copyOf: PAD[cur] ? PAD[cur].name : null, name: (t.name || $("mkName").value.trim() || $("mkName").placeholder || "your theme") }; LABMK.ready = false;
+  labOpen(); labEdit(s); LABMK.ready = true; labRender();
+}
+{
+  const b0 = labBackToMk;
+  labBackToMk = function (sid) {
+    const o = LABMK.on; if (!o || o.f !== 4) return b0.apply(this, arguments);
+    LABMK.on = null; LABMK.ready = false;
+    try { ltStopAll(); } catch (_) {} mkRiffStop(); try { releasePad(); } catch (_) {} $("lab").hidden = true; $("lab").classList.remove("formk");
+    if (LAB.prev) { try { restoreLast(LAB.prev); } catch (_) {} LAB.prev = null; }
+    LAB.view = "home"; LAB.cur = null;
+    const t = mk.t; if (!t) return homeOpen(false);
+    if (sid) { t.chord = "lab:" + sid; CH24.picks++; }
+    $("mk").hidden = false; mkRender(); mkSheet("chord");
+    if (sid) { const x = labGet(sid); toast(`${x ? x.name : "Your sound"} is your chord sound`); }
+  };
+}
+{ const d0 = diagReport; diagReport = function () { const r = d0.apply(this, arguments); try { r.v624 = { chordSounds: LAB.store.sounds.filter(s => s.kind === "chords").length, ...CH24, pv8: PV8.on }; } catch (_) {} return r; }; }
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }
 requestAnimationFrame(() => document.documentElement.classList.add("gp-ready"));

@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.21 TEST · game mode · 25 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.22 TEST · game mode · 26 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1547,7 +1547,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.21 TEST · game mode · 25 Oct 2026</p>
+      <p class="ver">GlassPad 6.22 TEST · game mode · 26 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -4260,7 +4260,7 @@ const KIT_GAINS = {
 const KITS = {};
 async function loadKit(id) {
   if (KITS[id]) return KITS[id];
-  const j = await (await fetch("kit-" + id + ".json", { cache: "force-cache" })).json();
+  const j = await (await fetch("kit-" + id + ".json" + ({ mrk2: "?v=622" }[id] || ""), { cache: "force-cache" })).json();
   const k = {};
   for (const [fam, list] of Object.entries(j.s)) k[fam] = list.map(a => {
     const bin = atob(a.d), n = bin.length >> 1, f = new Float32Array(n);
@@ -10286,7 +10286,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.21 TEST</p>
+    <p class="hm-ver">GlassPad 6.22 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -11197,7 +11197,7 @@ $("mkHear").addEventListener("click", () => {
   const t = mk.t;
   const lc = t.myLead && samples.find(s => s.name === t.myLead), bc = t.myBass && samples.find(s => s.name === t.myBass);
   if (bc) { if (!bc.buf) try { bc.buf = clipBuf(bc); } catch (_) {} playClipOnce(bc); } else mkTaste("bass", t.bass, [0]);
-  if (lc) { if (!lc.buf) try { lc.buf = clipBuf(lc); } catch (_) {} setTimeout(() => playClipOnce(lc), 250); } else setTimeout(() => mkTaste("lead", t.lead, [0, 3, 7, 12]), 250);
+  if (lc) { if (!lc.buf) try { lc.buf = clipBuf(lc); } catch (_) {} setTimeout(() => playClipOnce(lc), 250); } else setTimeout(() => mkTaste("lead", t.lead, [0, 7, 12]), 250);
 });
 // save & play
 $("mkSave").addEventListener("click", () => {
@@ -14572,7 +14572,7 @@ $("mksBox").addEventListener("click", e => {
   if (d.fing) { mk.fing = +d.fing; mkRedraw(); return; }
   if (d.ls) {
     if ((mk.fing || 1) === 1) { t.lead = d.ls; t.recs = []; } else { t.lead2 = d.ls; t.recs2 = []; }
-    if (d.ls !== "off") mkTaste("lead", d.ls, [0, 3, 7, 12]);
+    if (d.ls !== "off") mkTaste("lead", d.ls, [0, 7, 12]);
     mkRedraw(); mkRender(); return;
   }
   if (d.lr) {
@@ -14755,7 +14755,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.21 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.22 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -14941,7 +14941,7 @@ $("mksBox").addEventListener("click", e => {
 }
 
 /* ----- the riff: what a sound will sound like, in the feel's key and tempo ----- */
-const RIFF = { lead: [0, 3, 7, 12, 7, 3, 7, 0], timers: [], voices: [], until: 0 };
+const RIFF = { lead: [0, 7, 12, 7, 0, 7, 12, 7], timers: [], voices: [], until: 0 };
 // 5.64.1: stop a riff straight away (its notes, and any recording still repeating)
 function mkRiffStop() {
   RIFF.timers.forEach(clearTimeout); RIFF.timers = []; RIFF.until = 0; RIFF_OVR.on = false;
@@ -14985,7 +14985,7 @@ function mkRiff(parts, bars, over) {
   const lb = 60 + k.root, bb = 36 + k.root, iv = RIFF.lead.map(n => n === 3 ? k.third : n);
   RIFF.until = performance.now() + (bars * 4 * beat + .6) * 1000;
   for (let bar = 0; bar < bars; bar++) {
-    if (parts !== "lead") for (let i = 0; i < 4; i++) riffNote("bass", bass, bb, bar * 4 * beat + i * beat, beat * .85);
+    if (parts !== "lead") for (let i = 0; i < 8; i++) riffNote("bass", bass, bb, bar * 4 * beat + i * e8, e8 * .85);
     if (parts !== "bass") iv.forEach((n, i) => riffNote("lead", lead, lb + n, bar * 4 * beat + i * e8, e8 * .9, over && over.second));
   }
 }
@@ -16174,7 +16174,7 @@ function ltRel(v) {
 }
 function ltStopAll() { clearTimeout(LT.holdT); LT.seq.forEach(clearTimeout); LT.seq = []; LT.v.forEach(ltRel); LT.v = []; LT.mode = null; }
 function ltArp(s) {
-  const lead = s.kind === "lead", base = lead ? 69 : 45, notes = lead ? [0, 3, 7, 12, 7, 3, 0] : [0, 7, 12, 7, 0], step = .3, ctx = audio.ctx, t0 = ctx.currentTime + .03;
+  const lead = s.kind === "lead", base = lead ? 69 : 45, notes = lead ? [0, 7, 12, 7, 0] : [0, 7, 12, 7, 0], step = .3, ctx = audio.ctx, t0 = ctx.currentTime + .03;
   if (s.glide) {
     const v = ltVoice(s, base, t0); LT.v.push(v);
     notes.forEach((n, i) => { if (i) pitchParts(v, base + n, t0 + i * step, .045); });
@@ -17665,7 +17665,7 @@ if (window.GPNative && !window.GPNOFF && (typeof GPNative.kitUse === "function" 
   async function send(id) {
     NKIT.busy = true;
     try {
-      const text = await (await fetch("kit-" + id + ".json", { cache: "force-cache" })).text();
+      const text = await (await fetch("kit-" + id + ".json" + ({ mrk2: "?v=622" }[id] || ""), { cache: "force-cache" })).text();
       const j = '{"id":' + JSON.stringify(id) + ',"map":' + JSON.stringify(KIT_MAPS[id] || {}) + ',"gains":' + JSON.stringify(KIT_GAINS[id] || {}) + ',"kit":' + text + '}';
       if (GPNative.kitLoad(j)) NKIT.sent.push(id);
     } catch (e) { NKIT.err = String(e); }
@@ -20323,7 +20323,7 @@ const SV_GAUGE = '<svg viewBox="0 0 24 24" fill="none" stroke="#a98bff" stroke-w
 function mkDrumsHTML() {
   const t = mk.t, cur = kitOfTheme(t), by = t.drummer || "";
   const pad = (cls, n, sm, k) => `<button type="button" class="sp ${cls}"${k ? ` data-kit="${k}" aria-pressed="${cls === "on"}"` : ""}${cls === "off" || cls === "empty" ? " disabled" : ""}><i></i><b>${n}</b><small>${sm}</small></button>`;
-  return `<p>Tap a pad to hear the kit and pick it.</p><div class="sg">${KIT19.map(([k, n, sm]) => pad(cur === k ? "on" : "", n, sm, k)).join("")}${KIT19_SOON.map(([, n, sm]) => pad("off", n, sm)).join("")}${pad("empty", "", "").repeat(6)}</div>
+  return `<p>Tap a pad to pick it and hear a bar of the kit.</p><div class="sg">${KIT19.map(([k, n, sm]) => pad(cur === k ? "on" : "", n, sm, k)).join("")}${KIT19_SOON.map(([, n, sm]) => pad("off", n, sm)).join("")}${pad("empty", "", "").repeat(6)}</div>
     <div class="lbl kit-by">PLAYED BY</div><div class="mk-fx" role="group" aria-label="Played by">${[["", "The app", "the theme's own beat"], ["blues", "A drummer", "blues shuffle"]].map(([v, n, d]) => `<button type="button" data-by="${v}" class="${by === v ? "on" : ""}" aria-pressed="${by === v}"><b>${n}</b><small>${d}</small></button>`).join("")}</div>
     ${t.feelSet === false ? `<span class="tiny">PICK A FEEL TO HEAR IT WITH THE BAND</span>` : ""}`;
 }
@@ -20619,6 +20619,49 @@ setInterval(k80Sync, 150);
   const sk = setKit; setKit = async function () { const r = await sk.apply(this, arguments); k80Sync(); return r; };
   const d0 = diagReport; diagReport = function () { const r = d0.apply(this, arguments); try { r.kits621 = { kit: drum.kit, k80: K80.on, sets: K80.sets }; } catch (_) {} return r; };
 }
+
+/* ---------- 6.22: a kit pad in Make your own plays one bar of a simple beat on that kit only (no band) ----------
+   Tap = pick it (as before) + the beat: kick on 1 and 3 (and the "and" of 3), snare on 2 and 4, closed hats in 8ths with an
+   open hat on the last one, then a kick + crash to finish. The theme's tempo (90 with no feel). Anything playing stops first.
+   It waits for the kit to load (in the app: until the engine has it, at most 4 s). Afterwards the kit goes back to what it
+   was before the tap (the theme keeps the pick; Hear it on the picture plays the band with it). */
+const KPV = window.KPV = { pend: null, tap: 0, plays: 0, hits: 0, tok: 0, waited: 0, last: null };
+document.addEventListener("click", e => { try { if (mk.sheet === "drums" && e.target.closest("#mksBox [data-kit]")) KPV.tap = performance.now(); } catch (_) {} }, true);
+// (with no feel picked the pad tap starts no band preview, so the bar is started here)
+$("mksBox").addEventListener("click", () => { if (KPV.tap && performance.now() - KPV.tap < 400 && mk.t && mk.sheet === "drums") { KPV.tap = 0; kitBar(mk.t.kit || "synth"); } }, true);
+{
+  const p0 = mkPreviewPlay;
+  mkPreviewPlay = function () {
+    if (performance.now() - KPV.tap < 400 && mk.t) { KPV.tap = 0; kitBar(mk.t.kit || "synth"); return; }
+    return p0.apply(this, arguments);
+  };
+}
+function kitBar(id) {
+  const tok = ++KPV.tok, was = drum.kit || "synth", busy = T.playing || hpv.on || riffOn();
+  try { mkStopAll(); } catch (_) {}
+  kitTo(id);
+  const t0w = performance.now();
+  const ready = () => drum.kit === id && (id === "synth" || !!KITS[id]) &&
+    (!(typeof NATIVE === "object" && NATIVE && NATIVE.on && NATIVE.band && NATIVE.drumOk) || id === "synth" || !!(window.NKIT && NKIT.ready(id)));
+  const go = () => {
+    if (tok !== KPV.tok || $("mk").hidden) return;
+    if (T.playing || (!ready() && performance.now() - t0w < 4000)) return setTimeout(go, 50);
+    KPV.waited = Math.round(performance.now() - t0w);
+    try { ensureAudio(); } catch (_) {}
+    const bpm = (() => { try { return riffKey().bpm || 90; } catch (_) { return 90; } })(), e8 = 30 / bpm, t0 = audio.ctx.currentTime + .1;
+    const big = id === "80s", K = big ? "bkick" : "kick", S = big ? "gsnare" : "snare";
+    const pat = [[0, K, .95], [0, "hat", .7], [1, "hat", .5], [2, S, .9], [2, "hat", .65], [3, "hat", .5],
+                 [4, K, .9], [4, "hat", .7], [5, K, .7], [5, "hat", .5], [6, S, .9], [6, "hat", .65], [7, "ohat", .6], [8, K, .95], [8, "crash", .75]];
+    for (const [i, inst, v] of pat) { try { hit(inst, t0 + i * e8, v); KPV.hits++; } catch (_) {} }
+    KPV.plays++; KPV.last = { id, bpm, at: t0 };
+    // the kit goes back to what it was once the bar has rung out (unless something else has started)
+    KPV.pend = { id, was };
+    setTimeout(() => { if (tok !== KPV.tok) return; KPV.pend = null; if (!T.playing && !hpv.on && drum.kit === id && was !== id) kitTo(was); }, (9 * e8 + 2.5) * 1000);
+  };
+  setTimeout(go, busy ? 320 : 0);
+}
+{ const c0 = mkClose; mkClose = function () { KPV.tok++; const p = KPV.pend; KPV.pend = null; try { if (p && drum.kit === p.id && p.was !== p.id && !T.playing) kitTo(p.was); } catch (_) {} return c0.apply(this, arguments); }; }
+{ const d0 = diagReport; diagReport = function () { const r = d0.apply(this, arguments); try { r.kitBar = { plays: KPV.plays, hits: KPV.hits, waited: KPV.waited, last: KPV.last }; } catch (_) {} return r; }; }
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }
 requestAnimationFrame(() => document.documentElement.classList.add("gp-ready"));

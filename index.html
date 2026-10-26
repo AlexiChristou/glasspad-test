@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.26 TEST · game mode · 26 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.27 TEST · game mode · 26 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1446,6 +1446,7 @@
   <div class="gr"><div><label>Pro mode</label><small>The full app: note names, Band, FX, Mix, Save and everything else</small></div><button class="gsw" id="gPro" aria-pressed="false"></button></div>
   <div class="gr"><div><label>Band volume</label><small>The band against your playing</small></div><input type="range" id="gBandVol" min="0" max="1.5" step="0.01" value="1"></div>
   <div class="gr"><div><label>Built-in bass</label><small>Plays a bass line until you touch the bass pad</small></div><button class="gsw" id="gBassSw" aria-pressed="true"></button></div>
+  <div class="gr"><div><label>Bass line timing</label><small>How a bass line you record snaps to the beat</small></div><div class="gseg" id="gBlSnap"><button data-v="off">As played</button><button data-v="8">1/8</button><button data-v="16">1/16</button></div></div>
   <div class="gr"><div><label>Background picture</label><small>Off: plain strips, as in Pro</small></div><button class="gsw" id="gBg" aria-pressed="true"></button></div>
   <div class="gr"><div><label>Picture brightness</label><small>Darker keeps the strips clearer</small></div><input type="range" id="gBright" min="20" max="70" step="1" value="40"></div>
   <div class="gr"><div><label>Strip lines</label><small>How the strips are drawn over the picture</small></div><div class="gseg" id="gLines"><button data-v="soft">Soft</button><button data-v="pro">Pro</button><button data-v="none">None</button></div></div>
@@ -1547,7 +1548,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.26 TEST · game mode · 26 Oct 2026</p>
+      <p class="ver">GlassPad 6.27 TEST · game mode · 26 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -9390,7 +9391,8 @@ gameBassStep = function (s, t, t0, dur) {
   const ch = pad.cur, r0 = ch.tones[0], rootPc = mod12(cbase(ch) + r0), root = 33 + mod12(rootPc - 9);
   const rel = ch.tones.map(x => mod12(x - r0)), fifth = rel.includes(7) ? 7 : (rel.find(x => x >= 6 && x <= 8) ?? 7), third = rel.find(x => x === 3 || x === 4) ?? 0;
   const sev = rel.find(x => x === 10 || x === 11) ?? 10;
-  const own = (GAME_BASS_THEME[gameKey()] || {})[game.band];
+  const own = blTheme(game.band);
+  if (own && own.bars) { blStep(own, s, t, dur, gm, ch, root, rel, third, fifth, sev); return; }   // 6.27: your recorded line
   if (own === "walk") {   // the live app's walking bass: a quarter note on each beat
     const S = T.meter.steps, B = T.meter.pulses || [0, 4, 8, 12];
     if (!B.includes(s)) return;
@@ -10286,7 +10288,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.26 TEST</p>
+    <p class="hm-ver">GlassPad 6.27 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14756,7 +14758,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.26 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.27 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -17375,7 +17377,7 @@ if (NATIVE.on && typeof GPNative.bandSetup === "function") {
       chords2: window.pad2Setup ? pad2Setup() : { on: false },
       lift: { amt: gameLiftAmt(), when: keyLift.when, fill: keyLift.fill, chargeBars: game.chargeBars, riser: !!game.riserOn, now: keyLift.now },
       bass: { on: !!(game.bass && bass.on), key: +rootSel.value, range: bassPat.range === 2 ? 2 : 1, scale: curScale().steps, game: GAME_BASS,
-        theme: [0, 1, 2].map(l => (GAME_BASS_THEME[gameKey()] || {})[l] ?? null) } };
+        theme: [0, 1, 2].map(l => blTheme(l)) } };
   }
   const sendSetup = force => {
     try { const j = JSON.stringify(bandSetup()); if (force || j !== NB.lastSetup) { NB.lastSetup = j; GPNative.bandSetup(j); NB.sent++; } } catch (e) { NB.err = String(e); }
@@ -21003,6 +21005,320 @@ const DV26 = window.DV26 = { switches: 0, cut: 0, skipped: 0 };
   const ps0 = pvStop; pvStop = function () { hpv.swi = false; return ps0.apply(this, arguments); };
 }
 { const d0 = diagReport; diagReport = function () { const r = d0.apply(this, arguments); try { r.v626 = { ...DV26 }; } catch (_) {} return r; }; }
+
+/* ---------- 6.27: record your own bass line ----------
+   Make your own → Bass → BASS LINE: the feel's line or one of My bass lines (saved with a name, usable in any theme).
+   "Record a new line" opens the pad with the theme playing: the lead pad is off, the band's bass rests, you practise,
+   Rec bass counts a bar in and records 1, 2 or 4 bars (Settings → Bass line timing snaps them), then asks to save it.
+   A line is notes: [step, interval from the chord's root, length]. Its 3rd/5th/7th are kept as the chord's own
+   (4 = the chord's 3rd, 7 = its 5th, 10 = its 7th) and the engine fits every note to the chord and scale playing
+   (band.h, app 0.3.33). Older apps play only the first bar, without the fitting. */
+const BL27 = window.BL27 = { store: { lines: [] }, snap: "16", bars: 2 };
+try { const o = JSON.parse(localStorage.getItem("glasspad.basslines") || "null"); if (o && Array.isArray(o.lines)) BL27.store = o; } catch (_) {}
+try { BL27.snap = localStorage.getItem("glasspad.blsnap") || "16"; BL27.bars = +(localStorage.getItem("glasspad.blbars") || 2) || 2; } catch (_) {}
+BL27.save = () => { try { localStorage.setItem("glasspad.basslines", JSON.stringify(BL27.store)); return true; } catch (_) { toast("Not enough room on the phone to save that"); return false; } };
+BL27.get = id => BL27.store.lines.find(l => l.id === id) || null;
+BL27.eng = L => ({ st: L.n.map(x => x[0]), iv: L.n.map(x => x[1]), len: L.n.map(x => x[2]), bars: L.bars, sp: L.sp || 16, fit: 1 });
+BL27.MUTE = { st: [], iv: [], len: [], bars: 1, sp: 16, fit: 1 };
+BL27.used = id => MY.list.filter(t => t.bassLine === id).length;
+BL27.qTxt = q => q === "off" ? "as played" : "1/" + q;
+BL27.newName = () => { const has = new Set(BL27.store.lines.map(l => l.name)); let k = 1; while (has.has("Bass line " + k)) k++; return "Bass line " + k; };
+// which line plays now: record mode, the theme open in Make your own, the theme on the pad
+BL27.now = () => {
+  if (BR27.on) return BR27.state === "ask" && BR27.tmp && BR27.tmp.n.length ? BL27.eng(BR27.tmp) : BL27.MUTE;
+  let id = null;
+  try {
+    if (!$("mk").hidden && mk.t) id = mk.t.bassLine;
+    else { const k = gameKey(); if (k === "__mkplay" && MKP.pending) id = MKP.pending.t.bassLine; else if (isMine(k)) { const t = MY.list.find(x => x.id === k); id = t && t.bassLine; } }
+  } catch (_) {}
+  const L = id && BL27.get(id); return L && L.n.length ? BL27.eng(L) : null;
+};
+function blTheme(l) { try { const L = BL27.now(); if (L) return L; } catch (_) {} return (GAME_BASS_THEME[gameKey()] || {})[l] ?? null; }
+// the page's band (website without the engine): the same as band.h
+function blStep(own, s, t, dur, gm, ch, root, rel, third, fifth, sev) {
+  const S = T.meter.steps, sc = S / (own.sp || 16), bi = mod(T.bar, own.bars || 1), pos = bi * S + s;
+  const hasSev = rel.some(x => x === 10 || x === 11), sc0 = curScale().steps || [], key = +rootSel.value + (keyLift.now || 0);
+  const inScale = m => !sc0.length || sc0.some(st => Math.abs(mod12(key + st) - mod12(m)) < .01);
+  const fit = iv => { const o = Math.floor(iv / 12 + 1e-9) * 12, r = iv - o;
+    if (Math.abs(r) < .01) return iv; if (Math.abs(r - 4) < .01 && third > 0) return o + third; if (Math.abs(r - 7) < .01) return o + fifth;
+    if (Math.abs(r - 10) < .01 && hasSev) return o + sev; for (const k of [0, -1, 1, -2, 2]) if (inScale(root + iv + k)) return iv + k; return iv; };
+  own.st.forEach((st, i) => { const at = st * sc; if (Math.floor(at + 1e-6) !== pos) return; gameBassNote(root + (own.fit ? fit(own.iv[i]) : own.iv[i]), t + (at - pos) * dur, own.len[i] * sc * dur, gm); });
+}
+// a note as the chord heard it: its 3rd/5th/7th become 4/7/10 (the chord's own, wherever the line plays)
+BL27.ivOf = (midi, ch) => {
+  const r0 = ch.tones[0], rootPc = mod12(cbase(ch) + r0), root = 33 + mod12(rootPc - 9), rel = ch.tones.map(x => mod12(x - r0));
+  const fifth = rel.includes(7) ? 7 : (rel.find(x => x >= 6 && x <= 8) ?? 7), third = rel.find(x => x === 3 || x === 4) ?? 0, sev = rel.find(x => x === 10 || x === 11);
+  const iv = Math.round(midi - root), o = Math.floor(iv / 12) * 12; let r = iv - o;
+  if (third && r === third) r = 4; else if (r === fifth) r = 7; else if (sev != null && r === sev) r = 10;
+  return o + r;
+};
+
+/* ----- record mode on the pad ----- */
+const BR27 = window.BR27 = { on: false, state: "off", tmp: null, held: new Map(), notes: [], a0: 0, a1: 0, cnt: -1, tick: 0, arpB: false };
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  body.br27 #recTop, body.br27 #recAudioTop, body.br27 #gHint { display: none !important; }
+  body.br27 #styleRow > *:not(#br27Row) { display: none !important; }
+  @keyframes br27p { 0%,100% { box-shadow: 0 0 0 0 rgba(255,77,94,.55) } 50% { box-shadow: 0 0 14px 5px rgba(255,77,94,.55) } }
+  #br27Btn { display: none; align-items: center; gap: 8px; color: #fff; background: rgba(255,77,94,.14); border: 1.5px solid #ff4d5e; animation: br27p 1.4s infinite; white-space: nowrap; }
+  body.br27 #br27Btn { display: inline-flex; }
+  #br27Btn i { width: 13px; height: 13px; border-radius: 50%; background: #ff4d5e; display: inline-block; flex: none; }
+  #br27Btn.wait { animation: none; } #br27Btn.rec { background: #ff4d5e; animation: none; } #br27Btn.rec i { background: #fff; border-radius: 3px; }
+  #br27Btn.ask { animation: none; opacity: .55; }
+  #br27Row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 0 4px; }
+  #br27Row button { height: 42px; border-radius: 21px; font: 700 14px var(--display); color: #fff; white-space: nowrap; }
+  #br27Back { border: 1.5px solid rgba(180,120,255,.75); background: rgba(40,20,70,.6); padding: 0 14px; }
+  #br27Bars { display: flex; border: 1.5px solid #19d3e6; border-radius: 21px; overflow: hidden; }
+  #br27Bars button { border: 0; border-radius: 0; background: none; padding: 0 12px; color: #9fe9f2; }
+  #br27Bars button.on { background: rgba(25,211,230,.25); color: #fff; }
+  #br27Bars.off { opacity: .45; pointer-events: none; }
+  #br27Lead { position: fixed; z-index: 30; overflow: hidden; border-radius: 6px; background: rgba(6,6,14,.62); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); touch-action: none; display: none; }
+  body.br27 #br27Lead { display: block; }
+  #br27Lead .msg { position: absolute; left: 0; right: 0; top: 46%; text-align: center; font: 700 14px var(--display); color: rgba(255,255,255,.75); letter-spacing: .04em; }
+  #br27Lead .tag { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); font: 700 12px var(--display); letter-spacing: .08em; color: #8ff0fb; background: rgba(5,20,30,.8); border: 1px solid #19d3e6; border-radius: 14px; padding: 6px 12px; white-space: nowrap; z-index: 2; }
+  #br27Lead .cnt { position: absolute; inset: 0; display: grid; place-items: center; font: 800 64px var(--display); color: #fff; text-shadow: 0 0 18px #ff4d5e; padding-top: 30px; }
+  #br27Fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: linear-gradient(90deg, rgba(255,77,94,.10), rgba(255,77,94,.42) 70%, rgba(255,120,130,.62)); box-shadow: inset 0 0 40px rgba(255,77,94,.35); }
+  #br27Fill::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(105deg, rgba(255,255,255,.07) 0 6px, transparent 6px 22px), linear-gradient(180deg, rgba(255,255,255,.20), rgba(255,255,255,0) 35%); }
+  #br27Fill::after { content: ''; position: absolute; right: -2px; top: 0; bottom: 0; width: 4px; background: #fff; box-shadow: 0 0 14px 4px #ff7d8a, 0 0 40px 10px rgba(255,77,94,.7); border-radius: 2px; }
+  #br27Fill.done { opacity: .55; } #br27Fill.done::after { display: none; }
+  #br27Ask { position: fixed; left: 16px; right: 16px; top: 22%; z-index: 50; max-width: 420px; margin: 0 auto; background: rgba(14,10,30,.97); border: 1.5px solid #19d3e6; border-radius: 20px; padding: 18px; color: #fff; text-align: center; font: 500 14px var(--body); }
+  #br27Ask[hidden] { display: none; }
+  #br27Ask h4 { margin: 0 0 6px; font: 800 17px var(--display); } #br27Ask p { margin: 0 0 14px; color: #b9c0d8; font-size: 13px; }
+  #br27Ask label { display: flex; align-items: center; gap: 10px; border: 1.5px solid rgba(255,255,255,.35); border-radius: 14px; padding: 0 14px; margin-bottom: 10px; color: #b9c0d8; font-size: 13px; }
+  #br27Ask input { flex: 1; min-width: 0; height: 44px; background: none; border: 0; color: #fff; font: 700 15px var(--display); text-align: right; outline: none; }
+  #br27Ask .go { display: block; width: 100%; height: 48px; border: 0; border-radius: 24px; background: #19d3e6; color: #04141a; font: 800 15px var(--display); margin-bottom: 8px; }
+  #br27Ask .two { display: flex; gap: 8px; } #br27Ask .two button { flex: 1; min-height: 46px; border-radius: 23px; border: 1.5px solid rgba(255,255,255,.35); background: none; color: #fff; font: 600 14px var(--body); }
+  /* Make your own → Bass → BASS LINE (the chord sheet's list and buttons) */
+  .bl27-ed { margin-top: 8px; } .bl27-ed button.sure { border-color: #ff4d5e; color: #ff8a96; background: rgba(255,77,94,.12); }
+  .mks-newch.bl27-rec { border-color: rgba(255,77,94,.75); display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .mks-newch.bl27-rec i { width: 12px; height: 12px; border-radius: 50%; background: #ff4d5e; display: inline-block; }
+  .bl27-box { margin-top: 8px; border: 1.5px solid var(--mkc); border-radius: 13px; padding: 10px; background: rgba(16,18,28,.9); }
+  .bl27-box p { margin: 0 0 8px; font-size: 13.5px; color: #eef1f7; }
+  .bl27-box input { width: 100%; box-sizing: border-box; height: 44px; border-radius: 11px; border: 1.5px solid rgba(255,255,255,.3); background: rgba(0,0,0,.3); color: #fff; padding: 0 12px; font: 600 15px var(--body); margin-bottom: 8px; }
+  .bl27-box.warn { border-color: #ff4d5e; } .bl27-box .del { border-color: #ff4d5e !important; color: #ff8a96 !important; }`;
+  document.head.appendChild(st);
+  const btn = document.createElement("button"); btn.id = "br27Btn"; btn.className = "arecTop"; btn.innerHTML = "<i></i><span>Rec bass</span>";
+  $("play").after(btn);
+  const row = document.createElement("div"); row.id = "br27Row"; row.hidden = true;
+  row.innerHTML = `<button id="br27Back">‹ My theme</button><div id="br27Bars">${[1, 2, 4].map(n => `<button data-n="${n}">${n === 4 ? "4 bars" : n}</button>`).join("")}</div>`;
+  $("styleRow").appendChild(row);
+  const lead = document.createElement("div"); lead.id = "br27Lead";
+  lead.innerHTML = `<div id="br27Fill"></div><div class="tag" id="br27Tag"></div><div class="msg" id="br27Msg">LEAD OFF · PLAY THE BASS</div><div class="cnt" id="br27Cnt" hidden></div>`;
+  document.body.appendChild(lead);
+  const ask = document.createElement("div"); ask.id = "br27Ask"; ask.hidden = true; ask.setAttribute("role", "dialog");
+  document.body.appendChild(ask);
+}
+const br27UI = () => {
+  const B = BR27, btn = $("br27Btn"), st = B.state;
+  btn.classList.toggle("wait", st === "wait" || st === "count"); btn.classList.toggle("rec", st === "rec"); btn.classList.toggle("ask", st === "ask");
+  btn.querySelector("span").textContent = st === "rec" ? "Recording…" : st === "wait" || st === "count" ? "Cancel" : "Rec bass";
+  $("br27Bars").querySelectorAll("button").forEach(b => b.classList.toggle("on", +b.dataset.n === BL27.bars));
+  $("br27Bars").classList.toggle("off", st !== "practice");
+  $("br27Msg").hidden = st !== "practice";
+  $("br27Cnt").hidden = st !== "wait" && st !== "count";
+  const f = $("br27Fill"); f.style.display = st === "rec" || st === "ask" ? "block" : "none"; f.classList.toggle("done", st === "ask");
+  if (st === "ask") f.style.width = "100%";
+  const nm = (MKP.pending && MKP.pending.t.name) || qs.name || "your theme";
+  if (st !== "rec") $("br27Tag").textContent = "RECORDING BASS LINE · " + nm;
+};
+const br27Place = () => {
+  const el = $("br27Lead"); if (!BR27.on) return;
+  try { const r = $("pad").getBoundingClientRect(), lh = leadH(); el.style.left = r.left + "px"; el.style.top = r.top + "px"; el.style.width = r.width + "px"; el.style.height = Math.max(0, lh) + "px"; } catch (_) {}
+};
+function br27Enter() {
+  const t = mk.t; if (!t) return;
+  if (t.feelSet === false) return mkNeedFeel();
+  t.name = $("mkName").value.trim() || $("mkName").placeholder;
+  MKP.pending = { t: JSON.parse(JSON.stringify(t)), editing: mk.editing };
+  myRegister({ ...JSON.parse(JSON.stringify(t)), id: "__mkplay" });
+  try { pvClear(); hpv.on = false; } catch (_) {}
+  try { mkpv.prev = null; } catch (_) {}
+  mkClose(false); try { hm.fromPad = false; } catch (_) {} ensureAudio();
+  try { keepPend = null; } catch (_) {} qs.pend = null;
+  game.bgKey = ""; loadStyle(styleOf("__mkplay")); qs.name = t.name;
+  try { pvGain(pvTarget(), .05); } catch (_) {}
+  if (!T.playing) setPlaying(true); setLayout("pad");
+  Object.assign(BR27, { on: true, state: "practice", tmp: null, notes: [], cnt: -1 }); BR27.held.clear();
+  BR27.arpB = game.arpB; if (game.arpB) { game.arpB = false; $("gArpB").setAttribute("aria-pressed", "false"); }
+  document.body.classList.add("br27"); $("br27Row").hidden = false; $("br27Ask").hidden = true;
+  br27UI(); br27Place();
+  clearInterval(BR27.tick); BR27.tick = setInterval(br27Tick, 10);
+}
+function br27Clean() {
+  if (!BR27.on) return;
+  BR27.on = false; BR27.state = "off"; BR27.tmp = null; clearInterval(BR27.tick); BR27.held.clear();
+  document.body.classList.remove("br27"); $("br27Row").hidden = true; $("br27Ask").hidden = true;
+  if (BR27.arpB && !game.arpB) { game.arpB = true; $("gArpB").setAttribute("aria-pressed", "true"); }
+}
+// back to Make your own (lineId: the line to use, undefined = no change)
+function br27Exit(lineId) {
+  br27Clean();
+  if (MKP.pending && lineId !== undefined) MKP.pending.t.bassLine = lineId;
+  mkEditTheme("__mkplay"); mk.fromPad = true;
+  setTimeout(() => { try { if (!$("mk").hidden) mkSheet("bass"); } catch (_) {} }, 60);
+}
+const br27Steps = () => T.meter.steps || 16;
+function br27Arm() {
+  if (!T.playing) setPlaying(true);
+  BR27.state = "wait"; BR27.a0 = -1; br27UI();
+}
+function br27Plan(a) {   // the first bar where your line's bar 1 sits (the band counts bars from Play), with a whole bar to count in
+  const S = br27Steps(), n = BL27.bars, cur = Math.floor(a / S); let b = cur + 2; while (b % n) b++;
+  BR27.a0 = b * S; BR27.a1 = (b + n) * S; BR27.notes = []; BR27.held.clear();
+}
+function br27Close(v, h, a) {
+  BR27.held.delete(v);
+  if (h.a0 >= BR27.a0 - .5 && h.a0 < BR27.a1) BR27.notes.push({ a0: h.a0, a1: Math.min(a, BR27.a1), midi: h.midi });
+}
+function br27Finish(a) {
+  for (const [v, h] of [...BR27.held]) br27Close(v, h, a);
+  const S = br27Steps(), tot = BR27.a1 - BR27.a0, q = BL27.snap, g = q === "8" ? 2 : q === "16" ? 1 : 0, n = [];
+  for (const x of BR27.notes) {
+    let pos = x.a0 - BR27.a0, end = x.a1 - BR27.a0;
+    if (g) { pos = Math.round(pos / g) * g; end = Math.round(end / g) * g; } else { pos = Math.round(pos * 100) / 100; end = Math.round(end * 100) / 100; }
+    if (pos < 0) { if (pos > -.5) pos = 0; else continue; }
+    if (pos >= tot - 1e-6) continue;
+    const len = Math.max(g ? g * .5 : .25, Math.min(end, tot) - pos);
+    let ch; try { ch = chordAtAbs(BR27.a0 + Math.max(0, pos)); } catch (_) { ch = pad.cur; }
+    if (!ch || !ch.tones) continue;
+    n.push([+pos.toFixed(3), BL27.ivOf(x.midi, ch), +len.toFixed(3)]);
+  }
+  n.sort((p, r) => p[0] - r[0]);
+  // one note per step (a snap can put two on the same step): keep the later one
+  const out = []; for (const x of n) { if (out.length && Math.abs(out[out.length - 1][0] - x[0]) < 1e-6) out.pop(); out.push(x); }
+  BR27.tmp = { bars: BL27.bars, sp: S, q, n: out };
+  BR27.state = "ask"; br27UI(); br27Ask();
+}
+function br27Ask() {
+  const L = BR27.tmp, has = L.n.length, el = $("br27Ask");
+  el.innerHTML = has
+    ? `<h4>Save this bass line?</h4><p>${L.bars} bar${L.bars > 1 ? "s" : ""} · ${L.q === "off" ? "as played" : "snapped to 1/" + L.q} · playing now</p>
+       <label>Name<input id="br27Name" maxlength="24" autocomplete="off" spellcheck="false" value="${escH(BL27.newName())}"></label>
+       <button class="go" data-a="save">Save and use it</button><div class="two"><button data-a="again">Record again</button><button data-a="back">Back to my theme</button></div>`
+    : `<h4>No notes recorded</h4><p>Play the bass pad (the lower part) while it records.</p>
+       <div class="two"><button data-a="again">Record again</button><button data-a="back">Back to my theme</button></div>`;
+  el.hidden = false;
+}
+$("br27Ask").addEventListener("click", e => {
+  const b = e.target.closest("button[data-a]"); if (!b) return;
+  if (b.dataset.a === "save") {
+    const L = BR27.tmp; if (!L || !L.n.length) return;
+    const name = (($("br27Name") || {}).value || "").trim() || BL27.newName();
+    const id = "bl" + Date.now().toString(36);
+    BL27.store.lines.push({ id, name, bars: L.bars, sp: L.sp, q: L.q, n: L.n, at: Date.now() });
+    if (!BL27.save()) { BL27.store.lines.pop(); return; }
+    br27Exit(id); setTimeout(() => toast(`Saved “${name}”: your theme plays it`), 200); return;
+  }
+  if (b.dataset.a === "again") { BR27.tmp = null; BR27.state = "practice"; $("br27Ask").hidden = true; br27UI(); return; }
+  if (b.dataset.a === "back") br27Exit();
+});
+$("br27Ask").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "br27Name") { e.preventDefault(); const g = $("br27Ask").querySelector('[data-a="save"]'); if (g) g.click(); } });
+$("br27Btn").addEventListener("click", () => {
+  const st = BR27.state;
+  if (st === "practice") return br27Arm();
+  if (st === "wait" || st === "count") { BR27.state = "practice"; br27UI(); return; }
+  if (st === "rec") { try { br27Finish(absNow()); } catch (_) { BR27.state = "practice"; br27UI(); } }
+});
+$("br27Back").addEventListener("click", () => br27Exit());
+$("br27Bars").addEventListener("click", e => { const b = e.target.closest("button[data-n]"); if (!b || BR27.state !== "practice") return; BL27.bars = +b.dataset.n; try { localStorage.setItem("glasspad.blbars", BL27.bars); } catch (_) {} br27UI(); });
+// the lead pad is off: the cover takes its touches
+for (const ev of ["pointerdown", "touchstart", "mousedown"]) $("br27Lead").addEventListener(ev, e => { e.stopPropagation(); if (e.cancelable) e.preventDefault(); }, { passive: false });
+function br27Tick() {
+  const B = BR27; if (!B.on) return;
+  br27Place();
+  if (!audio || !T.playing) { if (B.state === "wait" || B.state === "count") { B.state = "practice"; br27UI(); } if (B.state === "rec") br27Finish(B.a1); return; }
+  const a = absNow(), S = br27Steps();
+  if (B.state === "wait" && T.abs > 0) { if (B.a0 < 0) br27Plan(a); if (a >= B.a0 - S) { B.state = "count"; br27UI(); } else $("br27Cnt").textContent = "…"; }
+  if (B.state === "count") {
+    const pl = T.meter.pulses || [0, 4, 8, 12], pos = a - (B.a0 - S), k = pl.filter(p => p <= pos + 1e-6).length;
+    const show = String(Math.max(1, pl.length - k + 1)); if ($("br27Cnt").textContent !== show) $("br27Cnt").textContent = show;
+    if (a >= B.a0 - .5) { B.state = "rec"; br27UI(); }
+  }
+  if (B.state !== "rec") return;
+  // the notes you play on the bass pad (one per finger; a new note when its pitch changes)
+  const live = new Set();
+  for (const v of voices.values()) {
+    if (v.kind !== "bass" || v.released) continue;
+    live.add(v); const h = B.held.get(v);
+    if (!h) B.held.set(v, { a0: a, midi: v.midi });
+    else if (Math.abs(h.midi - v.midi) > .01) { br27Close(v, h, a); B.held.set(v, { a0: a, midi: v.midi }); }
+  }
+  for (const [v, h] of [...B.held]) if (!live.has(v)) br27Close(v, h, a);
+  const p = Math.max(0, Math.min(1, (a - B.a0) / (B.a1 - B.a0)));
+  $("br27Fill").style.width = (p * 100).toFixed(2) + "%";
+  const bar = Math.min(BL27.bars, Math.floor(Math.max(0, a - B.a0) / S) + 1), tg = `RECORDING BASS · BAR ${bar} OF ${BL27.bars}`;
+  if ($("br27Tag").textContent !== tg) $("br27Tag").textContent = tg;
+  if (a >= B.a1) br27Finish(B.a1);
+}
+// a bass note starts the moment you touch (not at the next 10 ms check); pitch changes and letting go are checked every 10 ms
+{ const sv0 = startVoice; startVoice = function () { const v = sv0.apply(this, arguments);
+    try { if (BR27.on && (BR27.state === "rec" || BR27.state === "count") && v && v.kind === "bass" && audio && T.playing) BR27.held.set(v, { a0: absNow(), midi: v.midi }); } catch (_) {}
+    return v; }; }
+// the red rim while it records, pulsing with the beat (the loop's own)
+{ const d0 = drawEdge; drawEdge = function (now) { d0.apply(this, arguments); if (BR27.on && BR27.state === "rec" && ls.rim) { const beat = T.playing ? Math.max(0, 1 - (now - flashAt) / 260) : 0; $("recRim").style.opacity = (.45 + beat * .55).toFixed(3); } }; }
+// leaving the pad any other way ends record mode
+{ const h0 = homeOpen; homeOpen = function () { br27Clean(); return h0.apply(this, arguments); };
+  const o0 = mkOpen; mkOpen = function () { br27Clean(); return o0.apply(this, arguments); }; }
+// Settings → Bass line timing
+const blSnapSync = () => $("gBlSnap").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x.dataset.v === BL27.snap));
+$("gBlSnap").addEventListener("click", e => { const b = e.target.closest("button[data-v]"); if (!b) return; BL27.snap = b.dataset.v; try { localStorage.setItem("glasspad.blsnap", BL27.snap); } catch (_) {} blSnapSync(); });
+blSnapSync();
+
+/* ----- Make your own → Bass: BASS LINE ----- */
+const BLUI = { ren: null, del: null, sure: null, sureT: 0 };
+const blSection = () => {
+  const t = mk.t, cur = t.bassLine && BL27.get(t.bassLine) ? t.bassLine : null, L = BL27.store.lines;
+  const info = l => { const u = BL27.used(l.id); return `${l.bars} bar${l.bars > 1 ? "s" : ""} · ${BL27.qTxt(l.q)} · ${u ? `in ${u} theme${u > 1 ? "s" : ""}` : "not in a theme yet"}`; };
+  let h = `<div class="lbl">BASS LINE</div><div class="mks-grid mks-mych bl27-list">
+    <button data-bl="" class="${!cur ? "on" : ""}"><b>The feel's line</b><small>What the feel's band plays</small></button>
+    ${L.map(l => `<button data-bl="${l.id}" class="${cur === l.id ? "on" : ""}"><b>${escH(l.name)}</b><small>${escH(info(l))}</small></button>`).join("")}</div>`;
+  if (cur) {
+    const l = BL27.get(cur), u = BL27.used(cur);
+    if (BLUI.ren === cur) h += `<div class="bl27-box"><input id="bl27Name" maxlength="24" autocomplete="off" spellcheck="false" value="${escH(l.name)}"><div class="mks-grid"><button data-blrenok="${cur}" class="on">Save name</button><button data-blno="1">Cancel</button></div></div>`;
+    else if (BLUI.del === cur) h += `<div class="bl27-box warn"><p>Delete “${escH(l.name)}”? It's in ${u} theme${u > 1 ? "s" : ""}. ${u > 1 ? "They go" : "It goes"} back to the feel's line.</p><div class="mks-grid"><button data-bldelok="${cur}" class="del">Delete</button><button data-blno="1">Cancel</button></div></div>`;
+    else h += `<div class="mks-grid bl27-ed"><button data-blren="${cur}">Rename</button><button data-bldel="${cur}" class="${BLUI.sure === cur ? "sure" : ""}">${BLUI.sure === cur ? "Sure? Delete" : "Delete"}</button></div>`;
+  }
+  h += `<button class="mks-newch bl27-rec" data-blrec="1"><i></i>Record a new line (on the pad)</button>`;
+  return h;
+};
+{
+  const b0 = MK_SHEETS.bass2f[1];   // keeps the Sound lab buttons (6.16) and everything else the sheet has
+  MK_SHEETS.bass2f[1] = () => { const h = b0(), sec = blSection(), k = h.indexOf('<div class="mk-fxl">'); return k >= 0 ? h.slice(0, k) + sec + h.slice(k) : h + sec; };
+}
+function blDelete(id) {
+  BL27.store.lines = BL27.store.lines.filter(l => l.id !== id); BL27.save();
+  let ch = false; for (const t of MY.list) if (t.bassLine === id) { t.bassLine = null; ch = true; } if (ch) mySave();
+  if (mk.t && mk.t.bassLine === id) mk.t.bassLine = null;
+  if (MKP.pending && MKP.pending.t.bassLine === id) MKP.pending.t.bassLine = null;
+}
+$("mksBox").addEventListener("click", e => {
+  const t = mk.t, b = e.target.closest("button"); if (!b || !t || mk.sheet !== "bass2f") return;
+  const d = b.dataset, redraw = () => { mkRedraw(); mkRender(); };
+  if (d.bl !== undefined) { t.bassLine = d.bl || null; BLUI.ren = BLUI.del = BLUI.sure = null; redraw(); if (t.feelSet !== false) mkPreviewPlay(); return; }
+  if (d.blrec) { BLUI.ren = BLUI.del = BLUI.sure = null; br27Enter(); return; }
+  if (d.blren) { BLUI.ren = d.blren; BLUI.del = BLUI.sure = null; redraw(); setTimeout(() => { const i = $("bl27Name"); if (i) { i.focus(); i.select(); } }, 30); return; }
+  if (d.blrenok) { const l = BL27.get(d.blrenok), v = (($("bl27Name") || {}).value || "").trim(); if (l && v) { l.name = v; BL27.save(); } BLUI.ren = null; redraw(); return; }
+  if (d.blno) { BLUI.ren = BLUI.del = BLUI.sure = null; redraw(); return; }
+  if (d.bldel) {
+    if (BL27.used(d.bldel)) { BLUI.del = d.bldel; redraw(); return; }
+    if (BLUI.sure === d.bldel) { blDelete(d.bldel); BLUI.sure = null; redraw(); return; }
+    BLUI.sure = d.bldel; clearTimeout(BLUI.sureT); BLUI.sureT = setTimeout(() => { BLUI.sure = null; if (mk.sheet === "bass2f") mkRedraw(); }, 4000); redraw(); return;
+  }
+  if (d.bldelok) { blDelete(d.bldelok); BLUI.del = null; redraw(); return; }
+});
+$("mksBox").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "bl27Name") { e.preventDefault(); const g = $("mksBox").querySelector("[data-blrenok]"); if (g) g.click(); } });
+// the Bass row says which line plays
+{
+  const r0 = mkRender;
+  mkRender = function () {
+    const r = r0.apply(this, arguments);
+    try { const t = mk.t, L = t && t.bassLine && BL27.get(t.bassLine), b = document.querySelector('#mkRows [data-k="bass"] .tx b'); if (L && b && !b.dataset.bl27) { b.textContent += " · " + L.name; b.dataset.bl27 = "1"; } } catch (_) {}
+    return r;
+  };
+}
+window.v627 = () => ({ lines: BL27.store.lines.length, now: BL27.now(), br: { on: BR27.on, state: BR27.state, a0: BR27.a0, a1: BR27.a1, notes: BR27.notes.length, tmp: BR27.tmp }, snap: BL27.snap, bars: BL27.bars });
+
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }
 requestAnimationFrame(() => document.documentElement.classList.add("gp-ready"));

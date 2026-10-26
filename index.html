@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.27 TEST · game mode · 26 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.28 TEST · game mode · 26 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1548,7 +1548,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.27 TEST · game mode · 26 Oct 2026</p>
+      <p class="ver">GlassPad 6.28 TEST · game mode · 26 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -7429,7 +7429,7 @@ function renderSlots() {
         c.buf = clipBuf(c); storeSamples(); renderSlots(); if (c.root != null) compareClip(c); else playClipOnce(c);
       });
       q(".cmp").addEventListener("click", () => compareClip(c));
-      const done = () => { c.buf = clipBuf(c); storeSamples(); playClipOnce(c); };
+      const done = () => { c.buf = clipBuf(c); storeSamples(); };   // 6.28: no sound after a trim (▶ plays it)
       const setStart = d => { c.nudge = Math.max(-30, Math.min(300, (c.nudge || 0) + d)); q(".sOut").textContent = ms(c.nudge); };
       const setEnd = d => { const max = Math.max(0, Math.round(((c.sb || soundBounds(c.data, c.sr)).end / c.sr) * 1000) - 150); c.trimEnd = Math.max(0, Math.min(max, (c.trimEnd || 0) + d)); q(".eOut").textContent = c.trimEnd ? "−" + c.trimEnd + " ms" : "full"; };
       holdRepeat(q(".sE"), () => setStart(-5), done); holdRepeat(q(".sL"), () => setStart(5), done);
@@ -10288,7 +10288,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.27 TEST</p>
+    <p class="hm-ver">GlassPad 6.28 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14672,7 +14672,7 @@ $("msxList").addEventListener("click", e => {
   const b = e.target.closest("[data-a]"), row = e.target.closest(".msx-row"); if (!b || !row) return;
   const i = +row.dataset.i, c = samples[i]; if (!c) return; const a = b.dataset.a;
   if (a !== "del") msx.sure = -1;
-  const redo = () => { c.sb = null; c.buf = clipBuf(c); storeSamples(); playClipOnce(c); };
+  const redo = () => { c.sb = null; c.buf = clipBuf(c); storeSamples(); };   // 6.28: no sound on each trim step (▶ plays it)
   if (a === "play") { if (!c.buf) try { c.buf = clipBuf(c); } catch (_) {} playClipOnce(c); return; }
   if (a === "tog") { const inp = $("msxName"); if (inp) msxRename(samples[msx.open] && samples[msx.open].name, inp.value.trim().slice(0, 24)); msx.open = msx.open === i ? -1 : i; msxRender(); return; }
   if (a === "tune1" || a === "tune0") { c.tune = a === "tune1" && c.root != null; c.buf = clipBuf(c); storeSamples(); playClipOnce(c); msxRender(); return; }
@@ -14758,7 +14758,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.27 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.28 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -15746,13 +15746,10 @@ function labRender() {
   const s = LAB.cur, lead = s.kind === "lead", rec = s.base.t === "rec", n = labUsedBy(s.id).length, isNew = !labGet(s.id);
   const sl = (key, label, v, fmt, o = {}) => `<div class="lb-sl${o.dim ? " dim" : ""}"><span>${label}</span><input type="range" min="${o.min ?? 0}" max="${o.max ?? 1}" step="0.01" value="${v}" data-${o.attr || "tone"}="${key}"><output>${fmt(v)}</output></div>`;
   const pct = v => Math.round(v * 100) + "%";
-  const ped = (id, name, params, ch) => { const fx = s.fx[id] || {}, on = !!fx.on;   // 5.68: ch = [key, [[value, label]…], default] for the pedal's choice
-    const seg = ch ? `<div class="seg" style="grid-template-columns:repeat(${ch[1].length},minmax(0,1fr))">${ch[1].map(([v, l]) => `<button class="${(fx[ch[0]] ?? ch[2]) === v ? "on" : ""}" data-fxc="${id}:${ch[0]}:${v}">${l}</button>`).join("")}</div>` : "";
-    return `<div class="lb-ped${on ? " on" : ""}"><button class="pt" data-fxon="${id}">${name}<span>${on ? "ON" : "OFF"}</span></button>${seg}${params.map(([k, l]) => `<label>${l}<span>${pct(fx[k] ?? 0)}</span></label><input type="range" min="0" max="1" step="0.01" value="${fx[k] ?? 0}" data-fx="${id}:${k}">`).join("")}</div>`; };
-  const peds = lead ? [["octave", "Octave", [["level", "LEVEL"]], LAB_CH.octL], ["drive", "Drive", [["amt", "GAIN"], ["tone", "TONE"]]], ["chorus", "Chorus", [["rate", "RATE"], ["depth", "DEPTH"]]],
-    ["flanger", "Flanger", [["rate", "RATE"], ["fb", "REGEN"]]], ["phaser", "Phaser", [["rate", "RATE"], ["depth", "DEPTH"]]], ["trem", "Tremolo", [["rate", "SPEED"], ["depth", "DEPTH"]], LAB_CH.trem]]
-    : s.kind === "chords" ? LAB_CH_PEDS : [["drive", "Drive", [["amt", "GAIN"], ["tone", "TONE"]]], ["chorus", "Chorus", [["rate", "RATE"], ["depth", "DEPTH"]]], ["filter", "Filter", [["cut", "CUTOFF"], ["depth", "DEPTH"], ["res", "RESONANCE"], ["speed", "SPEED"]], LAB_CH.filt],
-       ["octave", "Octave", [["level", "LEVEL"]], LAB_CH.octB], ["comp", "Squeeze", [["amt", "AMOUNT"], ["punch", "PUNCH"]]]];
+  const ped = (id, name, params, ch, ch2) => { const fx = s.fx[id] || {}, on = !!fx.on;   // 5.68: ch = [key, [[value, label]…], default] for the pedal's choice (6.28: ch2 = a second choice)
+    const segOf = c => c ? `<div class="seg" style="grid-template-columns:repeat(${Math.min(c[1].length, 3)},minmax(0,1fr))">${c[1].map(([v, l]) => `<button class="${(fx[c[0]] ?? labDef28(s, id, c[0]) ?? c[2]) === v ? "on" : ""}" data-fxc="${id}:${c[0]}:${v}">${l}</button>`).join("")}</div>` : "";
+    return `<div class="lb-ped${on ? " on" : ""}"><button class="pt" data-fxon="${id}">${name}<span>${on ? "ON" : "OFF"}</span></button>${segOf(ch)}${segOf(ch2)}${params.map(([k, l]) => { const v = fx[k] ?? labDef28(s, id, k) ?? 0; return `<label>${l}<span>${labShow28(s, id, k, v)}</span></label><input type="range" min="0" max="1" step="0.01" value="${v}" data-fx="${id}:${k}">`; }).join("")}</div>`; };
+  const peds = labPeds28(s);
   const rv = lead ? (s.fx.reverb || {}).mix ?? 0 : (s.fx.reverb || {}).send ?? 0, ev = (s.fx.echo || {}).send ?? 0;
   const ic = rec ? SV.mic : LBI.wave("var(--lc)");
   B.innerHTML = `<div class="lb-top">${back}<div><small>SOUND LAB · ${lead ? "LEAD" : "BASS"}</small><h2>${escH(s.name.toUpperCase())}</h2></div><button class="lb-chg" id="lbChg" ${labChanged() || isNew ? "" : "hidden"}>${isNew ? "NOT SAVED" : "● CHANGED"}</button></div>
@@ -15765,9 +15762,7 @@ function labRender() {
       ${sl("attack", "ATTACK", s.tone.attack ?? .2, v => TONE_FMT.attack(v))}${sl("release", "RELEASE", s.tone.release ?? .4, v => TONE_FMT.release(v))}
       ${lead ? (rec ? `<span class="lb-note">Resonance and Detune are for synths, so they're hidden for a recording.</span>` : sl("res", "RESONANCE", s.tone.res ?? .5, v => TONE_FMT.res(v)) + sl("detune", "DETUNE", s.tone.detune ?? .2, v => TONE_FMT.detune(v))) : ""}</div>
     <div class="lb-sec"><div class="lb-sh"><i>3</i><b>EFFECTS</b></div><div class="lb-peds">${peds.map(p => ped(...p)).join("")}</div>
-      <span class="lb-note">HOW MUCH GOES INTO THE ROOM</span>
-      ${sl("echo", "ECHO", ev, pct, { attr: "room" })}${sl("reverb", "REVERB", rv, pct, { attr: "room" })}
-      <span class="lb-note">The room itself (size, echo speed) comes with the feel. Space on the pad turns it up or down.</span></div>
+      <span class="lb-note">Space on the pad still turns the echo and reverb up or down.</span></div>
     ${lead ? `<div class="lb-sec"><div class="lb-sh"><i>4</i><b>PLAYING</b></div>
       <button class="lb-sw" data-sw="glide" aria-pressed="${!!s.glide}"><span>Glide<small>slides between notes when you move your finger</small></span><i></i></button>
       <button class="lb-sw" data-sw="autoVib" aria-pressed="${!!s.autoVib}"><span>Auto vibrato<small>wobble comes in when you hold a note</small></span><i></i></button>
@@ -15835,7 +15830,7 @@ $("lab").addEventListener("input", e => {
   if (r.dataset.tone) { s.tone[r.dataset.tone] = v; if (out) out.textContent = r.dataset.tone === "vib" ? TONE_FMT.vib(v) : TONE_FMT[r.dataset.tone](v); }
   else if (r.dataset.lv) { s.level = v; if (out) out.textContent = Math.round(v * 100) + "%"; }
   else if (r.dataset.room) { const k = r.dataset.room; if (k === "echo") s.fx.echo = { ...(s.fx.echo || {}), on: v > 0, send: v }; else if (s.kind === "lead") s.fx.reverb = { ...(s.fx.reverb || {}), on: v > 0, mix: v }; else s.fx.reverb = { ...(s.fx.reverb || {}), on: v > 0, send: v }; if (out) out.textContent = Math.round(v * 100) + "%"; }
-  else if (r.dataset.fx) { const [id, k] = r.dataset.fx.split(":"); s.fx[id] = { ...(s.fx[id] || {}), [k]: v }; const lab = r.previousElementSibling && r.previousElementSibling.querySelector("span"); if (lab) lab.textContent = Math.round(v * 100) + "%"; }
+  else if (r.dataset.fx) { const [id, k] = r.dataset.fx.split(":"); s.fx[id] = { ...(s.fx[id] || {}), [k]: v }; const lab = r.previousElementSibling && r.previousElementSibling.querySelector("span"); if (lab) lab.textContent = labShow28(s, id, k, v); }
   labLive(s); labSync();
 });
 // 5.68: no sound after a change (it was annoying); HOLD TO TRY is the way to hear it
@@ -16891,7 +16886,7 @@ if (!window.GPNative && /[?&]engine\b/.test(location.search) && window.AudioWork
     return r;
   };
   const DR = ["kick", "dum", "tek", "bkick", "k808", "shaker", "gsnare", "snare", "clap", "hat", "ohat", "crash", "rim"];
-  const BK = ["snd", "trimSnd", "attack", "relTc", "oct", "od", "ou", "bus", "trim", "master", "rev", "boost", "drive", "dAmt", "dTone", "comp", "cAmt", "cPunch", "filt", "fMode", "fCut", "fDepth", "fRes", "fRateHz", "pump", "beat", "cho", "chRate", "chDepth"];
+  const BK = ["snd", "trimSnd", "attack", "relTc", "oct", "od", "ou", "bus", "trim", "master", "rev", "boost", "drive", "dAmt", "dTone", "comp", "cAmt", "cPunch", "filt", "fMode", "fCut", "fDepth", "fRes", "fRateHz", "pump", "beat", "cho", "chRate", "chDepth", "echo", "eSecs", "eFb", "ownRoom", "rSize", "rTone"];
   const PK = ["bus", "trim", "master", "mono", "rev", "echo", "eSecs", "eFb", "filt", "fMode", "fCut", "fDepth", "fRes", "fRateHz", "ens", "eWidth", "eDepth", "ph", "phRate", "phDepth", "tr", "trTimed", "trHz", "trDepth", "pump", "beat"];
   window.GPNative = { web: true,
     noteOn() {}, noteOn2() {}, noteMove() {}, noteOff() {}, allOff() { send(["allOff"]); }, reset() {},
@@ -16901,8 +16896,8 @@ if (!window.GPNative && /[?&]engine\b/.test(location.search) && window.AudioWork
     bassMix(j) { const o = JSON.parse(j); send(["bassMix", BK.map(k => +o[k] || 0)]); },
     padNote(id, snd, m, len, pk, a, fq, lite, ms) { if (W.ctx) send(["padNote", id, snd, m, len, pk, a, fq, lite, frameIn(ms)]); },
     padRelease(id, tc, ms) { if (W.ctx) send(["padRelease", id, tc, frameIn(ms)]); }, pump(v, ms) { if (W.ctx) send(["pump", v, frameIn(ms)]); },
-    padMix(j) { const o = JSON.parse(j); send(["padMix", PK.map(k => +o[k] || 0)]); },
-    pad2Mix(j) { const o = JSON.parse(j); send(["pad2Mix", [...PK, "own", "eqOn", "eqLow", "eqMid", "eqFreq", "eqHigh", "eqCut"].map(k => +o[k] || 0)]); },   // 6.20
+    padMix(j) { const o = JSON.parse(j); send(["padMix", [...PK, "ownRoom", "rSize", "rTone"].map(k => +o[k] || 0)]); },
+    pad2Mix(j) { const o = JSON.parse(j); send(["pad2Mix", [...PK, "own", "eqOn", "eqLow", "eqMid", "eqFreq", "eqHigh", "eqCut", "ownRoom", "rSize", "rTone"].map(k => +o[k] || 0)]); },   // 6.20
     bandSetup(j) { send(["bandSetup", new TextEncoder().encode(j)]); }, bandStart(intro, ms) { send(["bandCmd", 0, intro, ms >= 0 && W.ctx ? frameIn(ms) : -1]); },
     bandEnd() { send(["bandCmd", 1, 0, -1]); }, bandStop() { send(["bandCmd", 2, 0, -1]); }, bandTap() { send(["bandCmd", 3, 0, -1]); },
     bandShift() { send(["bandCmd", 4, 0, -1]); }, bassTouch(d) { send(["bandCmd", 5, d, -1]); },
@@ -17255,6 +17250,7 @@ if (NATIVE.on && NATIVE.heardIn) {
         filt: n(f.on), fMode: f.mode === "env" ? 0 : f.mode === "sweep" ? 1 : 2, fCut: f.cut, fDepth: f.depth, fRes: f.res,
         fRateHz: 1 / (SWEEP_BARS[pickIdx(f.speed, SWEEP_BARS.length)][0] * bar), pump: pad.pump || 0, beat: 60 / T.bpm,
         cho: n(P.chorus.on), chRate: P.chorus.rate, chDepth: P.chorus.depth };   // 5.93 / app 0.3.11
+      try { Object.assign(m, mix28("bass", P)); } catch (_) {}   // 6.28 / app 0.3.34: its echo, its own room
       const k = JSON.stringify(m, (_, v) => typeof v === "number" ? +v.toFixed(4) : v);
       if (k !== B.mix) { B.mix = k; GPNative.bassMix(k); }
     } catch (_) {}
@@ -17315,12 +17311,13 @@ if (NATIVE.on && NATIVE.heardIn) {
     try {
       const P = PFX.pad, f = P.filter, tr = P.trem, A = audio, bar = T.meter.steps * 15 / T.bpm, n = x => x ? 1 : 0, timed = tr.sync === "time", Pd = PAD[pad.sound];
       const m = { bus: A.padBus.gain.value, trim: A.padOut.gain.value, master: masterNow(), mono: Pd && Pd.osc.some(o => o[3]) ? 0 : 1,
-        rev: A.pfx.pad.revSend.gain.value, echo: A.pfx.pad.echoSend.gain.value, eSecs: A.echoD.delayTime.value, eFb: A.echoFb.gain.value,
+        rev: A.pfx.pad.revSend.gain.value, echo: A.pfx.pad.echoSend.gain.value, eSecs: P.echo.time != null ? echoSecsOf(P.echo) : A.echoD.delayTime.value, eFb: P.echo.fb != null ? P.echo.fb * .65 : A.echoFb.gain.value,   /* 6.28: a chord sound's own echo */
         filt: n(f.on), fMode: f.mode === "env" ? 0 : f.mode === "sweep" ? 1 : 2, fCut: f.cut, fDepth: f.depth, fRes: f.res,
         fRateHz: 1 / (SWEEP_BARS[pickIdx(f.speed, SWEEP_BARS.length)][0] * bar),
         ens: n(P.ens.on), eWidth: P.ens.width, eDepth: P.ens.depth, ph: n(P.phaser.on), phRate: P.phaser.rate, phDepth: P.phaser.depth,
         tr: n(tr.on), trTimed: n(timed), trHz: timed ? 1 / (TREM_DIV[pickIdx(tr.rate, TREM_DIV.length)][0] * 60 / T.bpm) : 1 + tr.rate * 13, trDepth: tr.depth,
         pump: pad.pump || 0, beat: 60 / T.bpm };
+      try { const r28 = mix28("pad", P); m.ownRoom = r28.ownRoom; m.rSize = r28.rSize; m.rTone = r28.rTone; } catch (_) {}   // 6.28
       const k = JSON.stringify(m, (_, v) => typeof v === "number" ? +v.toFixed(4) : v);
       if (k !== C.mix) { C.mix = k; GPNative.padMix(k); }
     } catch (_) {}
@@ -21318,6 +21315,208 @@ $("mksBox").addEventListener("keydown", e => { if (e.key === "Enter" && e.target
   };
 }
 window.v627 = () => ({ lines: BL27.store.lines.length, now: BL27.now(), br: { on: BR27.on, state: BR27.state, a0: BR27.a0, a1: BR27.a1, notes: BR27.notes.length, tmp: BR27.tmp }, snap: BL27.snap, bars: BL27.bars });
+
+
+/* ---------- 6.28 (+ app 0.3.34): new pedals, sounds with their own echo and room, Drums Room + Punch ----------
+   Lead pedals: Pitch (the Octave pedal with any interval: −1 oct, −5th, +4th, +5th, +1 oct, both), Drive (Smooth / Crush),
+   Wah (Sweep / Follow playing), Tremolo (Volume / Spin), Reverb (Room / Shimmer). In the Sound lab Echo and Reverb are
+   pedals: Send, Time (free in seconds or in time), Feedback; Send, Size. A sound keeps a time / size only once you move it
+   (until then it follows the theme, as before). A sound with its own size plays in its own room in the engine (lead, bass,
+   chords); everything else shares the one room as before. The bass gets an echo in the engine (its Echo pedal was silent
+   in the app). Drums sheet: Room (reverb send) and Punch (compressor) saved in the theme. Also: Lime stays green
+   (the colour fix darkened it into the next colour), no sound on each trim step, a white outline on the Photo / Colours /
+   Feel / Chord sheets. */
+const WAH_DEF = { on: false, mode: "sweep", rate: .4, depth: .7, q: .5 };
+S.wah = S.wah || { ...WAH_DEF }; if (!S.drive.type) S.drive.type = "smooth"; if (!S.trem.type) S.trem.type = "vol"; if (!S.reverb.type) S.reverb.type = "room"; if (S.reverb.lsize === undefined) S.reverb.lsize = null;
+LEAD_FX_IDS.push("wah");
+Object.assign(LAB_CH, {
+  pitch: ["mode", [["down", "−1 OCT"], ["dn5", "−5TH"], ["up4", "+4TH"], ["up5", "+5TH"], ["up", "+1 OCT"], ["both", "BOTH"]], "down"],
+  drvT: ["type", [["smooth", "SMOOTH"], ["crush", "CRUSH"]], "smooth"],
+  wahM: ["mode", [["sweep", "SWEEP"], ["follow", "FOLLOW PLAYING"]], "sweep"],
+  tremT: ["type", [["vol", "VOLUME"], ["spin", "SPIN"]], "vol"],
+  revT: ["type", [["room", "ROOM"], ["shimmer", "SHIMMER"]], "room"],
+  esync: ["sync", [["free", "FREE"], ["time", "IN TIME"]], "free"],
+});
+function labPeds28(s) {
+  const echo = ["echo", "Echo", [["send", "SEND"], ["time", "TIME"], ["fb", "FEEDBACK"]], LAB_CH.esync];
+  if (s.kind === "lead") return [["octave", "Pitch", [["level", "LEVEL"]], LAB_CH.pitch], ["drive", "Drive", [["amt", "GAIN"], ["tone", "TONE"]], LAB_CH.drvT],
+    ["wah", "Wah", [["rate", "SPEED"], ["depth", "DEPTH"], ["q", "SHARPNESS"]], LAB_CH.wahM],
+    ["chorus", "Chorus", [["rate", "RATE"], ["depth", "DEPTH"]]], ["flanger", "Flanger", [["rate", "RATE"], ["fb", "REGEN"]]], ["phaser", "Phaser", [["rate", "RATE"], ["depth", "DEPTH"]]],
+    ["trem", "Tremolo", [["rate", "SPEED"], ["depth", "DEPTH"]], LAB_CH.tremT, LAB_CH.trem], echo, ["reverb", "Reverb", [["mix", "SEND"], ["lsize", "SIZE"]], LAB_CH.revT]];
+  const rev = ["reverb", "Reverb", [["send", "SEND"], ["size", "SIZE"]]];
+  if (s.kind === "chords") return [...LAB_CH_PEDS, echo, rev];
+  return [["drive", "Drive", [["amt", "GAIN"], ["tone", "TONE"]]], ["chorus", "Chorus", [["rate", "RATE"], ["depth", "DEPTH"]]], ["filter", "Filter", [["cut", "CUTOFF"], ["depth", "DEPTH"], ["res", "RESONANCE"], ["speed", "SPEED"]], LAB_CH.filt],
+    ["octave", "Octave", [["level", "LEVEL"]], LAB_CH.octB], ["comp", "Squeeze", [["amt", "AMOUNT"], ["punch", "PUNCH"]]], echo, rev];
+}
+// the theme's own echo / room (what a sound without its own follows): the setup from before the Sound lab opened, else now
+const base28 = (id, k) => { try { const f = LAB.prev && LAB.prev.setup && LAB.prev.setup.fx && LAB.prev.setup.fx[id]; if (f && f[k] != null) return f[k]; } catch (_) {} return S[id] && S[id][k]; };
+function labDef28(s, id, k) {
+  if (id === "echo" && (k === "time" || k === "fb" || k === "sync")) return base28("echo", k);
+  if (id === "reverb" && (k === "lsize" || k === "size")) return base28("reverb", "size");
+  if (id === "reverb" && k === "type") return "room";
+  if (id === "drive" && k === "type") return "smooth";
+  if (id === "trem" && k === "type") return "vol";
+  if (id === "wah") return WAH_DEF[k];
+  return undefined;
+}
+const echoSecsOf = e => (e.sync ?? S.echo.sync) === "time" ? Math.min(1.45, ECHO_DIV[pickIdx(e.time ?? S.echo.time, ECHO_DIV.length)][0] * 60 / T.bpm) : .08 + (e.time ?? S.echo.time) * .82;
+function labShow28(s, id, k, v) {
+  if (id === "echo" && k === "time") { const sy = (s.fx.echo || {}).sync ?? base28("echo", "sync"); return sy === "time" ? ECHO_DIV[pickIdx(v, ECHO_DIV.length)][1] : (.08 + v * .82).toFixed(2) + " s"; }
+  if (id === "wah" && k === "rate") return (.2 + v * v * 5.8).toFixed(1) + " Hz";
+  return Math.round(v * 100) + "%";
+}
+// Pitch: the Octave pedal's two voices; −5th uses the lower voice, +4th / +5th the upper one
+{
+  const o0 = octGains;
+  octGains = function (src) {
+    const s = src || (buildingSecond ? PFX.lead2.octave : S.octave), l = s.on ? s.level : 0;
+    if (s.mode === "dn5") return [l, 0]; if (s.mode === "up4" || s.mode === "up5") return [0, l * .8];
+    return o0.apply(this, arguments);
+  };
+}
+const pitchSemis28 = m => m === "dn5" ? [-7, 12] : m === "up4" ? [-12, 5] : m === "up5" ? [-12, 7] : [-12, 12];
+// the engine's lead mixer: 16 more numbers after a 1 (core.h readLead; an app before 0.3.34 ignores them)
+{
+  const m0 = leadMixArr;
+  leadMixArr = function () {
+    const a = m0.apply(this, arguments), n = x => x ? 1 : 0, W = { ...WAH_DEF, ...(S.wah || {}) }, R = S.reverb;
+    const [sd0, su0] = pitchSemis28(S.octave.mode), [sd1, su1] = pitchSemis28(PFX.lead2.octave && PFX.lead2.octave.mode);
+    return [...a, 1, sd0, su0, sd1, su1, n(S.drive.type === "crush"), n(W.on), W.mode === "follow" ? 1 : 0, W.rate, W.depth, W.q, n(S.trem.type === "spin"),
+      n(R.lsize != null), R.lsize ?? R.size, R.tone ?? .8, n(R.type === "shimmer")].map(x => +(+x).toFixed(5));
+  };
+}
+// a part's echo and room for the engine (bass: its echo is new in 0.3.34; bass / chords: their own room when the sound has a size)
+function mix28(part, P) {
+  const A = audio, e = P.echo || {}, r = P.reverb || {}, o = {};
+  if (part === "bass") {
+    o.echo = A.pfx.bass.echoSend ? A.pfx.bass.echoSend.gain.value : (e.on ? (e.send ?? 0) * .8 : 0);
+    o.eSecs = e.time != null ? echoSecsOf(e) : A.echoD.delayTime.value; o.eFb = e.fb != null ? e.fb * .65 : A.echoFb.gain.value;
+  }
+  o.ownRoom = r.size != null ? 1 : 0; o.rSize = r.size ?? S.reverb.size; o.rTone = S.reverb.tone ?? .8;
+  return o;
+}
+// a setup's lead settings that Object.assign would leave behind from the one before (FX loop in applyPreset)
+{
+  const a0 = applyPreset;
+  applyPreset = function (p) {
+    const r = a0.apply(this, arguments);
+    try {
+      const fx = (p && p.fx) || {};
+      S.wah = { ...WAH_DEF, ...(fx.wah || {}) };
+      S.drive.type = (fx.drive && fx.drive.type) || "smooth"; S.trem.type = (fx.trem && fx.trem.type) || "vol";
+      S.reverb.type = (fx.reverb && fx.reverb.type) || "room"; S.reverb.lsize = fx.reverb && fx.reverb.lsize != null ? fx.reverb.lsize : null;
+    } catch (_) {}
+    return r;
+  };
+}
+// the Sound lab: a lead sound puts its own settings on the lead (and takes back the theme's where it has none)
+{
+  const l0 = labLive;
+  labLive = function (s) {
+    const r = l0.apply(this, arguments);
+    try {
+      if (s && s.kind === "lead") {
+        const f = s.fx || {}, e = f.echo || {}, rv = f.reverb || {};
+        S.wah = { ...WAH_DEF, ...(f.wah || {}) };
+        S.drive.type = (f.drive && f.drive.type) || "smooth"; S.trem.type = (f.trem && f.trem.type) || "vol";
+        S.reverb.type = rv.type || "room"; S.reverb.lsize = rv.lsize != null ? rv.lsize : null;
+        for (const k of ["time", "fb", "sync"]) if (e[k] == null) S.echo[k] = base28("echo", k);
+        applyFx("echo");
+      }
+    } catch (_) {}
+    return r;
+  };
+  const f0 = labFill;
+  labFill = function (s) {
+    const r = f0.apply(this, arguments);
+    try { if (s.kind === "lead") { s.fx.wah = { ...WAH_DEF, ...(s.fx.wah || {}) }; } } catch (_) {}
+    return r;
+  };
+  const i0 = labIntoPreset;
+  labIntoPreset = function (p, t) {
+    const r = i0.apply(this, arguments);
+    try {
+      const a = labRef(t.lead);
+      if (a) {
+        const e = a.fx.echo || {}, rv = a.fx.reverb || {};
+        for (const k of ["time", "fb", "sync"]) if (e[k] != null) p.fx.echo[k] = e[k];
+        if (rv.lsize != null) p.fx.reverb.lsize = rv.lsize; else delete p.fx.reverb.lsize;
+        p.fx.reverb.type = rv.type || "room";
+        p.fx.wah = { ...WAH_DEF, ...(a.fx.wah || {}) };
+      }
+    } catch (_) {}
+    return r;
+  };
+}
+// A1: Lime (and any bright colour) stays itself, only a touch deeper; only white-ish colours borrow a neighbour's shade
+neonCols = function (id) {
+  const st = id && QSTYLES_SYNTH[id], c = st && st.cols;
+  if (!c) return { ...NEON_DEF };
+  const o = { lead: GC[c[0]] || NEON_DEF.lead, bass: GC[c[1]] || NEON_DEF.bass, mid: GC[c[2]] || NEON_DEF.mid };
+  const ch = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
+  const lum = h => { const v = ch(h); return .2126 * v[0] + .7152 * v[1] + .0722 * v[2]; }, sat = h => { const v = ch(h); return Math.max(...v) - Math.min(...v); };
+  const keys = ["lead", "bass", "mid"], ok = ["bass", "lead", "mid"].filter(k => lum(o[k]) < .8);
+  for (const k of keys) {
+    if (lum(o[k]) < .8) continue;
+    if (sat(o[k]) > .35) { let h = o[k]; for (let i = 1; i <= 12 && lum(h) >= .78; i++) h = neonMix(o[k], "#000000", .04 * i); o[k] = h; }
+    else o[k] = neonMix(o[ok.find(x => x !== k) || "lead"] || NEON_DEF.mid, "#000000", .3);
+  }
+  return o;
+};
+// A3: Photo, Colours, Feel and Chord sheets get a white outline with a soft glow (the Lead / Bass / Drums sheets have their colour's)
+{
+  const sh0 = mkSheet;
+  mkSheet = function (k) { try { $("mkSheet").dataset.k28 = k || ""; } catch (_) {} return sh0.apply(this, arguments); };
+}
+// B3: Drums sheet: Room (how much reverb) and Punch (the compressor), saved in the theme (t.room, t.punch; null = the feel's)
+const drDef28 = t => { const f = (QSTYLES_SYNTH[t && t.band] || {}).p, d = (f && f.pfx && f.pfx.drums) || {}; return { room: d.reverb && d.reverb.on ? d.reverb.send : 0, punch: d.comp && d.comp.on ? d.comp.amt : 0 }; };
+const drNow28 = t => { const d = drDef28(t); return { room: t.room ?? d.room, punch: t.punch ?? d.punch }; };
+const drPut28 = (pf, t) => {
+  if (!pf || !t) return; pf.drums = pf.drums || bmc(PFX_DEF.drums);
+  if (t.room != null) pf.drums.reverb = { ...(pf.drums.reverb || {}), on: t.room > .005, send: t.room };
+  if (t.punch != null) pf.drums.comp = { ...(pf.drums.comp || {}), on: t.punch > .005, amt: t.punch, punch: (pf.drums.comp && pf.drums.comp.punch) ?? .6 };
+};
+{
+  const dh = mkDrumsHTML;
+  mkDrumsHTML = function () {
+    const h = dh.apply(this, arguments);
+    try {
+      const v = drNow28(mk.t), pc = x => Math.round(x * 100) + "%";
+      const row = (k, name, val, lo, hi) => `<div class="dr28r"><div class="dr28t"><b>${name}</b><span>${pc(val)}</span></div><input type="range" min="0" max="1" step="0.01" value="${val}" data-dr28="${k}"><div class="dr28l"><span>${lo}</span><span>${hi}</span></div></div>`;
+      const box = `<div class="dr28"><div class="dr28h">KIT SOUND</div>${row("room", "Room", v.room, "none", "lots")}${row("punch", "Punch", v.punch, "natural", "squashed")}</div>`;
+      const at = h.indexOf('<div class="lbl kit-by">');
+      return at >= 0 ? h.slice(0, at) + box + h.slice(at) : h + box;
+    } catch (_) { return h; }
+  };
+  document.addEventListener("input", e => {
+    const r = e.target.closest && e.target.closest("[data-dr28]"); if (!r || !mk.t) return;
+    const k = r.dataset.dr28, v = +r.value; mk.t[k] = v;
+    const sp = r.parentNode.querySelector(".dr28t span"); if (sp) sp.textContent = Math.round(v * 100) + "%";
+    try { drPut28(PFX, mk.t); applyAllPfx(); } catch (_) {}   // heard now if the band is playing
+  }, true);
+  document.addEventListener("change", e => { if (e.target.closest && e.target.closest("[data-dr28]") && mk.t) try { mkRender(); } catch (_) {} }, true);
+  const reg0 = myRegister;
+  myRegister = function (t) {
+    const r = reg0.apply(this, arguments);
+    try { if (t && (t.room != null || t.punch != null)) for (const set of [QSTYLES_SYNTH, QSTYLES_ORIGINAL]) { const st = set[t.id]; if (st && st.p) { st.p.pfx = st.p.pfx || bmc(PFX_DEF); drPut28(st.p.pfx, t); } } } catch (_) {}
+    return r;
+  };
+  // themes registered before this block ran (at load) get the new settings too
+  try { MY.list.forEach(t => { if (t.room != null || t.punch != null || [t.lead, t.lead2, t.bass, t.chord].some(v => typeof v === "string" && v.startsWith("lab:"))) myRegister(t); }); } catch (_) {}
+  const st = document.createElement("style");
+  st.textContent = `
+  #mkSheet[data-k28="photo"] #mksBox, #mkSheet[data-k28="cols"] #mksBox, #mkSheet[data-k28="feel"] #mksBox, #mkSheet[data-k28="chord"] #mksBox { border: 1.5px solid rgba(255,255,255,.9) !important; box-shadow: 0 0 22px rgba(255,255,255,.28) !important; }
+  #mksBox .dr28 { margin: 16px 0 4px; padding: 12px 14px 6px; border: 1.5px solid color-mix(in srgb, var(--mkc, #ff3fb4) 40%, transparent); border-radius: 16px; background: color-mix(in srgb, var(--mkc, #ff3fb4) 6%, transparent); }
+  #mksBox .dr28h { font: 500 11px "IBM Plex Mono", var(--mono); letter-spacing: .14em; color: #aab0c8; margin-bottom: 6px; }
+  #mksBox .dr28r { margin-bottom: 8px; }
+  #mksBox .dr28t { display: flex; justify-content: space-between; align-items: baseline; font: 600 14px "IBM Plex Sans", var(--body); color: #fff; }
+  #mksBox .dr28t span { font: 500 12px "IBM Plex Mono", var(--mono); color: color-mix(in srgb, var(--mkc, #ff3fb4) 70%, #fff); }
+  #mksBox .dr28r input { width: 100%; margin: 8px 0 2px; accent-color: var(--mkc, #ff3fb4); }
+  #mksBox .dr28l { display: flex; justify-content: space-between; font: 400 11px "IBM Plex Mono", var(--mono); color: #8a90ab; }`;
+  document.head.appendChild(st);
+}
+window.v628 = () => ({ wah: S.wah, drive: S.drive.type, trem: S.trem.type, octave: S.octave.mode, reverb: { type: S.reverb.type, lsize: S.reverb.lsize, size: S.reverb.size }, echo: { time: S.echo.time, fb: S.echo.fb, sync: S.echo.sync },
+  bassFx: { echo: PFX.bass.echo, reverb: PFX.bass.reverb }, padFx: { echo: PFX.pad.echo, reverb: PFX.pad.reverb }, drums: { comp: PFX.drums.comp, reverb: PFX.drums.reverb }, lead16: (() => { try { return leadMixArr().slice(59); } catch (_) { return null; } })() });
 
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }

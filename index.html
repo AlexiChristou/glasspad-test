@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.28 TEST · game mode · 26 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.29 TEST · game mode · 27 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1548,7 +1548,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.28 TEST · game mode · 26 Oct 2026</p>
+      <p class="ver">GlassPad 6.29 TEST · game mode · 27 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10288,7 +10288,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.28 TEST</p>
+    <p class="hm-ver">GlassPad 6.29 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14758,7 +14758,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.28 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.29 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -20514,12 +20514,12 @@ function pad2Send(force) {
     if (PAD2.on && PAD2.own) {
       const P = pad2Fx(), f = P.filter, tr = P.trem, A = audio, bar = T.meter.steps * 15 / T.bpm, n = x => x ? 1 : 0, timed = tr.sync === "time", Pd = PAD[PAD2.sound], e = eqNorm(P.eq);
       m = { bus: A.padBus.gain.value, trim: A.padOut.gain.value, master: masterNow(), mono: Pd && Pd.osc.some(o => o[3]) ? 0 : 1,
-        rev: P.reverb.on ? P.reverb.send * 1.1 : 0, echo: P.echo.on ? P.echo.send * .8 : 0, eSecs: A.echoD.delayTime.value, eFb: A.echoFb.gain.value,
+        rev: P.reverb.on ? P.reverb.send * 1.1 : 0, echo: P.echo.on ? P.echo.send * .8 : 0, eSecs: P.echo.time != null ? echoSecsOf(P.echo) : A.echoD.delayTime.value, eFb: P.echo.fb != null ? P.echo.fb * .65 : A.echoFb.gain.value,   /* 6.29 */
         filt: n(f.on), fMode: f.mode === "env" ? 0 : f.mode === "sweep" ? 1 : 2, fCut: f.cut, fDepth: f.depth, fRes: f.res,
         fRateHz: 1 / (SWEEP_BARS[pickIdx(f.speed, SWEEP_BARS.length)][0] * bar),
         ens: n(P.ens.on), eWidth: P.ens.width, eDepth: P.ens.depth, ph: n(P.phaser.on), phRate: P.phaser.rate, phDepth: P.phaser.depth,
         tr: n(tr.on), trTimed: n(timed), trHz: timed ? 1 / (TREM_DIV[pickIdx(tr.rate, TREM_DIV.length)][0] * 60 / T.bpm) : 1 + tr.rate * 13, trDepth: tr.depth,
-        pump: pad.pump || 0, beat: 60 / T.bpm, own: 1, eqOn: n(e.on), eqLow: e.low, eqMid: e.mid, eqFreq: e.freq, eqHigh: e.high, eqCut: e.cut };
+        pump: pad.pump || 0, beat: 60 / T.bpm, own: 1, eqOn: n(e.on), eqLow: e.low, eqMid: e.mid, eqFreq: e.freq, eqHigh: e.high, eqCut: e.cut, ...mix28("pad2", P) };   // 6.29: its own room when it has a size
     }
     const k = JSON.stringify(m, (_, v) => typeof v === "number" ? +v.toFixed(4) : v);
     if (!force && k === P2M.last) return; P2M.last = k; GPNative.pad2Mix(k); P2M.sent++;
@@ -21518,6 +21518,100 @@ const drPut28 = (pf, t) => {
 window.v628 = () => ({ wah: S.wah, drive: S.drive.type, trem: S.trem.type, octave: S.octave.mode, reverb: { type: S.reverb.type, lsize: S.reverb.lsize, size: S.reverb.size }, echo: { time: S.echo.time, fb: S.echo.fb, sync: S.echo.sync },
   bassFx: { echo: PFX.bass.echo, reverb: PFX.bass.reverb }, padFx: { echo: PFX.pad.echo, reverb: PFX.pad.reverb }, drums: { comp: PFX.drums.comp, reverb: PFX.drums.reverb }, lead16: (() => { try { return leadMixArr().slice(59); } catch (_) { return null; } })() });
 
+/* ---------- 6.29 (app 0.3.35): Colours picker; Chords 2 picks a saved chord sound; own echo time / room for Chords 2 and the 2nd lead sound ----------
+   Colours sheet: every colour at full brightness; the picked one keeps its colour with a dark gap and a white ring (white too).
+   Studio, Chords 2's Sound: MY CHORD SOUNDS listed under the 9 sounds. Picking one takes a copy of its sound, level and pedals
+   (incl. Echo time and Reverb size) and switches Chords 2's own effects on. Later edits in the Sound lab don't follow (a copy).
+   Studio boards for Chords 2 and the 2nd lead sound: Echo gets Time + Feedback, Chords 2's Reverb gets Size. A knob that was
+   never moved shows (and plays) the theme's; moving it gives that part its own. The 2nd lead sound's own echo time reaches
+   the engine as 3 more lead numbers (an older app ignores them: it keeps sharing the lead's echo). */
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  #mkSheet .mks .mks-sw button { opacity: 1 !important; background: var(--c) !important; border: 0 !important; box-shadow: none !important; }
+  #mkSheet .mks .mks-sw button.on { background: var(--c) !important; border: 0 !important; box-shadow: 0 0 0 2.5px #0b0d16, 0 0 0 4.5px #fff, 0 0 14px var(--c) !important; }`;
+  document.head.appendChild(st);
+}
+// Studio boards: Echo Time / Feedback for the 2nd sound and Chords 2, Reverb Size for Chords 2
+{
+  const ECHO29 = { id: "echo", name: "Echo", p: [["send", "Send"], ["time", "Time"], ["fb", "Feedback"]] };
+  PART_FX.lead2 = PART_FX.lead2.map(f => f.id === "echo" ? ECHO29 : f);
+  PART_FX.pad2 = PART_FX.pad.map(f => f.id === "echo" ? ECHO29 : f.id === "reverb" ? { id: "reverb", name: "Reverb", p: [["send", "Send"], ["size", "Size"]] } : f);
+  const base = (id, k) => id === "echo" ? S.echo[k] : S.reverb[k];
+  const fs0 = fxShow;   // a knob never moved has no value of its own: it reads the theme's
+  fxShow = function (part, id, k, v) { if (v == null && (part === "lead2" || part === "pad2")) v = base(id, k) ?? .5; return fs0.call(this, part, id, k, v); };
+  const rb0 = renderBoard;
+  renderBoard = function () {
+    const r = rb0.apply(this, arguments);
+    try {
+      const part = fxPart; if (part !== "lead2" && part !== "pad2") return r;
+      for (const [id, k] of [["echo", "time"], ["echo", "fb"], ["reverb", "size"]]) {
+        const inp = $(`${part}-${id}-${k}`); if (!inp) continue;
+        if (fxS(part, id)[k] == null) { const v = base(id, k) ?? .5; inp.value = v; $(`${part}-${id}-${k}-out`).textContent = fxShow(part, id, k, v); }
+      }
+    } catch (_) {}
+    return r;
+  };
+  if (typeof fxPart !== "undefined" && (fxPart === "lead2" || fxPart === "pad2")) try { renderBoard(); } catch (_) {}
+}
+// the 2nd lead sound's own echo: [1, seconds, feedback] after the 6.28 numbers (0 = it shares the lead's echo)
+{
+  const m0 = leadMixArr;
+  leadMixArr = function () {
+    const a = m0.apply(this, arguments);
+    try {
+      const e = (PFX.lead2 && PFX.lead2.echo) || {}, own = e.time != null || e.fb != null, A = audio;
+      if (!own || !A) return [...a, 0, 0, 0];
+      return [...a, 1, +(e.time != null ? echoSecsOf(e) : A.echoD.delayTime.value).toFixed(5), +(e.fb != null ? e.fb * .65 : A.echoFb.gain.value).toFixed(5)];
+    } catch (_) { return [...a, 0, 0, 0]; }
+  };
+  // a saved lead sound on the 2nd finger brings its echo time / feedback (it used to keep only on / send)
+  const i0 = labIntoPreset;
+  labIntoPreset = function (p, t) {
+    const r = i0.apply(this, arguments);
+    try { const b = labRef(t.lead2); if (b && p.pfx && p.pfx.lead2 && p.pfx.lead2.echo) { const e = b.fx.echo || {}; for (const k of ["time", "fb", "sync"]) if (e[k] != null) p.pfx.lead2.echo[k] = e[k]; } } catch (_) {}
+    return r;
+  };
+}
+// Studio, Chords 2: pick one of MY CHORD SOUNDS
+{
+  PAD2_DEF.lab = null; PAD2_DEF.labLvl = 1; if (PAD2.lab === undefined) { PAD2.lab = null; PAD2.labLvl = 1; }
+  const myCh = () => { try { return LAB.store.sounds.filter(x => x.kind === "chords"); } catch (_) { return []; } };
+  const C29 = window.C29 = { picks: 0 };
+  const opts = () => {
+    const sel = $("p2Sound"); if (!sel) return;
+    let g = sel.querySelector("optgroup[data-my]"); const list = myCh();
+    if (!list.length) { if (g) g.remove(); return; }
+    if (!g) { g = document.createElement("optgroup"); g.dataset.my = "1"; g.label = "MY CHORD SOUNDS"; sel.appendChild(g); }
+    g.innerHTML = list.map(x => `<option value="lab:${x.id}">${escH(x.name)}</option>`).join("");
+  };
+  const s0 = pad2Sync;
+  pad2Sync = function () {
+    const r = s0.apply(this, arguments);
+    try {
+      opts(); const sel = $("p2Sound"), c = PAD2.lab ? labRef("lab:" + PAD2.lab) : null;
+      if (c) {
+        sel.value = "lab:" + c.id;
+        $("sum-pad2").textContent = PAD2.on ? `${c.name}${PAD2.arp !== "off" ? " · arp " + PAD2.arp : ""}${PAD2.oct ? (PAD2.oct > 0 ? " · up" : " · down") : ""}` : "Off";
+      } else sel.value = PAD2.sound;
+    } catch (_) {}
+    return r;
+  };
+  const ps0 = pad2Setup;
+  pad2Setup = window.pad2Setup = function () { const r = ps0.apply(this, arguments); if (r && r.on && PAD2.lab) r.trim *= PAD2.labLvl ?? 1; return r; };
+  $("p2Sound").addEventListener("change", e => {
+    const v = e.target.value;
+    if (!v.startsWith("lab:")) { PAD2.lab = null; PAD2.labLvl = 1; return; }   // a plain sound: the old handler takes it
+    e.stopImmediatePropagation();
+    const c = labRef(v); if (!c) return;
+    PAD2.lab = c.id; PAD2.labLvl = c.level ?? 1; if (PAD[c.base.v]) PAD2.sound = c.base.v;
+    PAD2.fx = { ...bmc(PFX_DEF.pad), ...bmc(c.fx) }; PAD2.fx.eq = eqNorm(PAD2.fx.eq); pad2Fx(); PAD2.own = true; C29.picks++;
+    pad2Sync(); try { pad2Send(true); } catch (_) {} try { if (fxPart === "pad2") renderBoard(); } catch (_) {}
+  }, true);
+  pad2Sync();
+}
+window.v629 = () => ({ ver: "6.29", pad2: { lab: PAD2.lab, labLvl: PAD2.labLvl, own: PAD2.own, sound: PAD2.sound, echo: PAD2.fx && PAD2.fx.echo, reverb: PAD2.fx && PAD2.fx.reverb },
+  lead2echo: PFX.lead2 && PFX.lead2.echo, leadTail: (() => { try { return leadMixArr().slice(-3); } catch (_) { return null; } })(), picks: C29.picks });
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }
 requestAnimationFrame(() => document.documentElement.classList.add("gp-ready"));

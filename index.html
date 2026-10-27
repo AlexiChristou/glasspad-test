@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.31 TEST · game mode · 27 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.32 TEST · game mode · 27 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1548,7 +1548,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.31 TEST · game mode · 27 Oct 2026</p>
+      <p class="ver">GlassPad 6.32 TEST · game mode · 27 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10288,7 +10288,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.31 TEST</p>
+    <p class="hm-ver">GlassPad 6.32 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14758,7 +14758,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.31 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.32 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -21979,6 +21979,187 @@ PB31.layout = k => {
   JAM.rows.forEach(x => { try { x.sync(); } catch (_) {} });
 };
 window.v631 = () => ({ ver: "6.31", cfg: PB29.cfg(), on: PB29.on(), nB: PB29.nB(), tabs: PB31.tabs, setup: (() => { try { const s2 = PB29.setup(homeBase()); if (s2.partB && s2.partB.drums) s2.partB.drums = { beat: s2.partB.drums.beat, kitKick: s2.partB.drums.kitKick, steps: s2.partB.drums.pat[1][0].length }; return s2; } catch (e) { return String(e); } })() });
+/* ---------- 6.32 (page only): new themes, names, GlassPad themes save as new, Copy whole theme ----------
+   Studio → THEMES → + New theme: Start from scratch (plain settings) or a copy of any theme (everything it has: setup,
+   Part B, intro, outro, key change, bass lines, notes). A new theme is one of "your" themes (MY.list) with its setup in
+   CRB, and opens on the theme page with its Name box ready to type in. A GlassPad (built-in) theme can be edited on the
+   theme page, but its Save is "Save as new theme": the edits go into a new theme and the GlassPad one goes back to how it
+   was when you opened it (its edits are never written to the phone's storage meanwhile). Copy whole theme (theme page)
+   = Copy as preset + the theme's name, its slots and pieces (Part B progression, beat), bass lines and key change. */
+const TH32 = window.TH32 = { snap: null, made: 0 };
+TH32.builtIn = id => HM_THEMES.includes(id);
+TH32.clone = o => o === undefined ? undefined : JSON.parse(JSON.stringify(o));
+TH32.uniq = base => { const used = new Set(creThemes().map(x => thName(x[0]).toLowerCase())); let n = base, i = 2; while (used.has(n.toLowerCase())) n = `${base} ${i++}`; return n; };
+// the GlassPad theme's edits stay off the phone's storage until saved as new
+{
+  const cs0 = crbSave;
+  crbSave = function () {
+    const sn = TH32.snap; if (!sn) return cs0.apply(this, arguments);
+    const cur = CRB[sn.id];
+    if (sn.o === undefined) delete CRB[sn.id]; else CRB[sn.id] = sn.o;
+    try { return cs0.apply(this, arguments); } finally { if (cur === undefined) delete CRB[sn.id]; else CRB[sn.id] = cur; }
+  };
+}
+TH32.restore = () => {
+  const sn = TH32.snap; if (!sn) return;
+  TH32.snap = null;
+  if (sn.o === undefined) delete CRB[sn.id]; else CRB[sn.id] = TH32.clone(sn.o);
+  if (CRT_B.on) try { crbTryB(false); } catch (_) {}
+  crbSave(); creApply();
+};
+{
+  const to0 = themeOpen;
+  themeOpen = function (id) {
+    if (TH32.snap && TH32.snap.id !== id) TH32.restore();
+    if (id && QSTYLES_SYNTH[id] && TH32.builtIn(id) && !TH32.snap) TH32.snap = { id, o: TH32.clone(CRB[id]) };
+    return to0.apply(this, arguments);
+  };
+  const tl0 = themeLeave;
+  themeLeave = function () { TH32.restore(); return tl0.apply(this, arguments); };
+  const ls0 = loadStyle;
+  loadStyle = function (st) { if (TH32.snap && st && st.id !== TH32.snap.id) TH32.restore(); return ls0.apply(this, arguments); };
+  const cs1 = creSync;
+  creSync = function () { if (!CRE.on) TH32.restore(); return cs1.apply(this, arguments); };
+  // Back to built-in: the GlassPad theme's old saves go for good
+  const bi0 = themeBuiltIn;
+  themeBuiltIn = function () { const k = CTH.id, sn = TH32.snap; const r = bi0.apply(this, arguments); if (sn && sn.id === k && !CRB[k]) { sn.o = undefined; crbSave(); } return r; };
+}
+// a new theme of yours: t = its MY entry (no id yet), o = its CRB (setup and slots)
+TH32.add = (t, o, notes) => {
+  t.id = "my" + Date.now().toString(36) + (TH32.made++ ? TH32.made : "");
+  MY.list.push(t);
+  if (!mySave()) { MY.list.pop(); return null; }
+  myRegister(t);
+  CRB[t.id] = o; crbSave(); creApply();
+  if (notes) { const a = creNotesAll(); a[t.id] = notes; try { localStorage.setItem("glasspad.creNotes", JSON.stringify(a)); } catch (_) {} }
+  return t.id;
+};
+// everything a theme has, as a new theme's CRB (setup = as it plays now when it's the open one)
+TH32.crbFrom = (src, setup) => {
+  const o = TH32.clone(CRB[src]) || {};
+  o.setup = setup ? TH32.clone(setup) : o.setup;
+  if (o.setup && o.setup.parts) o.setup.parts.auto = false;
+  if (o.lift == null && CRB_ORIG.lift[src] != null) o.lift = CRB_ORIG.lift[src];
+  const b = { ...(TH32.clone(CRB_ORIG.bass[src]) || {}), ...(o.bass || {}) };
+  if (Object.keys(b).length) o.bass = b; else delete o.bass;
+  return o;
+};
+TH32.entryFrom = (src, name) => {
+  const m = isMine(src) && MY.list.find(x => x.id === src);
+  const t = m ? TH32.clone(m) : mkFresh(QSTYLES_SYNTH[src] ? src : "tokyo");
+  delete t.id; t.name = name; t.from = src; return t;
+};
+TH32.newTheme = src => {
+  if (T.playing) setPlaying(false);
+  let id;
+  if (!src) {
+    const t = mkFresh("tokyo"); t.name = TH32.uniq("My theme"); t.from = null; t.scratch = true;
+    const setup = TH32.clone(DEFAULT_PRESET); if (setup.parts) setup.parts.auto = false;
+    id = TH32.add(t, { setup }, "");
+  } else {
+    let setup = null;
+    if (!(CRB[src] && CRB[src].setup)) { try { loadStyle(styleOf(src)); setup = capture(); } catch (e) { console.warn(e); } }
+    id = TH32.add(TH32.entryFrom(src, TH32.uniq(thName(src) + " copy")), TH32.crbFrom(src, setup), creNotesAll()[src] || "");
+  }
+  if (!id) return;
+  themeOpen(id); TH32.focusName();
+  toast(src ? `New theme: a copy of ${thName(src)}. Type its name at the top` : "New theme from scratch. Type its name at the top");
+};
+// Save on a GlassPad theme = Save as new theme
+TH32.saveAsNew = () => {
+  const k = CTH.id; if (!k) return;
+  if (CRT_B.on) return toast("Go back to section A first (Back to A), then save");
+  const o = TH32.crbFrom(k, capture());
+  const id = TH32.add(TH32.entryFrom(k, TH32.uniq(thName(k) + " copy")), o, creNotesAll()[k] || "");
+  if (!id) return;
+  try { if (SM.store[id]) delete SM.store[id]; } catch (_) {}
+  themeOpen(id); TH32.focusName();
+  toast(`Saved as a new theme. ${thName(k)} is as it was. Type the new name at the top`);
+};
+{
+  const sv0 = themeSave;
+  themeSave = function () { if (CTH.id && TH32.builtIn(CTH.id)) return TH32.saveAsNew(); return sv0.apply(this, arguments); };
+}
+TH32.rename = (id, name) => {
+  const t = MY.list.find(x => x.id === id); name = (name || "").trim().slice(0, 24); if (!t || !name) return false;
+  t.name = name; mySave();
+  for (const set of [QSTYLES_SYNTH, QSTYLES_ORIGINAL]) if (set[id]) set[id].name = name;
+  try { JAM.title && JAM.title(); } catch (_) {}
+  return true;
+};
+TH32.focusName = () => setTimeout(() => { const i = $("th32Name"); if (i) { i.scrollIntoView({ block: "center" }); i.focus(); i.select(); } }, 250);
+{
+  const st = document.createElement("style");
+  st.textContent = `
+  #th32Top { display: flex; flex-direction: column; gap: 4px; margin: 0 0 14px; }
+  #th32Top label { font: 600 11px/1.4 "Exo 2", sans-serif; letter-spacing: .16em; color: #ffcf7a; }
+  #th32Name { width: 100%; box-sizing: border-box; min-height: 44px; border-radius: 12px; background: #0006; color: #fff; border: 1.5px solid #ffcf7a99; padding: 8px 12px; font: 600 16px "IBM Plex Sans", sans-serif; }
+  #th32Top .gp { min-height: 44px; display: flex; align-items: center; border-radius: 12px; border: 1.5px solid #ffffff2a; padding: 0 12px; font: 600 16px "IBM Plex Sans", sans-serif; color: #fff; }
+  #th32Top small { font-size: 11.5px; opacity: .75; }`;
+  document.head.appendChild(st);
+}
+// the theme page: Name at the top; a GlassPad theme says Save makes a new one
+{
+  const bj0 = buildJam;
+  buildJam = function () {
+    const r = bj0.apply(this, arguments);
+    if (!CTH.id) return r;
+    try {
+      const k = CTH.id, gp = TH32.builtIn(k), body = $("spBody"), w = document.createElement("div"); w.id = "th32Top";
+      w.innerHTML = gp
+        ? `<label>NAME</label><div class="gp">${escH(thName(k))}</div><small>A GlassPad theme: change anything, then Save as new theme (top). This one stays as it is.</small>`
+        : `<label for="th32Name">NAME</label><input id="th32Name" maxlength="24" autocomplete="off" spellcheck="false" placeholder="Name this theme"><small>Your theme${(() => { const t = MY.list.find(x => x.id === k); return t && t.from && QSTYLES_SYNTH[t.from] ? " · copied from " + escH(thName(t.from)) : t && t.scratch ? " · started from scratch" : ""; })()}</small>`;
+      body.prepend(w);
+      const inp = $("th32Name");
+      if (inp) { inp.value = thName(k); const go = () => { if (!TH32.rename(k, inp.value)) inp.value = thName(k); }; inp.addEventListener("change", go); inp.addEventListener("keydown", e => { if (e.key === "Enter") inp.blur(); }); }
+      if (JAM.saveBtn && gp) JAM.saveBtn.textContent = "Save as new theme";
+      const cb = $("thCopy"); if (cb) cb.textContent = "Copy whole theme";
+      const bb = $("thBuilt"); if (bb && !gp) bb.hidden = true;   // your own theme has no built-in to go back to
+    } catch (e) { console.warn(e); }
+    return r;
+  };
+  const js0 = jamSync;
+  jamSync = function () { const r = js0.apply(this, arguments); try { if (CTH.id && SPN.part === "jam" && JAM.saveBtn && TH32.builtIn(CTH.id)) JAM.saveBtn.textContent = "Save as new theme"; } catch (_) {} return r; };
+}
+// Studio home: + New theme asks scratch or a copy
+{
+  const bh0 = buildJamHome;
+  buildJamHome = function () {
+    const r = bh0.apply(this, arguments);
+    try {
+      const old = document.querySelector("#thList .th-new"); if (!old) return r;
+      const nb = old.cloneNode(true); old.replaceWith(nb);
+      nb.addEventListener("click", e => {
+        e.stopPropagation();
+        const items = [["__scratch", "Start from scratch", "plain chords, sounds and drums"]].concat(creThemes().map(([i]) => [i, "Copy of " + thName(i), TH32.builtIn(i) ? "GlassPad theme" : "your theme"]));
+        thList("NEW THEME", items, "", v => TH32.newTheme(v === "__scratch" ? null : v));
+      });
+    } catch (e) { console.warn(e); }
+    return r;
+  };
+}
+// Copy whole theme: everything about the theme, for building it in as a preset
+{
+  const cp0 = crePreset;
+  crePreset = function () {
+    const t = cp0.apply(this, arguments), pre = "GLASSPAD PRESET ";
+    try {
+      const j = JSON.parse(t.slice(pre.length)), k = CTH.id || crbKey(), o = TH32.clone(CRB[k]) || {}, m = MY.list.find(x => x.id === k);
+      if (o.setup) o.setup = "(= setup below" + (CTH.id ? ", as it plays now)" : ", the saved one)");
+      const pieces = {};
+      try { if (o.progB && o.progB.startsWith("mp:")) pieces.progB = mpList().find(x => x.name === o.progB.slice(3)) || null; } catch (_) {}
+      try { if (o.drB && o.drB.startsWith("bt:")) pieces.drumsB = bmList("beats").find(x => (x.name || "My beat") === o.drB.slice(3)) || null; } catch (_) {}
+      j.theme = {
+        id: k, name: thName(k), glassPad: TH32.builtIn(k), from: m ? (m.from || m.band || null) : null, scratch: !!(m && m.scratch),
+        mine: m ? { ...TH32.clone(m), pic: m.pic ? "(photo)" : null } : null, cols: (QSTYLES_SYNTH[k] || {}).cols || null,
+        keyChange: GAME_LIFT[k] ?? 2, bassLines: TH32.clone(GAME_BASS_THEME[k]) || null, slots: o, pieces, notes: creNotesAll()[k] || "",
+        unsavedGlassPadEdits: !!(TH32.snap && TH32.snap.id === k),
+      };
+      return pre + JSON.stringify(j);
+    } catch (e) { console.warn(e); return t; }
+  };
+}
+window.v632 = () => ({ ver: "6.32", snap: TH32.snap && TH32.snap.id, cth: CTH.id, mine: MY.list.map(x => [x.id, x.name, x.from || null, !!x.scratch]), saved: (() => { try { return Object.keys(JSON.parse(localStorage.getItem("glasspad.creThemes") || "{}")); } catch (_) { return null; } })() });
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }
 requestAnimationFrame(() => document.documentElement.classList.add("gp-ready"));

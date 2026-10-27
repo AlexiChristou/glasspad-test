@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.34 TEST · game mode · 27 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.35 TEST · game mode · 27 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1548,7 +1548,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.34 TEST · game mode · 27 Oct 2026</p>
+      <p class="ver">GlassPad 6.35 TEST · game mode · 27 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10288,7 +10288,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.34 TEST</p>
+    <p class="hm-ver">GlassPad 6.35 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14758,7 +14758,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.34 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.35 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -22182,6 +22182,83 @@ const CH34 = window.CH34 = { plain: 0 };
     try { return pc0.apply(this, arguments); } finally { pad.rNow = r; pad.arp = a; }
   };
 }
+/* ---------- 6.35 (page only): your Sound lab sounds in Studio's sound pickers ----------
+   The theme page's (and the jam page's) Lead, 2nd sound, Bass and Chords pickers only listed Studio-saved and built-in
+   sounds. Now MY SOUND LAB SOUNDS come first: picking one = a COPY of it on the pad (sound, level, shape, pedals incl.
+   Wah / EQ / echo time / room size), kept by Save theme like any other setting; later Sound lab edits don't follow.
+   ▶ hears it over the band as the other rows do. Sounds made from a recording are listed but can't be picked here yet. */
+const LS35 = window.LS35 = { picks: 0, hears: 0 };
+LS35.kind = k => k === "pad" ? "chords" : k === "lead2" ? "lead" : k;
+LS35.data = (k, x) => {
+  const f = bmc(x.fx || {});
+  if (k === "lead") {
+    const d = jamPlain("lead", x.base.v);
+    for (const id of Object.keys(f)) d.fx[id] = { ...(d.fx[id] || {}), ...f[id] };
+    d.tone = { ...(d.tone || {}), ...(x.tone || {}) }; d.glide = !!x.glide; d.autoVib = !!x.autoVib; d.vol = x.level ?? 1;
+    return d;
+  }
+  if (k === "lead2") {
+    const l2 = {};
+    for (const id of ["octave", "drive", "chorus", "phaser", "trem"]) l2[id] = { ...(PFX_DEF.lead2[id] || {}), ...(f[id] || {}) };
+    const e = f.echo || {}; l2.echo = { on: !!e.on, send: e.send ?? .3 }; for (const q of ["time", "fb", "sync"]) if (e[q] != null) l2.echo[q] = e[q];
+    l2.reverb = { on: !!(f.reverb && f.reverb.on), send: (f.reverb || {}).mix ?? .3 };
+    return { snd2: x.base.v, vol2: x.level ?? 1, pfx: l2 };
+  }
+  if (k === "bass") return { sound: x.base.v, vol: x.level ?? .9, tone: { ...bassTone, ...(x.tone || {}) }, oct: bassOct, pfx: f, src: null };
+  const pf = { ...bmc(PFX_DEF.pad), ...f }; try { pf.eq = eqNorm(pf.eq); } catch (_) {}
+  return { sound: x.base.v, vol: LAB_CH_VOL * (x.level ?? 1), pfx: pf };
+};
+// the lead's Wah and EQ ride along with a sound put on the pad (sndPut copies only the classic pedals)
+{
+  const sp0 = sndPut;
+  sndPut = function (k, d) {
+    const r = sp0.apply(this, arguments);
+    try {
+      if (k === "lead" && d && d.fx) {
+        if (d.fx.wah) S.wah = { ...WAH_DEF, ...d.fx.wah };
+        if (d.fx.eq) { S.eq = eqNorm(d.fx.eq); try { eqSend(); } catch (_) {} }
+      }
+    } catch (_) {}
+    return r;
+  };
+}
+{
+  const so = () => spnListOpen;
+  const j0 = jamSoundList;
+  jamSoundList = function (k, title) {
+    const open0 = so();
+    spnListOpen = function (t, render) { return open0.call(this, t, ls => { render(ls); try { LS35.add(ls, k); } catch (e) { console.warn(e); } }); };
+    try { return j0.apply(this, arguments); } finally { spnListOpen = open0; }
+  };
+  const n0 = jamSndName;
+  jamSndName = function (k) {
+    try { const v = SPN.sndName[k], x = typeof v === "string" && labRef(v); if (x) return [x.name, "Sound lab"]; } catch (_) {}
+    return n0.apply(this, arguments);
+  };
+}
+LS35.add = (ls, k) => {
+  const kind = LS35.kind(k), L = LAB.store.sounds.filter(x => x.kind === kind);
+  const cur = SPN.sndName[k];
+  const it = x => { const rec = x.base.t === "rec"; return `<div class="it${cur === "lab:" + x.id ? " on" : ""}" data-lab="${x.id}"${rec ? ' style="opacity:.5"' : ""}>${rec ? "" : `<button class="pv" aria-label="Hear ${escH(x.name)}">${SV.play2}</button>`}<button class="nm"><span class="t">${escH(x.name)}</span><small>${escH(rec ? "made from a recording: pick it in Make your own" : labBaseTxt(x))}</small></button></div>`; };
+  const h = `<div class="lb">MY SOUND LAB SOUNDS</div>` + (L.length ? L.map(it).join("") : `<div class="empty">None yet. Make sounds in the Sound lab (Home › Sound lab) and they show here.</div>`);
+  const first = ls.querySelector(".lb"); if (first) first.insertAdjacentHTML("beforebegin", h); else ls.insertAdjacentHTML("beforeend", h);
+  const o = ls.onclick;
+  ls.onclick = e => {
+    const row = e.target.closest && e.target.closest("[data-lab]"); if (!row) return o && o(e);
+    const x = labGet(row.dataset.lab); if (!x) return;
+    if (x.base.t === "rec") { toast("Sounds made from a recording can't be picked here yet: use Make your own"); return; }
+    const data = LS35.data(k, x);
+    if (e.target.closest(".pv")) {
+      const keep = SPN.pv ? SPN.pv.snap : sndGrab(k); spnPvEnd(false);
+      SPN.pv = { k, snap: keep }; sndPut(k, data); spnTry(k === "lead2" ? "lead2" : k); LS35.hears++;
+      e.target.closest(".pv").classList.add("go"); SPN.pv.t = setTimeout(() => spnPvEnd(true), k === "pad" ? 2600 : 2200);
+      return;
+    }
+    spnPvEnd(false); if (k === "pad") setModule("padOn", true);
+    sndPut(k, data); SPN.sndName[k] = "lab:" + x.id; spnSndKeep(); LS35.picks++;
+    spnListClose(); jamSync();
+  };
+};
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }
 requestAnimationFrame(() => document.documentElement.classList.add("gp-ready"));

@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.29 TEST · game mode · 27 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.30 TEST · game mode · 27 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1548,7 +1548,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.29 TEST · game mode · 27 Oct 2026</p>
+      <p class="ver">GlassPad 6.30 TEST · game mode · 27 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10288,7 +10288,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.29 TEST</p>
+    <p class="hm-ver">GlassPad 6.30 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14758,7 +14758,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.29 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.30 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -17373,6 +17373,7 @@ if (NATIVE.on && typeof GPNative.bandSetup === "function") {
         info: { f: P.f[1], lp: P.f[0] === "lowpass", a: P.a, g: P.g, r: P.r, smooth: !!P.smooth }, feel: { on: { ...FEEL.on }, amt: FEEL.any ? FEEL.amt : 0 }, rhy },
       chords2: window.pad2Setup ? pad2Setup() : { on: false },
       lift: { amt: gameLiftAmt(), when: keyLift.when, fill: keyLift.fill, chargeBars: game.chargeBars, riser: !!game.riserOn, now: keyLift.now },
+      ...(window.PB29 ? PB29.setup(home) : {}),   // 6.30
       bass: { on: !!(game.bass && bass.on), key: +rootSel.value, range: bassPat.range === 2 ? 2 : 1, scale: curScale().steps, game: GAME_BASS,
         theme: [0, 1, 2].map(l => blTheme(l)) } };
   }
@@ -17382,9 +17383,9 @@ if (NATIVE.on && typeof GPNative.bandSetup === "function") {
   setInterval(() => { if (audio && (game.on || stuEng()) && NATIVE.band) sendSetup(false); }, 300);
   // the engine's events → the page's own (as the page's scheduler would have queued them), and its clock state mirrored
   const evT = ms => audio.ctx.currentTime + ms / 1000;
-  const chordOf = (k, lift) => {
+  const chordOf = (k, lift, v = 0) => {
     const OC = ownChords(); if (OC) { const e = OC[mod(k, OC.length)]; manual.lift = lift; const ch = transposeCh(e.c, lift); ch.mi = e.i; ch.sec = "Verse"; ch.part = "verse"; ch.lift = lift; return ch; }
-    const p = progDegs(), base = homeBase() + lift;
+    const p = ((v & 2) && window.PB29 && PB29.degs()) || progDegs(), base = homeBase() + lift;   // 6.30: Part B's chords
     const ch = p ? progChordAt(p[mod(k, p.length)], base) : { tones: [0, 7, 12], drone: true, base, name: noteName(base) + " drone" };
     ch.sec = "Verse"; ch.part = "verse"; ch.lift = lift; return ch;
   };
@@ -17399,10 +17400,10 @@ if (NATIVE.on && typeof GPNative.bandSetup === "function") {
         case 8: T.next = t; T.abs = 0; T.step = 0; T.bar = 0; break;
         case 0: uiQueue.push({ s: a, t, pulse: !!(b & 1), down: !!(b & 2) }); T.abs = v + 1; T.step = (a + 1) % T.meter.steps; T.bar = Math.floor(T.abs / T.meter.steps); T.next = t + dur; break;
         case 1: uiQueue.push({ t, fx: ["kick", "snare", "hat"][a], down: !!b, vel: v }); break;
-        case 2: { const ch = chordOf(a, b); pad.cur = ch; if (v) uiQueue.push(ch.mi !== undefined ? { t, chord: ch, mi: ch.mi } : { t, chord: ch }); break; }
+        case 2: { const ch = chordOf(a, b, v); pad.cur = ch; if (v & 1) uiQueue.push(ch.mi !== undefined ? { t, chord: ch, mi: ch.mi } : { t, chord: ch }); break; }
         case 3: game.band = a; game.bandPend = null; uiQueue.push({ t, gameUI: true }); break;
         case 4: { let best = -1, bd = 99; bassLanes.forEach((l, i) => { if (Math.abs(mod12(l.midi) - mod12(v)) < .01) { const d = Math.abs(l.midi - v); if (d < bd) { bd = d; best = i; } } }); if (best >= 0) uiQueue.push({ t, gameBass: best }); break; }
-        case 5: uiQueue.push({ t, part: { part: "verse", pos: 0, t0: t, secs: passBars() * passesPerPart() * T.meter.steps * dur, lift: a } }); break;
+        case 5: uiQueue.push({ t, part: { part: "verse", pos: 0, t0: t, secs: passBars() * passesPerPart() * T.meter.steps * dur, lift: a } }); try { if (window.PB29) PB29.part(b, t); } catch (_) {} break;
         case 6: if (a === 1) { keyLift.target = b; keyLift.pend = { from: audAbs(), land: v }; } else if (a === 0) { keyLift.target = b; keyLift.pend = null; } break;
         case 9: if (NB.ownStops > 0) { NB.ownStops--; break; }   // 6.08: the echo of the page's own Stop
                 if (T.playing) { NB.quiet = true; T.noFlush = true; try { setPlaying(false); } finally { T.noFlush = false; NB.quiet = false; } } break;
@@ -17436,7 +17437,7 @@ if (NATIVE.on && typeof GPNative.bandSetup === "function") {
     if (!engineBand()) return bi0.apply(this, arguments);
     ensureAudio(); sendSetup(true);
     GPNative.bandStart(1, -1); NB.intro = true;
-    setPlaying(true, audio.ctx.currentTime + .06 + 8 * stepDur());   // the engine says when its bar 1 is (event 8)
+    setPlaying(true, audio.ctx.currentTime + .06 + (window.PB29 ? PB29.lead() : 8) * stepDur());   // 6.30   // the engine says when its bar 1 is (event 8)
   };
   const be0 = bandEnding;
   bandEnding = function () {
@@ -18611,13 +18612,14 @@ function thList(title, items, cur, pick) {
         }),
       });
       const progs = () => [...$("prog").options].filter(o => !o.hidden && o.value !== "mine").map(o => [o.value, o.textContent]);
-      const sb = jamRow(s, "Section B", {
-        val: () => { const b = (CRB[k] || {}).progB, o = b && progs().find(x => x[0] === b); return [o ? o[1] : "None", CRT_B.on ? "playing B now" : b ? "Try B plays it now" : "chords for a later SHIFT"]; },
-        pick: () => thList("SECTION B CHORDS", [["", "None"]].concat(progs()), (CRB[k] || {}).progB || "", v => { if (CRT_B.on) crbTryB(false); const o = crbOf(k); if (v) o.progB = v; else delete o.progB; crbSave(); }),
+      const sb = jamRow(s, "Part B", {
+        val: () => { const b = (CRB[k] || {}).progB, o = b && progs().find(x => x[0] === b); return [o ? o[1] : "None", CRT_B.on ? "playing B now" : b ? ((CRB[k] || {}).shiftB ? "SHIFT goes here · Try B plays it now" : "Try B plays it now") : "the chords SHIFT can go to"]; },
+        pick: () => thList("PART B CHORDS", [["", "None"]].concat(progs()), (CRB[k] || {}).progB || "", v => { if (CRT_B.on) crbTryB(false); const o = crbOf(k); if (v) o.progB = v; else delete o.progB; crbSave(); }),
         edit: () => { crbTryB(!CRT_B.on); jamSync(); },
       });
       const sy = sb.sync; sb.sync = () => { sy(); const e = sb.querySelector(".ed"); if (e) e.textContent = CRT_B.on ? "Back to A" : "Try B"; };
       sb.sync();
+      try { if (window.PB29) PB29.rows(s, k); } catch (e) { console.warn(e); }   // 6.30
       const nr = document.createElement("div"); nr.className = "jam-row";
       nr.innerHTML = `<span class="l">Notes</span><textarea id="thNotes" placeholder="Ideas for this theme: intro, ending, bass…"></textarea>`;
       s.appendChild(nr);
@@ -21612,6 +21614,91 @@ window.v628 = () => ({ wah: S.wah, drive: S.drive.type, trem: S.trem.type, octav
 }
 window.v629 = () => ({ ver: "6.29", pad2: { lab: PAD2.lab, labLvl: PAD2.labLvl, own: PAD2.own, sound: PAD2.sound, echo: PAD2.fx && PAD2.fx.echo, reverb: PAD2.fx && PAD2.fx.reverb },
   lead2echo: PFX.lead2 && PFX.lead2.echo, leadTail: (() => { try { return leadMixArr().slice(-3); } catch (_) { return null; } })(), picks: C29.picks });
+/* ---------- 6.30 (app 0.3.36): Part B, intros and outros (build 1 of the "pieces and parts" plan) ----------
+   Per theme, on the theme page (Creator mode: Studio → THEMES → the theme, THEME section): SHIFT goes to a new key (as before) or to
+   Part B (the Part B chords: B, and back to A when you tap again; the key stays). Intro: Drum fill (as before) · Straight in
+   · Count-in · Drums first · Chords fade in. Outro: Hit and ring (as before) · Fill, then hit · Hold the home chord · Sudden
+   stop · Fade out. Saved in glasspad.creThemes with the theme (CRB: shiftB, intro, outro) and in Copy as preset. The engine
+   plays them (band.h 0.3.36); the Web sound plays the theme as before. A theme with nothing set sends nothing new.
+   Part B needs chords that change every N bars (not your own lengths) and keeps A's chord length. */
+const PB_INTROS = [["fill", "Drum fill (as now)", 8], ["straight", "Straight in", 0], ["count", "Count-in (4 clicks)", 16], ["drums", "Drums first (1 bar)", 0], ["swell", "Chords fade in (1 bar)", 0]];
+const PB_OUTROS = [["hit", "Hit and ring (as now)"], ["fillhit", "Fill, then hit"], ["hold", "Hold the home chord"], ["stop", "Sudden stop"], ["fade", "Fade out (2 bars)"]];
+const PB29 = window.PB29 = { sec: 0, lands: 0 };
+PB29.cfg = () => { try { return CRE.on ? (CRB[CTH.id || crbKey()] || {}) : {}; } catch (_) { return {}; } };
+PB29.degs = () => { const o = PB29.cfg(), P = o.progB && PROGS[o.progB]; return P && P[1] && P[1].length ? P[1] : null; };
+PB29.on = () => { try { return PB29.cfg().shiftB === true && !!PB29.degs() && !ownChords(); } catch (_) { return false; } };
+PB29.lead = () => { const x = PB_INTROS.find(i => i[0] === (PB29.cfg().intro || "fill")); return x ? x[2] : 8; };
+PB29.setup = home => {
+  const o = PB29.cfg(), r = {};
+  if (o.intro && o.intro !== "fill") r.intro = o.intro;
+  if (o.outro && o.outro !== "hit") r.outro = o.outro;
+  const d = PB29.degs();
+  if (o.shiftB && d) r.partB = { on: true, prog: d.map(it => { const c = progChordAt(it, home); return { tones: c.tones, base: c.base, ...(c.rootRel != null ? { rootRel: c.rootRel } : {}) }; }) };
+  return r;
+};
+// the part the engine says is playing (event 5): the pad's landing flash when it changes
+PB29.part = (sec, t) => {
+  const was = PB29.sec; PB29.sec = sec ? 1 : 0;
+  if (PB29.sec !== was && T.playing) { PB29.lands++; setTimeout(() => { try { if (game.on) gameLanded(); } catch (_) {} }, Math.max(0, (t - audio.ctx.currentTime) * 1000)); }
+};
+// SHIFT on a Part B theme: the engine goes to B (or back); the key stays
+document.addEventListener("click", e => {
+  const g = e.target.closest && e.target.closest("#gShift"); if (!g || !PB29.on()) return;
+  if (!audio || !window.NATBAND || !(NATBAND.running || (window.engineBandOk && engineBandOk()))) return;
+  e.stopPropagation(); e.preventDefault();
+  game.liftUsed = true; g.classList.remove("nudge");
+  if (game.local) return;
+  if (!T.playing) { game.dir = PB29.sec ? -1 : 1; GPNative.bandShift(); game.local = { t0: performance.now(), t1: performance.now() + 1400, target: keyLift.now, sec: PB29.sec ? 0 : 1 }; return; }
+  if (!keyLift.pend) game.dir = PB29.sec ? -1 : 1;
+  GPNative.bandShift();
+}, true);
+{
+  const gl0 = gameLocalLand;
+  gameLocalLand = function () { const s = game.local && game.local.sec; const r = gl0.apply(this, arguments); if (s != null) PB29.sec = s; return r; };
+  const sp0 = setPlaying;
+  setPlaying = function (on) { if (!on) PB29.sec = 0; return sp0.apply(this, arguments); };   // Stop: the engine starts again from A
+  // the button: ▲ goes to B, ▼ back to A; lit while B plays (as a shifted key)
+  const gf0 = gameFx;
+  gameFx = function () {
+    const r = gf0.apply(this, arguments);
+    try {
+      if (!PB29.on() || !game.on) return r;
+      const b = $("gShift"), pend = !!((keyLift.pend && T.playing) || game.local), d = pend ? game.dir : (PB29.sec ? -1 : 1);
+      const armed = b.classList.contains("armed"), charging = (b.style.getPropertyValue("--lf") || "0%") !== "0%";
+      const txt = armed ? `READY ${d > 0 ? "▲" : "▼"}` : charging ? (d > 0 ? "▲ ▲ ▲" : "▼ ▼ ▼") : `SHIFT ${d > 0 ? "▲" : "▼"}`;
+      if (txt !== game.txt) { game.txt = txt; b.querySelector("span").innerHTML = txt.replace(/([▲▼])/g, m => `<b class="sar${m === "▼" ? " dn" : ""}">${m}</b>`); }
+      b.classList.toggle("down", d < 0); b.classList.toggle("away", PB29.sec === 1 && !pend);
+    } catch (_) {}
+    return r;
+  };
+}
+// the theme page's rows (after Part B): SHIFT goes to · Intro · Outro
+PB29.rows = (sec, k) => {
+  const o = () => CRB[k] || {}, nm = (list, v) => (list.find(x => x[0] === v) || list[0])[1];
+  const own = () => { try { return !!ownChords(); } catch (_) { return false; } };
+  jamRow(sec, "SHIFT goes to", {
+    val: () => [o().shiftB ? "Part B" : "A new key", o().shiftB ? (!o().progB ? "pick the Part B chords first" : own() ? "needs chords that change every few bars" : "and back: you decide when") : "as now"],
+    pick: () => thList("SHIFT GOES TO", [["key", "A new key", "as now"], ["b", "Part B", "the Part B chords, and back to A on the next tap"]], o().shiftB ? "b" : "key", v => { const c = crbOf(k); if (v === "b") c.shiftB = true; else delete c.shiftB; crbSave(); }),
+  });
+  jamRow(sec, "Intro", {
+    val: () => [nm(PB_INTROS, o().intro || "fill"), "when you press Play"],
+    pick: () => thList("INTRO", PB_INTROS.map(([v, n]) => [v, n]), o().intro || "fill", v => { const c = crbOf(k); if (v === "fill") delete c.intro; else c.intro = v; crbSave(); }),
+  });
+  jamRow(sec, "Outro", {
+    val: () => [nm(PB_OUTROS, o().outro || "hit"), "when you press Stop"],
+    pick: () => thList("OUTRO", PB_OUTROS.map(([v, n]) => [v, n]), o().outro || "hit", v => { const c = crbOf(k); if (v === "hit") delete c.outro; else c.outro = v; crbSave(); }),
+  });
+  const n = document.createElement("div"); n.className = "th-hint spn-note"; n.textContent = "Part B, Intro and Outro play in the app (the Web sound plays the theme as before).";
+  sec.appendChild(n);
+};
+{
+  const cp0 = crePreset;
+  crePreset = function () {
+    const t = cp0.apply(this, arguments), pre = "GLASSPAD PRESET ";
+    try { const j = JSON.parse(t.slice(pre.length)), o = CRB[crbKey()] || {}; j.parts = { shiftTo: o.shiftB ? "B" : "key", intro: o.intro || "fill", outro: o.outro || "hit" }; return pre + JSON.stringify(j); } catch (_) { return t; }
+  };
+}
+window.v630 = () => ({ ver: "6.30", cfg: PB29.cfg(), on: PB29.on(), sec: PB29.sec, lands: PB29.lands, setup: (() => { try { return PB29.setup(homeBase()); } catch (e) { return String(e); } })() });
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }
 requestAnimationFrame(() => document.documentElement.classList.add("gp-ready"));

@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.35 TEST · game mode · 27 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.36 TEST · game mode · 27 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1548,7 +1548,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.35 TEST · game mode · 27 Oct 2026</p>
+      <p class="ver">GlassPad 6.36 TEST · game mode · 27 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10288,7 +10288,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.35 TEST</p>
+    <p class="hm-ver">GlassPad 6.36 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14758,7 +14758,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.35 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.36 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -15729,7 +15729,7 @@ function labRender() {
   const B = $("lbBody"), back = `<button class="hm-x" id="lbBack" aria-label="Back">${SV.back}</button>`;
   $("lbDock").hidden = LAB.view !== "sound";
   if (LAB.view === "home") {
-    const used = s => { const n = labUsedBy(s.id).length; return n ? `in ${n} theme${n > 1 ? "s" : ""}` : "not used yet"; };
+    const used = s => window.LS36 ? window.LS36.usedTxt(s) : "";
     const list = kind => { const ss = LAB.store.sounds.filter(s => s.kind === kind), col = labColour(kind);
       return (ss.length ? ss.map(s => `<div class="lb-row" style="--rc:${col}"><button class="pl" data-hear="${s.id}" aria-label="Hear ${escH(s.name)}">${SV.play}</button>
         <button class="tx" data-edit="${s.id}"><b>${escH(s.name)}</b><small>${escH(labBaseTxt(s))} · ${used(s)}</small></button><span class="cv">${CHEV}</span></div>`).join("") : "")
@@ -15754,7 +15754,7 @@ function labRender() {
   const ic = rec ? SV.mic : LBI.wave("var(--lc)");
   B.innerHTML = `<div class="lb-top">${back}<div><small>SOUND LAB · ${lead ? "LEAD" : "BASS"}</small><h2>${escH(s.name.toUpperCase())}</h2></div><button class="lb-chg" id="lbChg" ${labChanged() || isNew ? "" : "hidden"}>${isNew ? "NOT SAVED" : "● CHANGED"}</button></div>
     <input class="lb-name" id="lbName" maxlength="24" value="${escH(s.name)}" aria-label="Name" autocomplete="off" spellcheck="false">
-    <span class="lb-note">${n ? `Used in ${n} theme${n > 1 ? "s" : ""}: ${labUsedBy(s.id).map(t => escH(t.name)).join(", ")}` : isNew ? "New sound" : "Not used in a theme yet"}</span>
+    <span class="lb-note">${window.LS36 ? window.LS36.noteTxt(s, n, isNew) : ""}</span>
     <div class="lb-sec"><div class="lb-sh"><i>1</i><b>SOUND</b></div><span class="lb-note">STARTS FROM</span>
       <button class="lb-from" id="lbFrom"><span>${ic}</span><span><small>${rec ? "RECORDING" : "SYNTH"}</small><b>${escH(rec ? s.base.v : synthName(s.kind, s.base.v))}</b></span><em>Change</em></button>
       ${sl("level", "LEVEL", s.level, pct, { max: 1.5, attr: "lv" })}</div>
@@ -16310,7 +16310,7 @@ labRender = function () {
   }
   $("lbDock").hidden = true; B.classList.add("lbh");
   const k = LAB_T.tab, col = labColour(k), all = LAB.store.sounds, ss = all.filter(s => s.kind === k), cnt = kind => all.filter(s => s.kind === kind).length;
-  const used = s => { const n = labUsedBy(s.id).length; return n ? `in ${n} theme${n > 1 ? "s" : ""}` : "not used yet"; };
+  const used = s => window.LS36 ? window.LS36.usedTxt(s) : "";
   const row = s => `<div class="lb-row" style="--rc:${col}"><button class="pl" data-hear="${s.id}" aria-label="Hear ${escH(s.name)}">${SV.play}</button>
     <button class="tx" data-edit="${s.id}"><b>${escH(s.name)}</b><small>${escH(labBaseTxt(s))} · ${used(s)}</small></button>${labWave(s, col)}<span class="cv">${CHEV}</span></div>`;
   B.innerHTML = `<div class="lb-top"><button class="hm-x" id="lbBack" aria-label="Back">${SV.back}</button><div><h2>SOUND LAB</h2></div></div>
@@ -22259,6 +22259,189 @@ LS35.add = (ls, k) => {
     spnListClose(); jamSync();
   };
 };
+/* ---------- 6.36 (page only): saved things load again; your sounds and bass lines everywhere ----------
+   1. Saved setups load again. makePreset() threw on a saved setup with the EQ pedal (6.15) or the Wah (6.28): DEFAULT_PRESET
+      has no such pedals. So since 6.15 Your jams didn't open, saved loops didn't load, carry-on lost the sounds, and Studio's
+      Save theme / new themes played their original settings. Now the missing pedals are added for the call.
+   2. Studio's Lead / Bass / Chords pages: the Saved picker lists MY SOUND LAB SOUNDS too (as the theme page does since 6.35).
+   3. Sounds saved in Studio (Save this sound) are copied into the Sound lab (once each, marked "From Studio"), so the Sound
+      lab and Make your own list them. Later Studio changes don't follow the copy. Studio lists don't show these copies twice.
+   4. Theme page, Part A: Bass line = the theme's own or one of My bass lines (made in Make your own › Bass). Your themes keep
+      it in the theme (as Make your own does); a GlassPad theme keeps it with its Studio save (Creator mode).
+   5. The Sound lab says which themes a sound was copied into from the theme page ("copied into …").
+   Also: working out Part B's drums no longer saves Part A with B's drums as "where you left off" (harmless until 1.). */
+const LS36 = window.LS36 = { imported: 0, skipped: 0 };
+{
+  const m0 = makePreset;
+  makePreset = function (over) {
+    const D = DEFAULT_PRESET.fx, add = [];
+    try { for (const id of Object.keys((over && over.fx) || {})) if (!D[id]) { D[id] = {}; add.push(id); } return m0.apply(this, arguments); }
+    finally { for (const id of add) delete D[id]; }
+  };
+}
+// working out Part B's drums swaps Part A's style for a moment: nothing is saved as "where you left off" meanwhile
+// (that save used to be harmless because it never loaded back; with 1. it would bring Part B's drums back as Part A's)
+{
+  const d0 = PB31.drums; let busy = false;
+  PB31.drums = function () { busy = true; try { return d0.apply(this, arguments); } finally { busy = false; } };
+  const sl0 = saveLast; saveLast = function () { if (busy) return; return sl0.apply(this, arguments); };
+}
+// ----- 3. Studio-saved sounds → the Sound lab -----
+LS36.recName = src => { if (!src || src.t === "set") return null; const c = samples.find(y => y.id === src.id); return c ? c.name : null; };
+LS36.fromStudio = (k, x) => {
+  const d = x.data || {}, kind = k === "pad" ? "chords" : k === "lead2" ? "lead" : k, s = labNew(kind);
+  s.id = "s" + Date.now().toString(36) + (LS36.imported++); s.studio = k + ":" + x.name;
+  const taken = new Set(LAB.store.sounds.filter(y => y.kind === kind).map(y => y.name));
+  s.name = taken.has(x.name) ? x.name + " (Studio)" : x.name;
+  const base = (v, src) => { if (v === "sampler") { const n = LS36.recName(src); return n ? { t: "rec", v: n } : null; } return v ? { t: "synth", v } : null; };
+  if (k === "lead") {
+    const b = base(d.wave, d.src); if (!b) return null; s.base = b;
+    const fx = bmc(d.fx || {}); if (fx.echo) fx.echo = { on: !!fx.echo.on, send: fx.echo.send ?? .3 };
+    if (fx.reverb) fx.reverb = { on: !!fx.reverb.on, mix: fx.reverb.mix ?? .3, ...(fx.reverb.type ? { type: fx.reverb.type } : {}), ...(fx.reverb.lsize != null ? { lsize: fx.reverb.lsize } : {}) };
+    s.fx = { ...s.fx, ...fx }; s.tone = { ...s.tone, ...(d.tone || {}) }; s.glide = !!d.glide; s.autoVib = !!d.autoVib; s.level = d.vol ?? 1;
+  } else if (k === "lead2") {
+    if (!d.snd2 || d.snd2 === "off" || d.snd2 === "sampler") return null;
+    s.base = { t: "synth", v: d.snd2 }; s.level = d.vol2 ?? 1; const p = d.pfx || {};
+    for (const id of ["octave", "drive", "chorus", "phaser", "trem"]) if (p[id]) s.fx[id] = { ...(s.fx[id] || {}), ...bmc(p[id]) };
+    if (p.echo) s.fx.echo = { on: !!p.echo.on, send: p.echo.send ?? .3 }; if (p.reverb) s.fx.reverb = { on: !!p.reverb.on, mix: p.reverb.send ?? .3 };
+  } else if (k === "bass") {
+    const b = base(d.sound, d.src); if (!b) return null; s.base = b;
+    s.level = d.vol ?? .9; s.tone = { ...s.tone, ...(d.tone || {}) }; if (d.pfx) s.fx = bmc(d.pfx);
+  } else {
+    if (!d.sound || !PAD[d.sound]) return null;
+    s.base = { t: "synth", v: d.sound }; s.level = Math.round(Math.min(2, (d.vol ?? LAB_CH_VOL) / LAB_CH_VOL) * 100) / 100; if (d.pfx) s.fx = bmc(d.pfx);
+  }
+  try { labFill(s); } catch (_) {}
+  return s;
+};
+LS36.sync = () => {
+  let n = 0;
+  try {
+    for (const k of ["lead", "lead2", "bass", "pad"]) for (const x of sndList(k)) {
+      const key = k + ":" + x.name; if (LAB.store.sounds.some(y => y.studio === key)) continue;
+      const s = LS36.fromStudio(k, x); if (!s) { if (!LAB.store.sounds.some(y => y.studioSkip === key)) LS36.skipped++; continue; }
+      LAB.store.sounds.push(s); n++;
+    }
+    if (n) labSave();
+  } catch (e) { console.warn(e); }
+  return n;
+};
+{
+  const lo0 = labOpen; labOpen = function () { LS36.sync(); return lo0.apply(this, arguments); };
+  const po0 = pickOpen; pickOpen = function () { LS36.sync(); return po0.apply(this, arguments); };
+  const ms0 = mkSheet; mkSheet = function () { LS36.sync(); return ms0.apply(this, arguments); };
+  const mo0 = mkOpen; mkOpen = function () { LS36.sync(); return mo0.apply(this, arguments); };
+  setTimeout(() => LS36.sync(), 0);
+  const lb0 = labBaseTxt;
+  window.labBaseTxt36 = s => lb0(s) + (s && s.studio ? " · from Studio" : "");
+}
+// ----- 2 + 5. the lab-sound list section, for the theme page and the part pages; copies remembered per theme -----
+LS35.add = (ls, k, done) => {
+  const kind = LS35.kind(k), L = LAB.store.sounds.filter(x => x.kind === kind && !(x.studio && x.studio.startsWith(k + ":")));
+  const cur = SPN.sndName[k];
+  const it = x => { const rec = x.base.t === "rec"; return `<div class="it${cur === "lab:" + x.id ? " on" : ""}" data-lab="${x.id}"${rec ? ' style="opacity:.5"' : ""}>${rec ? "" : `<button class="pv" aria-label="Hear ${escH(x.name)}">${SV.play2}</button>`}<button class="nm"><span class="t">${escH(x.name)}</span><small>${escH(rec ? "made from a recording: pick it in Make your own" : labBaseTxt(x) + (x.studio ? " · from Studio" : ""))}</small></button></div>`; };
+  const h = `<div class="lb">MY SOUND LAB SOUNDS</div>` + (L.length ? L.map(it).join("") : `<div class="empty">None yet. Make sounds in the Sound lab (Home › Sound lab) and they show here.</div>`);
+  const first = ls.querySelector(".lb"); if (first) first.insertAdjacentHTML("beforebegin", h); else ls.insertAdjacentHTML("beforeend", h);
+  const o = ls.onclick;
+  ls.onclick = e => {
+    const row = e.target.closest && e.target.closest("[data-lab]");
+    if (!row) { const r = o && o(e); LS36.mark(k); return r; }
+    const x = labGet(row.dataset.lab); if (!x) return;
+    if (x.base.t === "rec") { toast("Sounds made from a recording can't be picked here yet: use Make your own"); return; }
+    const data = LS35.data(k, x);
+    if (e.target.closest(".pv")) {
+      const keep = SPN.pv ? SPN.pv.snap : sndGrab(k); spnPvEnd(false);
+      SPN.pv = { k, snap: keep }; sndPut(k, data); spnTry(k === "lead2" ? "lead2" : k); LS35.hears++;
+      e.target.closest(".pv").classList.add("go"); SPN.pv.t = setTimeout(() => spnPvEnd(true), k === "pad" ? 2600 : 2200);
+      return;
+    }
+    spnPvEnd(false); if (k === "pad") setModule("padOn", true);
+    sndPut(k, data); SPN.sndName[k] = "lab:" + x.id; spnSndKeep(); LS35.picks++; LS36.mark(k);
+    spnListClose(); if (done) done(); else jamSync();
+  };
+};
+// the theme open on the theme page remembers which lab sound each part was copied from
+LS36.mark = k => {
+  try {
+    const id = CTH.id; if (!id) return;
+    const v = SPN.sndName[k], x = typeof v === "string" && labRef(v), c = crbOf(id);
+    c.labs = c.labs || {}; if (x) c.labs[k] = x.id; else delete c.labs[k];
+    if (!Object.keys(c.labs).length) delete c.labs; crbSave();
+  } catch (_) {}
+};
+LS36.copied = sid => { const out = []; try { for (const [k, o] of Object.entries(CRB)) if (o && o.labs && Object.values(o.labs).includes(sid) && !(TH32.snap && TH32.snap.id === k) && QSTYLES_SYNTH[k]) out.push(thName(k)); } catch (_) {} return out; };
+LS36.usedTxt = s => {
+  const n = labUsedBy(s.id).length, c = LS36.copied(s.id).length;
+  const a = n ? `in ${n} theme${n > 1 ? "s" : ""}` : "", b = c ? `copied into ${c}` : "";
+  return [a, b].filter(Boolean).join(" · ") || "not used yet";
+};
+LS36.noteTxt = (s, n, isNew) => {
+  const c = LS36.copied(s.id);
+  const a = n ? `Used in ${n} theme${n > 1 ? "s" : ""}: ${labUsedBy(s.id).map(t => escH(t.name)).join(", ")}` : "";
+  const b = c.length ? `Copied into ${c.map(escH).join(", ")} (changes here don't reach those)` : "";
+  return [a, b].filter(Boolean).join(" · ") || (isNew ? "New sound" : "Not used in a theme yet") + (s.studio ? " · from Studio (a copy)" : "");
+};
+// 2. the part pages' Saved picker
+{
+  const sl0 = spnSndList;
+  spnSndList = function (k, ls) {
+    const r = sl0.apply(this, arguments);
+    try { LS35.add(ls, k, () => { spnSndSync(); try { spnFill(); } catch (_) {} jamSync(); }); } catch (e) { console.warn(e); }
+    return r;
+  };
+  const ss0 = spnSndSync;
+  spnSndSync = function () {
+    const r = ss0.apply(this, arguments);
+    try { const R = SPN.sndRow; if (R && R.g.isConnected) { const x = labRef(SPN.sndName[R.k]); if (x) { R.g.querySelector(".spn-pick span").textContent = x.name; R.g.querySelector(".spn-pick small").textContent = "SOUND LAB"; } } } catch (_) {}
+    return r;
+  };
+}
+// ----- 4. My bass lines on the theme page -----
+LS36.blOf = k => { const t = isMine(k) && MY.list.find(x => x.id === k); return (t && t.bassLine) || (CRB[k] || {}).bassLine || null; };
+{
+  const n0 = BL27.now;
+  BL27.now = () => {
+    const r = n0(); if (r) return r;
+    try { if (!CRE.on || BR27.on) return null; const k = gameKey(), id = (CRB[k] || {}).bassLine, L = id && BL27.get(id); return L && L.n.length ? BL27.eng(L) : null; } catch (_) { return null; }
+  };
+  const bj0 = buildJam;
+  buildJam = function () {
+    const r = bj0.apply(this, arguments);
+    if (!CTH.id) return r;
+    try {
+      const k = CTH.id, sA = [...$("spBody").querySelectorAll(":scope > .spn-sec")].find(x => (x.querySelector(".spn-h b") || {}).textContent === "PART A");
+      if (!sA) return r;
+      const after = [...sA.querySelectorAll(":scope > .jam-row")].find(x => (x.querySelector(".l") || {}).textContent === "Bass plays");
+      const row = jamRow(sA, "Bass line", {
+        val: () => { const L = BL27.get(LS36.blOf(k)); return L ? [L.name, "yours · at every BAND level"] : ["The theme's own", "the Bass Low / Normal / High rows"]; },
+        pick: () => {
+          const lines = BL27.store.lines;
+          thList("BASS LINE", [["", "The theme's own", "the Bass Low / Normal / High rows"]].concat(lines.map(l => [l.id, l.name, `${l.bars} bar${l.bars > 1 ? "s" : ""} · yours`])), LS36.blOf(k) || "", v => {
+            const t = isMine(k) && MY.list.find(x => x.id === k);
+            if (t) { t.bassLine = v || null; mySave(); const c = crbOf(k); delete c.bassLine; crbSave(); }
+            else { const c = crbOf(k); if (v) c.bassLine = v; else delete c.bassLine; crbSave(); }
+          });
+          if (!lines.length) setTimeout(() => { const ls = $("spnList").querySelector(".ls"); if (ls) ls.insertAdjacentHTML("beforeend", `<div class="empty">No bass lines yet. Record one in Make your own › Bass › Record a new line.</div>`); }, 0);
+        },
+      });
+      if (after) after.after(row);
+      // the Bass Low / Normal / High rows don't play while a line of yours is picked
+      for (const lv of ["Low", "Normal", "High"]) {
+        const br = [...sA.querySelectorAll(":scope > .jam-row")].find(x => (x.querySelector(".l") || {}).textContent === "Bass " + lv);
+        if (br) { const sy = br.sync; br.sync = () => { sy(); br.style.opacity = LS36.blOf(k) ? ".45" : ""; }; br.sync(); }
+      }
+    } catch (e) { console.warn(e); }
+    return r;
+  };
+}
+// Copy whole theme: the bass line's notes too
+{
+  const cp0 = crePreset;
+  crePreset = function () {
+    const t = cp0.apply(this, arguments), pre = "GLASSPAD PRESET ";
+    try { const j = JSON.parse(t.slice(pre.length)), k = CTH.id || crbKey(), L = BL27.get(LS36.blOf(k)); if (j.theme) { j.theme.pieces = j.theme.pieces || {}; j.theme.pieces.bassLine = L || null; } return pre + JSON.stringify(j); } catch (_) { return t; }
+  };
+}
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }
 requestAnimationFrame(() => document.documentElement.classList.add("gp-ready"));

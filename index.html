@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.37 TEST · game mode · 30 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.38 TEST · game mode · 30 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1548,7 +1548,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.37 TEST · game mode · 30 Oct 2026</p>
+      <p class="ver">GlassPad 6.38 TEST · game mode · 30 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10297,7 +10297,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.37 TEST</p>
+    <p class="hm-ver">GlassPad 6.38 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14776,7 +14776,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.37 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.38 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -22529,6 +22529,92 @@ kitBar = function (id) {
   setTimeout(go, busy ? 320 : 0);
 };
 { const d0 = diagReport; diagReport = function () { const r = d0.apply(this, arguments); try { r.v637 = { homeKeep: HK37.shows, kitMiss: KPV.miss || 0 }; } catch (_) {} return r; }; }
+
+/* ---------- 6.38 (page only): bass line recorder: big Record button; Keep my feel / Tidy up ----------
+   1) A big Record button sits on the pad's top part (away from Stop); Cancel while it counts in, Finish while it
+      records, hidden while the save box is up. The small "Rec bass" next to Stop is hidden (still drives it).
+   2) The save box asks "Keep it or tidy it?": Keep my feel = as played; Tidy up (picked first) = notes on 8ths, and on
+      16ths where notes came closer together than ~3/4 of an 8th. Tapping one changes what's playing straight away.
+      Settings → Bass line timing is hidden (this replaces it). Saved lines: q "off" (feel) or "8" (tidy).
+   3) The save box uses the Sound lab's look: small mono labels, Plex Sans text. */
+const BR38 = window.BR38 = { mode: "tidy", raw: null, makes: 0 };
+function br38Make(mode) {
+  const S = BR38.raw.S, tot = BR38.raw.tot, a0 = BR38.raw.a0, src = BR38.raw.notes.slice().sort((x, y) => x.a0 - y.a0), n = [];
+  src.forEach((x, i) => {
+    let pos = x.a0 - a0, end = x.a1 - a0, g = 0;
+    if (mode === "tidy") {
+      const gp = i > 0 ? x.a0 - src[i - 1].a0 : 9, gn = i < src.length - 1 ? src[i + 1].a0 - x.a0 : 9;
+      g = Math.min(gp, gn) < 1.5 ? 1 : 2;
+      pos = Math.round(pos / g) * g; end = Math.max(pos + g * .5, Math.round(end / g) * g);
+    } else { pos = Math.round(pos * 100) / 100; end = Math.round(end * 100) / 100; }
+    if (pos < 0) { if (pos > -.5) pos = 0; else return; }
+    if (pos >= tot - 1e-6) return;
+    const len = Math.max(g ? g * .5 : .25, Math.min(end, tot) - pos);
+    let ch; try { ch = chordAtAbs(a0 + Math.max(0, pos)); } catch (_) { ch = pad.cur; }
+    if (!ch || !ch.tones) return;
+    n.push([+pos.toFixed(3), BL27.ivOf(x.midi, ch), +len.toFixed(3)]);
+  });
+  n.sort((p, r) => p[0] - r[0]);
+  const out = []; for (const x of n) { if (out.length && Math.abs(out[out.length - 1][0] - x[0]) < 1e-6) out.pop(); out.push(x); }
+  BR38.makes++;
+  return { bars: BR38.raw.bars, sp: S, q: mode === "tidy" ? "8" : "off", n: out };
+}
+br27Finish = function (a) {
+  for (const [v, h] of [...BR27.held]) br27Close(v, h, a);
+  BR38.raw = { S: br27Steps(), tot: BR27.a1 - BR27.a0, a0: BR27.a0, bars: BL27.bars, notes: BR27.notes.map(x => ({ ...x })) };
+  BR38.mode = "tidy";
+  BR27.tmp = br38Make(BR38.mode);
+  BR27.state = "ask"; br27UI(); br27Ask(); try { br38Sync(); } catch (_) {}
+};
+br27Ask = function () {
+  const L = BR27.tmp, has = L.n.length, el = $("br27Ask"), old = $("br27Name"), nm = old ? old.value : BL27.newName(), m = BR38.mode;
+  el.innerHTML = has
+    ? `<h4>Keep it or tidy it?</h4><p>${L.bars} bar${L.bars > 1 ? "s" : ""} · playing now</p>
+       <div class="lbl">How it plays</div>
+       <div class="opts"><button type="button" class="opt${m === "off" ? " on" : ""}" data-m="off"><b>Keep my feel</b><small>Exactly as you played it</small></button><button type="button" class="opt${m === "tidy" ? " on" : ""}" data-m="tidy"><b>Tidy up</b><small>Notes land on the beat</small></button></div>
+       <div class="snapnote">Tidy up: 1/8 (1/16 where you played fast)</div>
+       <label>Name<input id="br27Name" maxlength="24" autocomplete="off" spellcheck="false" value="${escH(nm)}"></label>
+       <button class="go" data-a="save">Save and use it</button><div class="two"><button data-a="again">Record again</button><button data-a="back">Back to my theme</button></div>`
+    : `<h4>No notes recorded</h4><p>Play the bass pad (the lower part) while it records.</p>
+       <div class="two"><button data-a="again">Record again</button><button data-a="back">Back to my theme</button></div>`;
+  el.hidden = false;
+};
+$("br27Ask").addEventListener("click", e => {
+  const o = e.target.closest("[data-m]"); if (!o || !BR38.raw || BR27.state !== "ask") return;
+  BR38.mode = o.dataset.m; BR27.tmp = br38Make(BR38.mode); br27Ask();
+});
+{
+  const st = document.createElement("style");
+  st.textContent = `body.br27 #br27Btn { display: none !important; }
+  #br38Rec { position: fixed; z-index: 35; transform: translateX(-50%); display: none; align-items: center; gap: 10px; height: 54px; padding: 0 26px; border-radius: 27px; border: 1.5px solid #ff4d5e; background: rgba(255,77,94,.16); color: #fff; font: 700 17px var(--display); box-shadow: 0 0 18px rgba(255,77,94,.35); white-space: nowrap; }
+  #br38Rec i { width: 16px; height: 16px; border-radius: 50%; background: #ff4d5e; flex: none; }
+  #br38Rec.rec { background: #ff4d5e; } #br38Rec.rec i { background: #fff; border-radius: 3px; }
+  #br38Rec.wait { background: rgba(14,10,30,.85); border-color: rgba(255,255,255,.4); box-shadow: none; } #br38Rec.wait i { display: none; }
+  .gr:has(> .gseg#gBlSnap) { display: none !important; }
+  #br27Ask .lbl { font: 500 10px var(--mono); letter-spacing: .12em; color: #8fa0b8; text-transform: uppercase; margin: 0 0 8px; text-align: left; }
+  #br27Ask h4 { font: 700 16px var(--display); letter-spacing: .02em; } #br27Ask p { font: 400 13px "IBM Plex Sans", var(--body); }
+  #br27Ask .opts { display: flex; gap: 8px; margin-bottom: 12px; }
+  #br27Ask .opt { flex: 1; border: 1.5px solid rgba(255,255,255,.3); border-radius: 16px; padding: 12px 8px 10px; text-align: center; background: none; color: #fff; }
+  #br27Ask .opt b { display: block; font: 700 14px var(--display); margin-bottom: 4px; } #br27Ask .opt small { display: block; font: 400 11.5px/1.3 "IBM Plex Sans", var(--body); color: #b9c0d8; }
+  #br27Ask .opt.on { border-color: #19d3e6; background: rgba(25,211,230,.16); box-shadow: 0 0 14px rgba(25,211,230,.3); } #br27Ask .opt.on small { color: #d8f7fb; }
+  #br27Ask .snapnote { font: 500 10px var(--mono); letter-spacing: .06em; color: #8fa0b8; margin: -4px 0 12px; text-transform: uppercase; }
+  #br27Ask label { font: 500 10px var(--mono); letter-spacing: .12em; text-transform: uppercase; } #br27Ask input { font: 700 15px var(--display); }
+  #br27Ask .two button { font: 600 14px "IBM Plex Sans", var(--body); }`;
+  document.head.appendChild(st);
+  const r = document.createElement("button"); r.id = "br38Rec"; r.type = "button"; r.innerHTML = "<i></i><span>Record</span>";
+  document.body.appendChild(r);
+  r.addEventListener("click", () => { try { $("br27Btn").click(); } catch (_) {} setTimeout(br38Sync, 0); });
+  const sync = window.br38Sync = () => {
+    const stt = BR27.state, show = BR27.on && stt !== "ask" && stt !== "off";
+    r.style.display = show ? "inline-flex" : "none"; if (!show) return;
+    r.classList.toggle("rec", stt === "rec"); r.classList.toggle("wait", stt === "wait" || stt === "count");
+    r.querySelector("span").textContent = stt === "rec" ? "Finish" : stt === "wait" || stt === "count" ? "Cancel" : "Record";
+    try { const L = $("br27Lead").getBoundingClientRect(); r.style.left = (L.left + L.width / 2) + "px"; r.style.top = (L.top + L.height * .66 - 27) + "px"; } catch (_) {}
+  };
+  new MutationObserver(() => sync()).observe($("br27Btn"), { attributes: true, childList: true, subtree: true, characterData: true });
+  setInterval(() => { if (BR27.on || r.style.display !== "none") sync(); }, 300);
+}
+{ const d0 = diagReport; diagReport = function () { const r = d0.apply(this, arguments); try { r.v638 = { mode: BR38.mode, makes: BR38.makes }; } catch (_) {} return r; }; }
 
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }

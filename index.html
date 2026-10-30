@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.42 TEST · game mode · 30 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.41 TEST · game mode · 30 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1548,7 +1548,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.42 TEST · game mode · 30 Oct 2026</p>
+      <p class="ver">GlassPad 6.41 TEST · game mode · 30 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -1867,14 +1867,13 @@ const PROGS = {
   dark: ["Dark 1–6–7", [0, 5, 6, 0]],
   tonic: ["One chord", [0]],
   drone: ["Drone (root + 5th)", null],
-  space: ["Space 6–7–5–1", [5, 6, 4, 0]],
   own: ["Your own (tap the chords)", [0]],
 };
 // picking a progression also picks the scale that makes it sound right, and a drum style to match (change either after)
 const PROG_FEEL = {
   epic: ["minpent", "halftime"], pop: ["majpent", "rock"], ballad: ["major", "halftime"], folk: ["majpent", "rock"],
   rock: ["minpent", "rock"], andalusian: ["minor", "bossa"], eastern: ["hijaz", "maqsum"], japanese: ["hirajoshi", "halftime"],
-  blues: ["blues", "shuffle"], jazz: ["major", "bossa"], dark: ["minor", "machine"], space: ["minor", "halftime"],
+  blues: ["blues", "shuffle"], jazz: ["major", "bossa"], dark: ["minor", "machine"],
 };
 const QUAL = { "": [0, 4, 7], m: [0, 3, 7], "7": [0, 4, 7, 10], m7: [0, 3, 7, 10], maj7: [0, 4, 7, 11] };
 for (const [k, [n]] of Object.entries(PROGS)) $("prog").add(new Option(n, k));
@@ -8130,11 +8129,6 @@ const QSTYLES_ORIGINAL = {
     fx: { drive: { on: true, amt: .5, tone: .45 }, echo: { on: true, time: .25, fb: .3 }, reverb: { on: true, size: .3, mix: .2 } },
     tone: { res: .8 }, drums: { style: "machine", swing: 0, vol: .8 }, pad: { sound: "strings", prog: "dark", every: 2, rhythm: "eighths" },
     bass: { on: true, sound: "pluck", pat: "drive", arp: "updown", rate: "1/16" }, lead: { follow: "chords" } }) },
-  space: { name: "Space Crusader", cols: ["Electric blue", "Violet", "Ice white"], isNew: true, p: makePreset({ scale: "minor", root: 2, wave: "sawtooth", autoVib: false, bpm: 90,
-    fx: { echo: { on: true, time: .5, fb: .55 }, reverb: { on: true, size: .95, mix: .6, type: "shimmer" } },
-    tone: { attack: .6, release: .9, res: .3 }, drums: { style: "halftime", swing: 0, vol: .5 },
-    pad: { sound: "warm", prog: "epic", every: 2, rhythm: "swell", arp: "up", arpRate: "1/8" },
-    bass: { on: true, sound: "sub", pat: "hold" }, lead: { follow: "fixed" } }) },  // 6.42
 };
 /* The synth styles (5.10): the same chords, keys and scales, played by an electronic band. Synth chords that pump with
    the kick, drum-machine beats, and a second lead sound for a second finger. */
@@ -8167,11 +8161,6 @@ const QSTYLES_SYNTH = {
     fx: { drive: { on: true, amt: .5, tone: .45 }, echo: { on: true, time: .25, fb: .3 }, reverb: { on: true, size: .3, mix: .2 } },
     tone: { res: .8 }, drums: { style: "machine", swing: 0, vol: .8 }, pad: { sound: "saws", prog: "dark", every: 2, rhythm: "eighths", pump: .35 },
     bass: { on: true, sound: "pluck", pat: "drive", arp: "updown", rate: "1/16" }, lead: { follow: "chords", snd2: "sawtooth", vol2: 1.15 } }) },
-  space: { name: "Space Crusader", cols: ["Electric blue", "Violet", "Ice white"], isNew: true, p: makePreset({ scale: "minor", root: 2, wave: "sawtooth", autoVib: false, bpm: 90,
-    fx: { echo: { on: true, time: .5, fb: .55 }, reverb: { on: true, size: .95, mix: .6, type: "shimmer" } },
-    tone: { attack: .6, release: .9, res: .3 }, drums: { style: "halftime", swing: 0, vol: .5 },
-    pad: { sound: "warm", prog: "epic", every: 2, rhythm: "swell", arp: "up", arpRate: "1/8" },
-    bass: { on: true, sound: "sub", pat: "hold" }, lead: { follow: "fixed" } }) },  // 6.42
 };
 // 5.13: each synth style's pedals for the chords, bass and drums (anything not listed stays off)
 const SYNTH_PFX = {
@@ -8190,7 +8179,6 @@ const SYNTH_PFX = {
   hunter:  { pad: { filter: { on: true, mode: "sweep", cut: .55, depth: .5, res: .3, speed: .5 }, reverb: { on: true, send: .35 } },
              bass: { drive: { on: true, amt: .35, tone: .45 }, comp: { on: true, amt: .6, punch: .6 }, filter: { on: true, mode: "env", cut: .35, depth: .6, res: .45 } },
              drums: { comp: { on: true, amt: .6, punch: .65 }, reverb: { on: true, send: .15 } } },
-  space:   { pad: { filter: { on: true, mode: "sweep", cut: .5, depth: .4, res: .2, speed: .3 }, reverb: { on: true, send: .5 } }, drums: { reverb: { on: true, send: .35 } } },  // 6.42
 };
 for (const [id, st] of Object.entries(QSTYLES_SYNTH)) st.p.pfx = SYNTH_PFX[id] || {};
 // every style sets the pad octaves (0 unless it says otherwise), so one style's octave doesn't carry into the next
@@ -8199,12 +8187,12 @@ for (const set of [QSTYLES_SYNTH, QSTYLES_ORIGINAL]) for (const st of Object.val
 for (const st of Object.values(QSTYLES_ORIGINAL)) st.p.pfx = { pad: { reverb: { on: !!st.p.fx.reverb.on, send: st.p.fx.reverb.mix ?? .4 } } };
 // each card has its own colour (lead, bass, highlights), whichever sounds are picked
 const QS_COLS = { epic: ["Electric blue", "Violet", "Amber"], arabic: ["Amber", "Teal", "Hot orange"], blues: ["Teal", "Amber", "Red"],
-  sunset: ["Neon pink", "Violet", "Hot orange"], spanish: ["Hot orange", "Red", "Ice white"], tokyo: ["Violet", "Cyan", "Neon pink"], hunter: ["Red", "Magenta", "Electric blue"], space: ["Electric blue", "Violet", "Ice white"] };
+  sunset: ["Neon pink", "Violet", "Hot orange"], spanish: ["Hot orange", "Red", "Ice white"], tokyo: ["Violet", "Cyan", "Neon pink"], hunter: ["Red", "Magenta", "Electric blue"] };
 for (const set of [QSTYLES_ORIGINAL, QSTYLES_SYNTH]) for (const [id, st] of Object.entries(set)) { st.cols = QS_COLS[id]; st.isNew = false; }
 // Balance: each style's part levels in dB [lead, chords, bass, drums], measured against Arabic Nights (synth)
 const STYLE_BAL = {
-  synth: { epic: [0.5, 0.8, -1.8, -2.1], arabic: [0.0, 0.1, 0.0, -2.4], blues: [-7.6, 4.3, -5.7, -0.7], sunset: [2.0, -0.6, 0.0, -1.5], spanish: [1.8, 1.1, -1.8, -3.6], tokyo: [0.0, 0.0, -2.2, -4.0], hunter: [-6.9, 1.4, -3.5, -6.9], space: [0.0, 0.0, -2.2, -4.0] },
-  original: { epic: [1.2, -0.3, -1.5, 1.9], arabic: [-1.8, -1.3, -1.5, 0.3], blues: [-6.1, 1.4, -3.2, -1.0], sunset: [2.0, 0.9, -4.9, -2.0], spanish: [0.3, 3.7, -1.5, -3.0], tokyo: [-0.3, 3.9, -2.6, 6.0], hunter: [-6.9, 0.8, -1.5, -4.6], space: [-0.3, 3.9, -2.6, 6.0] },
+  synth: { epic: [0.5, 0.8, -1.8, -2.1], arabic: [0.0, 0.1, 0.0, -2.4], blues: [-7.6, 4.3, -5.7, -0.7], sunset: [2.0, -0.6, 0.0, -1.5], spanish: [1.8, 1.1, -1.8, -3.6], tokyo: [0.0, 0.0, -2.2, -4.0], hunter: [-6.9, 1.4, -3.5, -6.9] },
+  original: { epic: [1.2, -0.3, -1.5, 1.9], arabic: [-1.8, -1.3, -1.5, 0.3], blues: [-6.1, 1.4, -3.2, -1.0], sunset: [2.0, 0.9, -4.9, -2.0], spanish: [0.3, 3.7, -1.5, -3.0], tokyo: [-0.3, 3.9, -2.6, 6.0], hunter: [-6.9, 0.8, -1.5, -4.6] },
 };
 for (const [name, set] of [["synth", QSTYLES_SYNTH], ["original", QSTYLES_ORIGINAL]])
   for (const [id, st] of Object.entries(set)) { const b = STYLE_BAL[name][id]; st.p.bal = { lead: b[0], pad: b[1], bass: b[2], drums: b[3] }; }
@@ -8242,7 +8230,7 @@ $("styleSet").addEventListener("change", e => {
   try { localStorage.setItem("glasspad.styleSet", styleSet); } catch (_) {}
   toast(styleSet === "original" ? "Styles: the original sounds" : "Styles: synth sounds");
 });
-const QS_ORDER = ["epic", "arabic", "blues", "sunset", "spanish", "tokyo", "hunter", "space", "surprise"];
+const QS_ORDER = ["epic", "arabic", "blues", "sunset", "spanish", "tokyo", "hunter", "surprise"];
 // Surprise me: random, with guard rails so it always works
 const SURPRISE = {
   progs: { epic: ["minpent", "minor"], rock: ["minpent", "minor", "dorian"], andalusian: ["minor"], dark: ["minor", "minpent"],
@@ -8764,7 +8752,7 @@ renderLoopUI();
    Pro, in its Settings, brings back the full app as it was; the Game mode button in the full app's Settings
    comes back here. */
 // each theme's key change: semitones, up or down (placeholders until Alexi sets them by ear)
-const GAME_LIFT = { epic: 2, arabic: 5, blues: 2, sunset: 2, spanish: 2, tokyo: -2, hunter: -2, space: 2 };
+const GAME_LIFT = { epic: 2, arabic: 5, blues: 2, sunset: 2, spanish: 2, tokyo: -2, hunter: -2 };
 // each theme's picture, landscape and portrait (only Tokyo Drift so far)
 const GAME_IMG = { tokyo: ["theme-tokyo-landscape.webp", "theme-tokyo-portrait.webp"] };
 // the built-in bass for each Band level: steps in the bar, interval from the root (7 = the chord's 5th), length in 16ths
@@ -10289,7 +10277,7 @@ const SV = {
   plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   studio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 20V10M10 20V4M15 20v-7M20 20V8"/></svg>'
 };
-const HM_FREE = ["tokyo", "space", "blues", "arabic", "sunset"], HM_LOCKED = ["epic", "hunter", "spanish"], HM_THEMES = [...HM_FREE, ...HM_LOCKED];
+const HM_FREE = ["tokyo", "blues", "arabic", "sunset"], HM_LOCKED = ["epic", "hunter", "spanish"], HM_THEMES = [...HM_FREE, ...HM_LOCKED];
 const hmPic = id => { const s = GAME_IMGS[id]; return s ? (s.port || s.land)[0] : "start-portrait.webp"; };
 const hmCol = id => { const st = QSTYLES_SYNTH[id]; return (st && st.cols && GC[st.cols[0]]) || "#ff3fa4"; };
 const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.played") || "[]"); } catch (_) { return []; } };
@@ -10309,7 +10297,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.42 TEST</p>
+    <p class="hm-ver">GlassPad 6.41 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -14233,7 +14221,6 @@ const FEELS = [
   { id: "spanish", name: "Passionate", line: "plucked Andalusian chords" },
   { id: "tokyo", name: "Neon", line: "Japanese drone, synthwave, bass arp" },
   { id: "hunter", name: "Menacing", line: "dark 80s chords, machine drums" },
-  { id: "space", name: "Cosmic", line: "floating pads, shimmer, half-time beat" },
 ];
 const FEEL_SPEED = { slow: .85, asis: 1, fast: 1.15 };
 const KEY_NAMES = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"];
@@ -14793,7 +14780,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.42 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.41 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -22691,20 +22678,6 @@ if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(tr
 requestAnimationFrame(() => document.documentElement.classList.add("gp-ready"));
 
 requestAnimationFrame(draw);
-/* ---------- 6.42 (page only): new GlassPad theme "Space Crusader" ----------
-   D minor, 90, half-time. Part A = Epic 1-6-3-7 (Dm Bb F C), Part B = Space 6-7-5-1 (Bb C Am Dm), Swell chords with an
-   up arpeggio, saw lead with Shimmer room, Sub drone bass. Intro "Chords fade in", outro "Fade out". Borrows Tokyo's pictures.
-   Part B / intro / outro defaults come from SC42 (they play even with Studio off); his own Studio choices win. */
-const SC42 = window.SC42 = { space: { shiftB: true, progB: "space", intro: "swell", outro: "fade" } };
-GAME_IMGS.space = GAME_IMGS.tokyo;
-{
-  const c0 = PB29.cfg;
-  PB29.cfg = () => { const r = c0(); let k = null; try { k = CTH.id || crbKey(); } catch (_) {} const d = SC42[k]; return d ? { ...d, ...r } : r; };
-  const t0 = hmThumb;
-  hmThumb = id => id === "space" ? "thumb-tokyo.webp" : t0(id);
-  for (const [k, d] of Object.entries(SC42)) if (!CRB[k]) CRB[k] = { ...d };
-}
-window.v642 = () => ({ ver: "6.42", has: !!QSTYLES_SYNTH.space, cfg: (() => { try { return PB29.cfg(); } catch (e) { return String(e); } })() });
 </script>
 
 <script>if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) navigator.serviceWorker.register("sw.js").catch(() => {});</script>

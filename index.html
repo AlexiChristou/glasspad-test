@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.40 TEST · game mode · 30 Oct 2026</p>
+  <p class="ver panel-ver">GlassPad 6.41 TEST · game mode · 30 Oct 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1548,7 +1548,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.40 TEST · game mode · 30 Oct 2026</p>
+      <p class="ver">GlassPad 6.41 TEST · game mode · 30 Oct 2026</p>
     </div>
   </div>
 </main>
@@ -10297,7 +10297,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.40 TEST</p>
+    <p class="hm-ver">GlassPad 6.41 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -11380,19 +11380,23 @@ function vrecFrame() {
   g.fillStyle = TH.ink; g.fillRect(0, 0, c.width, c.height);
   const full = $("gFull"); if (document.body.classList.contains("gpic") && full.width > 4) g.drawImage(full, 0, 0, c.width, c.height);
   g.drawImage(cv, R.left * k, R.top * k, R.width * k, R.height * k);
-  // the mark
-  const fs = Math.round(c.width * .042), y = c.height - fs * 1.4;
-  g.save(); g.textAlign = "center"; g.font = `italic 800 ${fs}px GPDisplay, sans-serif`; g.fillStyle = "#fff"; g.shadowColor = TH.leadLine || TH.acc; g.shadowBlur = fs * .6;
-  g.fillText("Made with GlassPad", c.width / 2, y); g.shadowBlur = 0;
-  g.font = `400 ${Math.round(fs * .6)}px "IBM Plex Mono", monospace`; g.fillStyle = "rgba(238,241,247,.8)"; g.fillText(GP_LINK.replace("https://", ""), c.width / 2, y + fs * .95);
-  g.restore();
+  // the mark (6.41: drawn once per recording into its own canvas, copied each frame: the glow was redrawn every frame)
+  const fs = Math.round(c.width * .042);
+  if (!vrec.mark || vrec.mark.width !== c.width) {
+    const m = vrec.mark = document.createElement("canvas"); m.width = c.width; m.height = Math.round(fs * 3.2); const mg = m.getContext("2d"), y = fs * 1.4;
+    mg.textAlign = "center"; mg.font = `italic 800 ${fs}px GPDisplay, sans-serif`; mg.fillStyle = "#fff"; mg.shadowColor = TH.leadLine || TH.acc; mg.shadowBlur = fs * .6;
+    mg.fillText("Made with GlassPad", c.width / 2, y); mg.shadowBlur = 0;
+    mg.font = `400 ${Math.round(fs * .6)}px "IBM Plex Mono", monospace`; mg.fillStyle = "rgba(238,241,247,.8)"; mg.fillText(GP_LINK.replace("https://", ""), c.width / 2, y + fs * .95);
+  }
+  g.drawImage(vrec.mark, 0, c.height - fs * 2.8);
   vrec.raf = requestAnimationFrame(vrecFrame);
 }
 async function startVideoRec() {
   ensureAudio();
   const mime = vrecMime();
   if (!mime || !HTMLCanvasElement.prototype.captureStream) { toast("This phone can't record video from the app. Try Audio."); return; }
-  const k = Math.min(1.5, 1280 / Math.max(innerWidth, innerHeight)), c = document.createElement("canvas");
+  const k = Math.min(1.5, 1080 / Math.max(innerWidth, innerHeight)), c = document.createElement("canvas");   // 6.41: 1080 (was 1280)
+  vrec.mark = null;
   c.width = Math.round(innerWidth * k / 2) * 2; c.height = Math.round(innerHeight * k / 2) * 2;
   vrec.comp = c; vrec.k = k; vrec.on = true; vrec.chunks = [];
   vrecFrame();
@@ -14776,7 +14780,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.40 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.41 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
@@ -22658,6 +22662,16 @@ br27Close = function (v, h, a) {
   if (h.a0 >= BR27.a0 - .5 && h.a0 < BR27.a1) BR27.notes.push({ a0: h.a0, a1: Math.min(a, BR27.a1), midi: h.midi, ch: h.ch || null });
 };
 { const d0 = diagReport; diagReport = function () { const r = d0.apply(this, arguments); try { r.v639 = { caught: BC39.caught, moved: BC39.moved }; } catch (_) {} return r; }; }
+
+/* ---------- 6.41 (page only): playing a recording stops the band; smoother video (guess) ----------
+   1) Listen / Watch on the take card, or playing a recording in Your recordings, stops the band first.
+   2) Video: the "Made with GlassPad" mark is drawn once per recording (its glow was redrawn every frame) and the
+      video's long side is 1080 px (was 1280). A guess at the jumpiness: not measured on a phone. */
+const RB41 = window.RB41 = { stops: 0 };
+function rb41Stop() { try { if (T.playing) { pvClear(); hpv.on = false; setPlaying(false); RB41.stops++; } } catch (_) {} }
+try { takeAudio.addEventListener("play", rb41Stop); } catch (_) {}
+document.addEventListener("play", e => { try { if (e.target && e.target.closest && e.target.closest("#rc")) rb41Stop(); } catch (_) {} }, true);
+$("takeListen").addEventListener("click", e => { try { if (rc.cardTake && rc.cardTake.type === "video") rb41Stop(); } catch (_) {} }, true);
 
 // 5.48.1: the app always opens on the new Home, even if you left it in Studio (Studio is one tap away from Home)
 if (!$("start").classList.contains("resume")) { if (!game.on) { try { setGame(true); } catch (_) {} } $("start").hidden = false; }

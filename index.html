@@ -1438,7 +1438,7 @@
     <span class="hint" id="freshHint">Start fresh stops everything, clears the loop and puts every setting back to the start. Your saved presets, saved loops and sounds are kept. Pad size sets how tall the pad stays while the controls are open (the controls scroll in the space above). Lift pad raises the pad off the bottom of the screen: some phones hold touches near the bottom edge for a moment, so if the outer bass keys respond late, lift it until they're instant. Smooth sound gives the sound engine a bigger buffer, which stops crackling on a busy phone but adds a little delay. Style sounds picks how the Quick start styles sound: Synth (electronic beats and synth chords) or Original (as they first were). Listening on: Phone speaker adds faint overtones above the bass so you can hear it on a phone's small speaker; Headphones plays the bass exactly as it is.</span>
   </div>
   </details>
-  <p class="ver panel-ver">GlassPad 6.44 TEST · game mode · 1 Nov 2026</p>
+  <p class="ver panel-ver">GlassPad 6.45 TEST · game mode · 1 Nov 2026</p>
 </div>
 
 <div id="gSheet" hidden role="dialog" aria-label="Settings"><div class="box">
@@ -1548,7 +1548,7 @@
   <div id="start">
     <div>
       <button id="go">Tap to start</button>
-      <p class="ver">GlassPad 6.44 TEST · game mode · 1 Nov 2026</p>
+      <p class="ver">GlassPad 6.45 TEST · game mode · 1 Nov 2026</p>
     </div>
   </div>
 </main>
@@ -10297,7 +10297,7 @@ const hmPlayed = () => { try { return JSON.parse(localStorage.getItem("glasspad.
     <div class="hm-rowwrap" id="hmRowWrap"><div class="hm-tiles" id="hmTiles"></div><button class="hm-more" id="hmMore" aria-label="More themes">${SV.next}</button></div>
     <button class="hm-unlock" id="hmUnlock"><span>${SV.lock}Unlock all themes</span><span class="hm-price">[PRICE]</span></button>
     <div class="hm-two"><button id="hmMine">${SV.plus}Make your own</button><button id="hmStudio">${SV.studio}Studio</button></div>
-    <p class="hm-ver">GlassPad 6.44 TEST</p>
+    <p class="hm-ver">GlassPad 6.45 TEST</p>
     <div class="hm-toast" id="hmToast" hidden></div>
   </div>`;
   document.body.appendChild(h);
@@ -11376,6 +11376,7 @@ function vrecMime() {
 }
 function vrecFrame() {
   if (!vrec.on) return;
+  const t0 = performance.now(), st = vrec.st; if (st) { if (st.last) { const gap = t0 - st.last; if (gap > st.gapMax) st.gapMax = gap; if (gap > 100) st.slow++; } st.last = t0; }   // 6.45: readout
   const c = vrec.comp, g = c.getContext("2d"), k = vrec.k, R = cv.getBoundingClientRect();
   g.fillStyle = TH.ink; g.fillRect(0, 0, c.width, c.height);
   const full = $("gFull"); if (document.body.classList.contains("gpic") && full.width > 4) g.drawImage(full, 0, 0, c.width, c.height);
@@ -11386,15 +11387,17 @@ function vrecFrame() {
   g.fillText("Made with GlassPad", c.width / 2, y); g.shadowBlur = 0;
   g.font = `400 ${Math.round(fs * .6)}px "IBM Plex Mono", monospace`; g.fillStyle = "rgba(238,241,247,.8)"; g.fillText(GP_LINK.replace("https://", ""), c.width / 2, y + fs * .95);
   g.restore();
+  if (st) { const d = performance.now() - t0; st.n++; st.draw += d; if (d > st.drawMax) st.drawMax = d; }
   vrec.raf = requestAnimationFrame(vrecFrame);
 }
 async function startVideoRec() {
   ensureAudio();
   const mime = vrecMime();
   if (!mime || !HTMLCanvasElement.prototype.captureStream) { toast("This phone can't record video from the app. Try Audio."); return; }
-  const k = Math.min(1.5, 1280 / Math.max(innerWidth, innerHeight)), c = document.createElement("canvas");   // 6.43: back to 1280
+  const k = Math.min(1.5, 960 / Math.max(innerWidth, innerHeight)), c = document.createElement("canvas");   // 6.45: 960 (was 1280)
   c.width = Math.round(innerWidth * k / 2) * 2; c.height = Math.round(innerHeight * k / 2) * 2;
   vrec.comp = c; vrec.k = k; vrec.on = true; vrec.chunks = [];
+  vrec.st = { n: 0, draw: 0, drawMax: 0, gapMax: 0, slow: 0, last: 0, w: c.width, h: c.height };
   vrecFrame();
   const vs2 = c.captureStream(30), dest = audio.ctx.createMediaStreamDestination(); recIn(dest); vrec.dest = dest;
   const stream = new MediaStream([...vs2.getVideoTracks(), ...dest.stream.getAudioTracks()]);
@@ -11411,11 +11414,15 @@ function stopVideoRec() {
   mr.onstop = async () => {
     vrec.on = false; cancelAnimationFrame(vrec.raf); clearInterval(vrec.tick);
     recOff(vrec.dest);
+    // 6.45: Creator readout: pictures per second, draw time per picture, longest gap
+    const S = vrec.st; let line = "";
+    if (S && S.n) { line = `Video ${S.w}x${S.h} · ${(S.n / secs).toFixed(1)} pics/s · draw ${(S.draw / S.n).toFixed(1)} ms avg, ${S.drawMax.toFixed(0)} max · longest gap ${S.gapMax.toFixed(0)} ms · gaps over 100 ms: ${S.slow}`; vrec.lastStat = line; }
     const blob = new Blob(vrec.chunks, { type: (mr.mimeType || "video/webm").split(";")[0] }); vrec.chunks = [];
     vrecUI();
     if (!blob.size) { toast("Nothing was recorded. Try again."); return; }
     const t = await recKeep(blob, "video", secs);
     if (t) { rc.cardTake = t; $("takeCard").querySelector(".tc-head span").innerHTML = `● Video kept · <b id="takeLen">${fmtTime(secs)}</b>`; $("takeListen").textContent = "▶ Watch"; $("takeShare").hidden = false; $("takeCard").hidden = false; }
+    if (line && CRE.on) toast(line, { label: "Copy", fn: () => { try { navigator.clipboard.writeText(line); } catch (_) {} } });
   };
   mr.stop();
 }
@@ -14785,7 +14792,7 @@ function creSet(v) { CRE.on = !!v; try { localStorage.setItem("glasspad.creator"
     r.innerHTML = `<div><label>Creator mode</label><small>Shows the Full Studio on Home. Off = what users see. 7 taps on the version number also switch it</small></div><button class="gsw" id="gCreator" aria-pressed="false"></button>`;
     g.querySelector("h3").after(r);
     $("gCreator").addEventListener("click", () => creSet(!CRE.on));
-    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.44 TEST";
+    const v = document.createElement("p"); v.className = "g-ver"; v.id = "gVer"; v.textContent = "GlassPad 6.45 TEST";
     g.after(v);
   }
   document.addEventListener("click", e => {
